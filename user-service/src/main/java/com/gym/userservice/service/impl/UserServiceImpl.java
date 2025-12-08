@@ -1,0 +1,413 @@
+package com.gym.userservice.service.impl;
+
+import com.gym.userservice.dto.AdminRegisterRequest;
+import com.gym.userservice.dto.MemberRegisterRequest;
+import com.gym.userservice.dto.TrainerRegisterRequest;
+import com.gym.userservice.entity.MemberDetails;
+import com.gym.userservice.entity.TrainerDetails;
+import com.gym.userservice.entity.User;
+import com.gym.userservice.exception.AccountDeactivatedException;
+import com.gym.userservice.exception.BadRequestException;
+import com.gym.userservice.exception.ResourceNotFoundException;
+import com.gym.userservice.repository.MemberDetailsRepository;
+import com.gym.userservice.repository.TrainerDetailsRepository;
+import com.gym.userservice.repository.UserRepository;
+import com.gym.userservice.service.IUserService;
+
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional; // Import HashMap
+
+@Service
+public class UserServiceImpl implements IUserService {
+
+    private final UserRepository repo;
+    private final TrainerDetailsRepository trainerRepo;
+    private final MemberDetailsRepository memberRepo;
+    private final PasswordEncoder encoder;
+
+    public UserServiceImpl(UserRepository repo,
+                           TrainerDetailsRepository trainerRepo,
+                           MemberDetailsRepository memberRepo,
+                           PasswordEncoder encoder) {
+
+        this.repo = repo;
+        this.trainerRepo = trainerRepo;
+        this.memberRepo = memberRepo;
+        this.encoder = encoder;
+    }
+
+    // ============================================================
+    // ADMIN REGISTER (RETURNS USER)
+    // ============================================================
+    @Override
+    public User registerAdmin(AdminRegisterRequest request) {
+
+        if (repo.findByEmail(request.getEmail()).isPresent()) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(encoder.encode(request.getPassword()));
+        user.setRole("ROLE_ADMIN");
+
+        User saved = repo.save(user);
+        saved.setPassword(null);
+        return saved;
+    }
+
+    // ============================================================
+    // TRAINER REGISTER
+    // ============================================================
+    @Override
+    public User registerTrainer(TrainerRegisterRequest request) {
+
+        Optional<User> existingUser = repo.findByEmailIncludeDeleted(request.getEmail());
+
+        if (existingUser.isPresent()) {
+            if (existingUser.get().isDeleted()) {
+                throw new AccountDeactivatedException("Account is deactivated. Please reactivate it.");
+            } else {
+                throw new BadRequestException("Email already exists");
+            }
+        }
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(encoder.encode(request.getPassword()));
+        user.setRole("ROLE_TRAINER");
+
+        User savedUser = repo.save(user);
+
+        TrainerDetails details = new TrainerDetails();
+        details.setSpecialization(request.getSpecialization());
+        details.setExperienceYears(request.getExperienceYears());
+        details.setCertification(request.getCertification());
+        details.setPhone(request.getPhone());
+        details.setUser(savedUser);
+
+        trainerRepo.save(details);
+
+        savedUser.setPassword(null);
+        return savedUser;
+    }
+
+    // ============================================================
+    // MEMBER REGISTER
+    // ============================================================
+    @Override
+    public User registerMember(MemberRegisterRequest request) {
+
+        Optional<User> existingUser = repo.findByEmailIncludeDeleted(request.getEmail());
+
+        if (existingUser.isPresent()) {
+            if (existingUser.get().isDeleted()) {
+                throw new AccountDeactivatedException("Account is deactivated. Please reactivate it.");
+            } else {
+                throw new BadRequestException("Email already exists");
+            }
+        }
+
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(encoder.encode(request.getPassword()));
+        user.setRole("ROLE_MEMBER");
+
+        User savedUser = repo.save(user);
+
+        MemberDetails details = new MemberDetails();
+        details.setAge(request.getAge());
+        details.setGender(request.getGender());
+        details.setHeight(request.getHeight());
+        details.setWeight(request.getWeight());
+        details.setGoal(request.getGoal());
+        details.setMembershipType(request.getMembershipType());
+        details.setPhone(request.getPhone());
+        details.setFingerprint(request.getFingerprint()); // Set fingerprint here
+        details.setUser(savedUser);
+
+        savedUser.setMemberDetails(details);
+
+        memberRepo.save(details);
+        savedUser.setPassword(null);
+
+        return savedUser;
+    }
+
+    // ============================================================
+    // GET EMAIL
+    // ============================================================
+    @Override
+    public User getByEmail(String email) {
+        User user = repo.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.isDeleted()) {
+            throw new ResourceNotFoundException("User is deleted");
+        }
+
+        return user;
+    }
+
+    // ============================================================
+    // GET BY ID
+    // ============================================================
+    @Override
+    public User getById(Long id) {
+        User user = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.isDeleted()) {
+            throw new ResourceNotFoundException("User is deleted");
+        }
+
+        return user;
+    }
+
+    @Override
+    public boolean existsById(Long id) {
+        return repo.existsById(id);
+    }
+
+    // ============================================================
+    // LISTS (FILTER OUT DELETED)
+    // ============================================================
+    @Override
+    public List<User> getAllUsers() {
+        List<User> list = repo.findAll()
+                .stream()
+                .filter(u -> !u.isDeleted())
+                .toList();
+
+        list.forEach(u -> u.setPassword(null));
+        return list;
+    }
+
+    @Override
+    public List<User> getAllMembers() {
+        List<User> list = repo.findByRole("ROLE_MEMBER")
+                .stream()
+                .filter(u -> !u.isDeleted())
+                .toList();
+
+        list.forEach(u -> u.setPassword(null));
+        return list;
+    }
+
+    @Override
+    public List<User> getAllTrainers() {
+        List<User> list = repo.findByRole("ROLE_TRAINER")
+                .stream()
+                .filter(u -> !u.isDeleted())
+                .toList();
+
+        list.forEach(u -> u.setPassword(null));
+        return list;
+    }
+
+    @Override
+    public List<User> getAllMembersForAdmin() {
+        List<User> list = repo.findByRole("ROLE_MEMBER")
+                .stream()
+                .filter(u -> !u.isDeleted())
+                .toList();
+
+        list.forEach(u -> u.setPassword(null));
+        return list;
+    }
+
+    // ============================================================
+    // SOFT DELETE USER
+    // ============================================================
+    @Override
+    public void deleteUser(Long id) {
+        User user = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setDeleted(true);
+
+        if (user.getMemberDetails() != null) {
+            user.getMemberDetails().setDeleted(true);
+            memberRepo.save(user.getMemberDetails());
+        }
+
+        if (user.getTrainerDetails() != null) {
+            user.getTrainerDetails().setDeleted(true);
+            trainerRepo.save(user.getTrainerDetails());
+        }
+
+        repo.save(user);
+    }
+
+    // ============================================================
+    // RESTORE USER (OPTIONAL)
+    // ============================================================
+    @Override
+    public User restoreUser(Long id) {
+        User user = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setDeleted(false);
+
+        if (user.getMemberDetails() != null) {
+            user.getMemberDetails().setDeleted(false);
+            memberRepo.save(user.getMemberDetails());
+        }
+
+        if (user.getTrainerDetails() != null) {
+            user.getTrainerDetails().setDeleted(false);
+            trainerRepo.save(user.getTrainerDetails());
+        }
+
+        return repo.save(user);
+    }
+
+    @Override
+    public User reactivateUser(String email) {
+        User user = repo.findByEmailIncludeDeleted(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.isDeleted()) {
+            throw new BadRequestException("User is not deactivated");
+        }
+
+        user.setDeleted(false);
+        user.setDeletedAt(null);
+
+        if (user.getMemberDetails() != null) {
+            user.getMemberDetails().setDeleted(false);
+            memberRepo.save(user.getMemberDetails());
+        }
+
+        if (user.getTrainerDetails() != null) {
+            user.getTrainerDetails().setDeleted(false);
+            trainerRepo.save(user.getTrainerDetails());
+        }
+
+        return repo.save(user);
+    }
+
+    // ============================================================
+    // UPDATE USER
+    // ============================================================
+    @Override
+    public User updateUser(Long id, Map<String, Object> updates) {
+        User user = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isDeleted()) {
+            throw new RuntimeException("Cannot update deleted user");
+        }
+
+        // COMMON FIELDS
+        if (updates.containsKey("name")) user.setName((String) updates.get("name"));
+        if (updates.containsKey("email")) {
+            String newEmail = (String) updates.get("email");
+            if (!newEmail.equals(user.getEmail())) {
+                if (repo.existsByEmailAndIdNot(newEmail, id)) {
+                    throw new BadRequestException("Email already exists");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
+        // MEMBER
+        if (user.getMemberDetails() != null) {
+            var m = user.getMemberDetails();
+
+            if (updates.containsKey("goal")) m.setGoal((String) updates.get("goal"));
+            if (updates.containsKey("phone")) m.setPhone((String) updates.get("phone"));
+            if (updates.containsKey("gender")) m.setGender((String) updates.get("gender"));
+            if (updates.containsKey("age")) m.setAge((Integer) updates.get("age"));
+            if (updates.containsKey("height")) m.setHeight(Double.valueOf(updates.get("height").toString()));
+            if (updates.containsKey("weight")) m.setWeight(Double.valueOf(updates.get("weight").toString()));
+            if (updates.containsKey("membershipType"))
+                m.setMembershipType((String) updates.get("membershipType"));
+        }
+
+        // TRAINER
+        if (user.getTrainerDetails() != null) {
+            var t = user.getTrainerDetails();
+
+            if (updates.containsKey("specialization")) t.setSpecialization((String) updates.get("specialization"));
+            if (updates.containsKey("certification")) t.setCertification((String) updates.get("certification"));
+            if (updates.containsKey("experienceYears"))
+                t.setExperienceYears(Integer.valueOf(updates.get("experienceYears").toString()));
+            if (updates.containsKey("phone")) t.setPhone((String) updates.get("phone"));
+        }
+
+        User updated = repo.save(user);
+        updated.setPassword(null);
+        return updated;
+    }
+
+    // ============================================================
+    // STATS
+    // ============================================================
+    @Override
+    public long countTotalMembers() {
+        return repo.countTotalMembers();
+    }
+
+    @Override
+    public long countMembersThisMonth() {
+        LocalDate now = LocalDate.now();
+        return repo.countMembersByMonthAndYear(now.getMonthValue(), now.getYear());
+    }
+
+    @Override
+    public long countMembersLastMonth() {
+        LocalDate prev = LocalDate.now().minusMonths(1);
+        return repo.countMembersByMonthAndYear(prev.getMonthValue(), prev.getYear());
+    }
+
+    @Override
+    public long countMembersByMonthAndYear(int month, int year) {
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("month must be between 1 and 12");
+        }
+        if (year < 1900) {
+            throw new IllegalArgumentException("Invalid year");
+        }
+
+        return repo.countMembersByMonthAndYear(month, year);
+    }
+
+    // ============================================================
+    // FINGERPRINT VERIFICATION
+    // ============================================================
+    @Override
+    public boolean verifyFingerprint(String email, String fingerprint) {
+        User user = repo.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.isDeleted()) {
+            throw new ResourceNotFoundException("User is deleted");
+        }
+
+        if (!"ROLE_MEMBER".equals(user.getRole())) {
+            throw new BadRequestException("Fingerprint verification is only available for members.");
+        }
+
+        MemberDetails memberDetails = user.getMemberDetails();
+        if (memberDetails == null || memberDetails.getFingerprint() == null || memberDetails.getFingerprint().isEmpty()) {
+            throw new BadRequestException("No fingerprint registered for this member.");
+        }
+
+        // IMPORTANT: In a real application, this comparison would involve a sophisticated
+        // biometric SDK or an external service to compare fingerprint templates,
+        // accounting for variations and returning a confidence score.
+        // For this example, we are using a simple string equality check.
+        return memberDetails.getFingerprint().equals(fingerprint);
+    }
+}

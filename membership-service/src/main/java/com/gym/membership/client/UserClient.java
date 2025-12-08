@@ -1,9 +1,13 @@
 package com.gym.membership.client;
 
 import com.gym.membership.config.FeignDynamicAuthConfig;
+
+import java.util.List;
+
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @FeignClient(
         name = "user-service",

@@ -45,13 +45,10 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         double productRevenue = productAssignmentRepo.getProductRevenueByMonth(m, y);
         long productsSoldThisMonth = productAssignmentRepo.countProductsByMonth(m, y);
 
-        long membersThisMonth = userClient.getMemberStatsForMonth(y, m).count;
-        long membersLastMonth = userClient.getMemberStatsForMonth(
-                m == 1 ? y - 1 : y,
-                m == 1 ? 12 : m - 1
-        ).count;
-
-        long totalMembers = userClient.getMemberStats().totalMembers;
+        UserClient.MemberStatsResponse memberStats = userClient.getMemberStats();
+        long membersThisMonth = memberStats.membersThisMonth;
+        long membersLastMonth = memberStats.membersLastMonth;
+        long totalMembers = memberStats.totalMembers;
         long totalProductsSold = productAssignmentRepo.count();
 
         return new AnalyticsResponse(

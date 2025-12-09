@@ -1,53 +1,93 @@
-import { useEffect, useState } from "react";
-import { useSubscriptions } from "../../hooks/useSubscriptions";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAllPlans } from "../../api/plans"; // For membership plans
+import { useSubscriptions } from "../../hooks/useSubscriptions"; // For membership subscription
+import { useAllWorkoutPlans, useAssignWorkoutPlan } from "../../hooks/useWorkoutPlans"; // For workout plans
+import { fetchProfile } from "../../api/profile";
+import { type UserProfile } from "../../api/profile";
+import { Dumbbell } from "lucide-react";
+import { type Plan as MembershipPlan } from "../../types/Plan"; // Renamed for clarity
 
-interface Plan {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  durationDays: number;
-}
 
-export default function PlansPage() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [openRow, setOpenRow] = useState<number | null>(null);
-  const { subscribe, loading:subscribing, error: subscribeError } = useSubscriptions();
-
-  async function loadPlans() {
-    setLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("http://localhost:8002/plans"); // your membership service URL
-      if (!res.ok) {
-        setError("Failed to load plans.");
-        return;
-      }
-
-      const data = await res.json();
-      setPlans(data || []);
-    } catch {
-      setError("Server unreachable.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSubscribe(planId: number) {
-    // In a real app, you would get the user ID from your auth context
-    const userId = 1; 
-    const success = await subscribe(userId, planId);
-    if (success) {
-      alert("Successfully subscribed!");
-    }
-  }
+export default function PlansPage({ onPageChange }: { onPageChange: (page: string) => void }) {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [errorUser, setErrorUser] = useState<string | null>(null);
 
   useEffect(() => {
-    loadPlans();
+    const loadProfile = async () => {
+      try {
+        const data = await fetchProfile();
+        setUser(data);
+      } catch (err: any) {
+        setErrorUser(err.message || "Failed to load user profile.");
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    loadProfile();
   }, []);
+
+  const memberId = user?.id; // Get memberId from authenticated user
+
+  // Membership Plans
+  const {
+    data: membershipPlans,
+    isLoading: isLoadingMembershipPlans,
+    isError: isErrorMembershipPlans,
+    error: membershipPlansError,
+  } = useQuery<MembershipPlan[], Error>({
+    queryKey: ["membershipPlans"],
+    queryFn: fetchAllPlans,
+  });
+
+  const {
+    subscribe,
+    loading: subscribingMembership,
+    error: subscribeMembershipError,
+  } = useSubscriptions();
+
+  // Workout Plans
+  const {
+    data: workoutPlans,
+    isLoading: isLoadingWorkoutPlans,
+    isError: isErrorWorkoutPlans,
+    error: workoutPlansError,
+  } = useAllWorkoutPlans();
+
+  const assignWorkoutPlanMutation = useAssignWorkoutPlan();
+
+  async function handleSubscribeMembership(planId: number) {
+    if (!memberId) {
+      alert("User not logged in or member ID not available.");
+      return;
+    }
+    const success = await subscribe(memberId, planId);
+    if (success) {
+      alert("Successfully subscribed to membership plan!");
+    } else {
+      alert(`Failed to subscribe to membership plan: ${subscribeMembershipError}`);
+    }
+  }
+
+  async function handleAssignWorkoutPlan(planId: number) {
+    if (!memberId) {
+      alert("User not logged in or member ID not available.");
+      return;
+    }
+
+    try {
+      // Assuming startDate is current date, endDate is optional
+      await assignWorkoutPlanMutation.mutateAsync({
+        memberId: memberId,
+        planId: planId,
+        startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+      });
+      alert("Successfully assigned workout plan!");
+    } catch (err: any) {
+      alert(`Failed to assign workout plan: ${err.message}`);
+    }
+  }
 
   // Convert days into months + days
   function formatDuration(days: number) {
@@ -59,7 +99,7 @@ export default function PlansPage() {
     return `${remDays} days`;
   }
 
-  if (loading) {
+  if (loadingUser || isLoadingMembershipPlans || isLoadingWorkoutPlans) {
     return (
       <div className="mt-10">
         <h1 className="text-3xl font-bold">Plans</h1>
@@ -72,12 +112,15 @@ export default function PlansPage() {
     );
   }
 
-  if (error) {
+  if (errorUser || isErrorMembershipPlans || isErrorWorkoutPlans) {
     return (
       <div className="mt-10">
-        <p className="text-red-600 text-lg">{error}</p>
+        <p className="text-red-600 text-lg">
+          Error:{" "}
+          {errorUser || membershipPlansError?.message || workoutPlansError?.message}
+        </p>
         <button
-          onClick={loadPlans}
+          onClick={() => { /* Refetch queries */ }}
           className="px-4 py-2 mt-4 bg-blue-600 text-white rounded"
         >
           Retry
@@ -87,10 +130,10 @@ export default function PlansPage() {
   }
 
   return (
-    <div>
+    <div className="p-6">
+      {/* Membership Plans Section */}
       <h1 className="text-3xl font-bold mb-6">Membership Plans</h1>
-
-      <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
+      <div className="bg-white shadow rounded-lg p-6 overflow-x-auto mb-10">
         <table className="w-full border-collapse">
           <thead>
             <tr className="text-left border-b bg-gray-100">
@@ -98,80 +141,70 @@ export default function PlansPage() {
               <th className="p-3">Plan Name</th>
               <th className="p-3">Price (₹)</th>
               <th className="p-3">Duration</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
-
           <tbody>
-            {plans.length === 0 && (
+            {membershipPlans && membershipPlans.length === 0 && (
               <tr>
-                <td colSpan={4} className="p-5 text-center text-gray-500">
-                  No plans available.
+                <td colSpan={5} className="p-5 text-center text-gray-500">
+                  No membership plans available.
                 </td>
               </tr>
             )}
-
-            {plans.map((p, index) => (
-              <>
-                {/* MAIN ROW */}
-                <tr
-                  key={p.id}
-                  onClick={() => setOpenRow(openRow === index ? null : index)}
-                  className="border-b hover:bg-gray-50 cursor-pointer transition"
-                >
-                  <td className="p-3">{index + 1}</td>
-
-                  <td className="p-3 font-medium">{p.name}</td>
-
-                  <td className="p-3 font-semibold text-green-700">
-                    ₹{p.price}
-                  </td>
-
-                  <td className="p-3 flex items-center gap-2">
-                    {formatDuration(p.durationDays)}
-
-                    <span
-                      className={`transform transition-transform ml-2 ${
-                        openRow === index ? "rotate-180" : ""
-                      }`}
-                    >
-                      ▼
-                    </span>
-                  </td>
-                </tr>
-
-                {/* DROPDOWN ROW */}
-                {openRow === index && (
-                  <tr className="bg-gray-50 border-b">
-                    <td colSpan={4} className="p-5">
-
-                      <div className="p-4 border rounded bg-white shadow-sm">
-                        <h2 className="text-lg font-semibold mb-2">
-                          Description
-                        </h2>
-                        <p className="text-gray-700">
-                          {p.description || "No description available."}
-                        </p>
-                        <div className="mt-4">
-                          <button
-                            onClick={() => handleSubscribe(p.id)}
-                            disabled={subscribing}
-                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
-                          >
-                            {subscribing ? "Subscribing..." : "Subscribe"}
-                          </button>
-                          {subscribeError && (
-                            <p className="text-red-600 mt-2">{subscribeError}</p>
-                          )}
-                        </div>
-                      </div>
-
-                    </td>
-                  </tr>
-                )}
-              </>
+            {membershipPlans?.map((p, index) => (
+              <tr key={p.id} className="border-b hover:bg-gray-50 transition">
+                <td className="p-3">{index + 1}</td>
+                <td className="p-3 font-medium">{p.name}</td>
+                <td className="p-3 font-semibold text-green-700">₹{p.price}</td>
+                <td className="p-3 flex items-center gap-2">
+                  {formatDuration(p.durationDays)}
+                </td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleSubscribeMembership(p.id)}
+                    disabled={subscribingMembership}
+                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+                  >
+                    {subscribingMembership ? "Subscribing..." : "Subscribe"}
+                  </button>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Workout Plans Section */}
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-3">
+        <Dumbbell size={30} /> Available Workout Plans
+      </h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {workoutPlans && workoutPlans.length === 0 && (
+          <p className="col-span-full text-gray-600">No workout plans available.</p>
+        )}
+        {workoutPlans?.map((plan) => (
+          <div key={plan.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <h2 className="text-xl font-bold mb-2">{plan.name}</h2>
+            <p className="text-gray-600 mb-3">{plan.description}</p>
+            <p className="text-sm text-gray-500">Difficulty: {plan.difficulty}</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => onPageChange(`workout-plan-details-${plan.id}`)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                View Plan
+              </button>
+              <button
+                onClick={() => handleAssignWorkoutPlan(plan.id)}
+                disabled={assignWorkoutPlanMutation.isPending}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-400"
+              >
+                {assignWorkoutPlanMutation.isPending ? "Assigning..." : "Assign This Plan"}
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

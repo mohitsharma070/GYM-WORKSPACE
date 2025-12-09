@@ -1,88 +1,112 @@
 import { useEffect, useState } from "react";
-
-interface Session {
-  id: number;
-  clientName: string;
-  time: string;
-  type: string;
-}
+import { fetchProfile } from "../../api/profile";
+import { type UserProfile } from "../../api/profile";
+import { useAllWorkoutPlans } from "../../hooks/useWorkoutPlans";
+import { useAssignedWorkoutPlansByTrainerId } from "../../hooks/useAssignedWorkoutPlans";
+import { Dumbbell } from "lucide-react";
+import type { WorkoutPlan } from "../../types/WorkoutPlan";
 
 export default function TrainerSchedule() {
-  const [todaySessions, setTodaySessions] = useState<Session[]>([]);
-  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [errorUser, setErrorUser] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate upcoming dynamic API
-    setTimeout(() => {
-      setTodaySessions([
-        { id: 1, clientName: "Rohit Sharma", time: "8:00 AM - 9:00 AM", type: "Strength Training" },
-        { id: 2, clientName: "Neha Verma", time: "10:00 AM - 11:00 AM", type: "Cardio" },
-      ]);
-
-      setUpcomingSessions([
-        { id: 3, clientName: "Amit Patel", time: "Tomorrow · 7:00 AM", type: "Yoga" },
-        { id: 4, clientName: "Priya Gupta", time: "Tomorrow · 4:00 PM", type: "Weight Loss Plan" },
-        { id: 5, clientName: "Rahul Singh", time: "Sunday · 9:30 AM", type: "HIIT" },
-      ]);
-
-      setLoading(false);
-    }, 500);
+    const loadProfile = async () => {
+      try {
+        const data = await fetchProfile();
+        setUser(data);
+      } catch (err: any) {
+        setErrorUser(err.message || "Failed to load user profile.");
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    loadProfile();
   }, []);
 
-  if (loading) {
-    return <p className="text-gray-600 mt-6">Loading schedule...</p>;
+  const trainerId = user?.id;
+
+  const {
+    data: createdPlans,
+    isLoading: isLoadingCreatedPlans,
+    isError: isErrorCreatedPlans,
+    error: createdPlansError,
+  } = useAllWorkoutPlans(trainerId || 0);
+
+  const {
+    data: assignedPlans,
+    isLoading: isLoadingAssignedPlans,
+    isError: isErrorAssignedPlans,
+    error: assignedPlansError,
+  } = useAssignedWorkoutPlansByTrainerId(trainerId || 0);
+
+  if (loadingUser || isLoadingCreatedPlans || isLoadingAssignedPlans) {
+    return <p className="p-6 text-xl">Loading trainer schedule...</p>;
   }
 
+  if (errorUser || isErrorCreatedPlans || isErrorAssignedPlans) {
+    return (
+      <p className="p-6 text-xl text-red-600">
+        Error loading schedule:{" "}
+        {errorUser || createdPlansError?.message || assignedPlansError?.message}
+      </p>
+    );
+  }
+
+  // --- Aggregate Schedule Data ---
+  const scheduleData: { [key: number]: { plan: WorkoutPlan; type: string }[] } = {};
+
+  createdPlans?.forEach((plan) => {
+    plan.workoutDays.forEach((day) => {
+      if (!scheduleData[day.dayNumber]) scheduleData[day.dayNumber] = [];
+      scheduleData[day.dayNumber].push({ plan, type: "Created" });
+    });
+  });
+
+  assignedPlans?.forEach((assigned) => {
+    assigned.workoutPlan.workoutDays.forEach((day) => {
+      if (!scheduleData[day.dayNumber]) scheduleData[day.dayNumber] = [];
+      scheduleData[day.dayNumber].push({ plan: assigned.workoutPlan, type: `Assigned to Member ${assigned.memberId}` });
+    });
+  });
+
+  const sortedDays = Object.keys(scheduleData)
+    .map(Number)
+    .sort((a, b) => a - b);
+
   return (
-    <div className="pb-20">
-      <h1 className="text-3xl font-bold mb-6">Trainer Schedule</h1>
+    <div className="p-6 pb-20">
+      <h1 className="text-3xl font-bold mb-6">Trainer Schedule Overview</h1>
 
-      {/* Today Section */}
-      <div className="bg-white shadow rounded-lg p-6 mb-10">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Today's Sessions</h2>
+      {sortedDays.length === 0 && <p className="text-gray-600">No workout plans created or assigned.</p>}
 
-        {todaySessions.length === 0 ? (
-          <p className="text-gray-500">No sessions scheduled for today.</p>
-        ) : (
-          <div className="space-y-4">
-            {todaySessions.map((session) => (
-              <div
-                key={session.id}
-                className="p-4 border rounded-lg hover:bg-gray-50 transition"
-              >
-                <p className="text-lg font-semibold">{session.clientName}</p>
-                <p className="text-gray-600">{session.time}</p>
-                <p className="text-blue-600 font-medium">{session.type}</p>
+      {sortedDays.map((dayNumber) => (
+        <div key={dayNumber} className="bg-white shadow rounded-lg p-6 mb-4">
+          <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+            <Dumbbell size={24} className="text-blue-600" />
+            Day {dayNumber}
+          </h2>
+
+          {scheduleData[dayNumber].map((entry, index) => (
+            <div key={`${dayNumber}-${entry.plan.id}-${index}`} className="border p-4 rounded-md bg-gray-50 mb-3">
+              <h3 className="text-lg font-semibold">{entry.plan.name} ({entry.type})</h3>
+              <p className="text-gray-700 text-sm">Difficulty: {entry.plan.difficulty}</p>
+              <p className="text-gray-700 text-sm">{entry.plan.description}</p>
+              
+              <div className="mt-2 space-y-1">
+                {entry.plan.workoutDays.find(d => d.dayNumber === dayNumber)?.workoutExercises.sort((a,b) => a.orderInDay - b.orderInDay).map(we => (
+                    <div key={we.id} className="text-sm border-t border-gray-200 pt-2 mt-2">
+                        <p className="font-medium">{we.exercise.name}</p>
+                        <p className="text-gray-600">Sets: {we.sets}, Reps: {we.reps}</p>
+                        {we.restTimeInSeconds && <p className="text-gray-600">Rest: {we.restTimeInSeconds}s</p>}
+                    </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Upcoming Sessions */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">
-          Upcoming Sessions
-        </h2>
-
-        {upcomingSessions.length === 0 ? (
-          <p className="text-gray-500">No upcoming sessions.</p>
-        ) : (
-          <div className="space-y-4">
-            {upcomingSessions.map((session) => (
-              <div
-                key={session.id}
-                className="p-4 border rounded-lg hover:bg-gray-50 transition"
-              >
-                <p className="text-lg font-semibold">{session.clientName}</p>
-                <p className="text-gray-600">{session.time}</p>
-                <p className="text-blue-600 font-medium">{session.type}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react";
+import { useCurrentAssignedWorkoutPlanForMember } from "../../hooks/useAssignedWorkoutPlans";
+import { type UserProfile } from "../../api/profile"; // Assuming UserProfile is available
+import { fetchProfile } from "../../api/profile";
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-}
 
 export default function MemberDashboard() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -17,21 +14,10 @@ export default function MemberDashboard() {
     setError("");
 
     try {
-      const token = localStorage.getItem("authToken");
-
-      const res = await fetch("http://localhost:8001/auth/me", {
-        headers: { Authorization: `Basic ${token}` },
-      });
-
-      if (!res.ok) {
-        setError("Failed to load user profile.");
-        return;
-      }
-
-      const data = await res.json();
+      const data = await fetchProfile();
       setUser(data);
-    } catch {
-      setError("Server unreachable.");
+    } catch (err: any) {
+      setError(err.message || "Failed to load user profile.");
     } finally {
       setLoading(false);
     }
@@ -41,12 +27,20 @@ export default function MemberDashboard() {
     loadProfile();
   }, []);
 
-  if (loading) return <p className="text-gray-600 mt-6">Loading dashboard...</p>;
+  const memberId = user?.id;
+  const {
+    data: assignedPlan,
+    isLoading: isPlanLoading,
+    isError: isPlanError,
+    error: planError,
+  } = useCurrentAssignedWorkoutPlanForMember(memberId || 0); // Pass 0 or null if memberId is undefined to prevent query
 
-  if (error)
+  if (loading || isPlanLoading) return <p className="text-gray-600 mt-6">Loading dashboard...</p>;
+
+  if (error || isPlanError)
     return (
       <div className="mt-10 text-center">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600">{error || planError?.message}</p>
         <button
           onClick={loadProfile}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
@@ -66,12 +60,19 @@ export default function MemberDashboard() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
         {/* Active Plan */}
         <div className="bg-white shadow rounded-lg p-6 border-l-4 border-blue-600">
           <p className="text-gray-500">Active Plan</p>
-          <p className="text-2xl font-bold mt-2">Basic Plan</p>
-          <p className="text-gray-500 text-sm mt-1">Placeholder (no API yet)</p>
+          {assignedPlan ? (
+            <>
+              <p className="text-2xl font-bold mt-2">{assignedPlan.workoutPlan.name}</p>
+              <p className="text-gray-500 text-sm mt-1">Difficulty: {assignedPlan.workoutPlan.difficulty}</p>
+              <p className="text-gray-500 text-sm">Start Date: {assignedPlan.startDate}</p>
+              {assignedPlan.endDate && <p className="text-gray-500 text-sm">End Date: {assignedPlan.endDate}</p>}
+            </>
+          ) : (
+            <p className="text-2xl font-bold mt-2">No Active Plan</p>
+          )}
         </div>
 
         {/* Assigned Trainer */}
@@ -91,7 +92,6 @@ export default function MemberDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
         <div
           onClick={() => alert("Opening plans…")}
           className="cursor-pointer bg-blue-50 border border-blue-200 p-5 rounded-lg hover:bg-blue-100 transition"

@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { useAllWorkoutPlans } from "../../hooks/useWorkoutPlans";
+import { type UserProfile } from "../../api/profile";
+import { fetchProfile } from "../../api/profile";
 
 interface Member {
   id: number;
@@ -7,13 +10,43 @@ interface Member {
 }
 
 export default function TrainerDashboard() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [errorUser, setErrorUser] = useState<string | null>(null);
 
-  async function loadTrainerData() {
-    setLoading(true);
-    setError("");
+  async function loadProfile() {
+    setLoadingUser(true);
+    setErrorUser(null);
+    try {
+      const data = await fetchProfile();
+      setUser(data);
+    } catch (err: any) {
+      setErrorUser(err.message || "Failed to load user profile.");
+    } finally {
+      setLoadingUser(false);
+    }
+  }
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const trainerId = user?.id; // Get trainerId from authenticated user
+
+  const {
+    data: createdPlans,
+    isLoading: isLoadingPlans,
+    isError: isErrorPlans,
+    error: plansError,
+  } = useAllWorkoutPlans(trainerId || 0);
+
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [errorMembers, setErrorMembers] = useState("");
+
+  async function loadClientsData() {
+    setLoadingMembers(true);
+    setErrorMembers("");
 
     try {
       const token = localStorage.getItem("authToken");
@@ -25,33 +58,35 @@ export default function TrainerDashboard() {
       });
 
       if (!res.ok) {
-        setError("Failed to load trainer data.");
+        setErrorMembers("Failed to load trainer data.");
         return;
       }
 
       const data = await res.json();
       setMembers(data);
     } catch {
-      setError("Server unreachable.");
+      setErrorMembers("Server unreachable.");
     } finally {
-      setLoading(false);
+      setLoadingMembers(false);
     }
   }
 
   useEffect(() => {
-    loadTrainerData();
+    loadClientsData();
   }, []);
 
-  if (loading) {
+  if (loadingUser || loadingMembers || isLoadingPlans) {
     return <p className="text-gray-600 mt-8">Loading trainer dashboard...</p>;
   }
 
-  if (error) {
+  if (errorUser || errorMembers || isErrorPlans) {
     return (
       <div className="mt-10">
-        <p className="text-red-600">{error}</p>
+        <p className="text-red-600">
+          {errorUser || errorMembers || plansError?.message}
+        </p>
         <button
-          onClick={loadTrainerData}
+          onClick={() => { loadProfile(); loadClientsData(); }}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
         >
           Retry
@@ -68,12 +103,17 @@ export default function TrainerDashboard() {
       </h1>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {/* Total Clients */}
         <div className="bg-white shadow rounded-lg p-6 border-l-4 border-blue-600">
           <p className="text-gray-500">Total Clients</p>
           <p className="text-3xl font-bold mt-2">{members.length}</p>
+        </div>
+
+        {/* Created Workout Plans */}
+        <div className="bg-white shadow rounded-lg p-6 border-l-4 border-purple-600">
+          <p className="text-gray-500">Created Plans</p>
+          <p className="text-3xl font-bold mt-2">{createdPlans?.length || 0}</p>
         </div>
 
         {/* Today's Sessions (Placeholder for now) */}
@@ -85,7 +125,6 @@ export default function TrainerDashboard() {
 
       {/* Quick Links / Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
         <a
           onClick={() => alert("Schedule feature coming soon")}
           className="bg-blue-50 border border-blue-200 p-5 rounded-lg hover:bg-blue-100 cursor-pointer transition"

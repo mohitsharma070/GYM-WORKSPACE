@@ -142,7 +142,11 @@ function UserRow({
                   </button>
 
                   <button
-                    onClick={() => deletePlanMutation.mutate(user.id)}
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to remove this plan from the user?")) {
+                        deletePlanMutation.mutate(user.id);
+                      }
+                    }}
                     className="px-3 py-1 bg-red-600 text-white rounded"
                   >
                     Remove Plan
@@ -172,9 +176,11 @@ function UserRow({
                       </div>
 
                       <button
-                        onClick={() =>
-                          deleteAssignedProductMutation.mutate(p.id)
-                        }
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to remove this assigned product?")) {
+                            deleteAssignedProductMutation.mutate(p.id);
+                          }
+                        }}
                         className="px-3 py-1 bg-red-600 text-white rounded"
                       >
                         Remove

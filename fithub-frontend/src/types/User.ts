@@ -10,7 +10,8 @@ export interface MemberDetails {
 
 export interface User {
   id: number;
-  name: string;
+  name: string; // Full name from backend
   email: string;
+  role: string;
   memberDetails?: MemberDetails;
 }

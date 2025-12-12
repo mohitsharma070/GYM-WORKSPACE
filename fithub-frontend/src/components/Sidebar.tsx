@@ -15,6 +15,7 @@ export function Sidebar({ activePage, onPageChange, userType }: SidebarProps) {
         { id: 'trainers', label: 'Trainers', icon: Dumbbell },
         { id: 'plans', label: 'Plans', icon: FileText },
         { id: 'products', label: 'Products', icon: FileText },
+        { id: 'workout-plans', label: 'Workout Plans', icon: Dumbbell },
         { id: 'attendance', label: 'Attendance', icon: Calendar },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
         { id: 'profile', label: 'Profile', icon: Settings },
@@ -29,7 +30,8 @@ export function Sidebar({ activePage, onPageChange, userType }: SidebarProps) {
     } else {
       return [
         { id: 'member-dashboard', label: 'Dashboard', icon: Home },
-        { id: 'plans', label: 'Plans', icon: FileText },
+        { id: 'plans', label: 'Membership Plans', icon: FileText }, // Renamed label for clarity
+        { id: 'workout-plans', label: 'Workout Plans', icon: Dumbbell }, // Added new item for workout plans
         { id: 'subscriptions', label: 'My Subscription', icon: CreditCard },
         { id: 'mark-attendance', label: 'Mark Attendance', icon: Calendar },
         { id: 'schedule', label: 'Schedule', icon: Calendar },

@@ -78,10 +78,16 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
 
     try {
       // Assuming startDate is current date, endDate is optional
+      // Placeholder for assignedByTrainerId as it's not readily available here.
+      // In a real app, this would come from the authenticated trainer's ID.
+      const assignedByTrainerId = 1; // Example: A default or specific trainer ID
+
       await assignWorkoutPlanMutation.mutateAsync({
         memberId: memberId,
         planId: planId,
+        assignedByTrainerId: assignedByTrainerId,
         startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        status: "ACTIVE", // Default status
       });
       alert("Successfully assigned workout plan!");
     } catch (err: any) {

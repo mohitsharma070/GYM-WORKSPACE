@@ -1,6 +1,4 @@
-import { useState } from "react";
 import type { Plan } from "../types/Plan";
-import { initiateFingerprintScan } from "../utils/fingerprintScanner";
 
 interface AddUserModalProps {
   newUser: any;
@@ -19,24 +17,6 @@ export default function AddUserModal({
   onClose,
   onSave,
 }: AddUserModalProps) {
-  const [scanStatus, setScanStatus] = useState("Ready");
-  const [isScanning, setIsScanning] = useState(false);
-
-  const handleScanButtonClick = async () => {
-    setIsScanning(true);
-    setScanStatus("Scanning... Please place your finger on the scanner.");
-    try {
-      const fingerprintData = await initiateFingerprintScan();
-      setNewUser({ ...newUser, fingerprint: fingerprintData });
-      setScanStatus("Fingerprint captured successfully!");
-    } catch (error: any) {
-      setNewUser({ ...newUser, fingerprint: "" }); // Clear fingerprint on failure
-      setScanStatus(`Scan Failed: ${error.message}`);
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
       <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-auto shadow-lg">
@@ -68,43 +48,6 @@ export default function AddUserModal({
             placeholder="Password"
             value={newUser.password}
             onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-          />
-
-          {/* FINGERPRINT */}
-          <input
-            type="hidden"
-            id="fingerprintData"
-            name="fingerprint"
-            value={newUser.fingerprint}
-            onChange={(e) => setNewUser({ ...newUser, fingerprint: e.target.value })}
-          />
-          <button
-            type="button"
-            id="scanFingerprintBtn"
-            className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-            onClick={handleScanButtonClick}
-            disabled={isScanning}
-          >
-            {isScanning ? "Scanning..." : "Scan Fingerprint"}
-          </button>
-          <div id="fingerprintStatus" className="text-sm text-gray-600 mt-1">
-            Status: {scanStatus}
-          </div>
-
-          {/* AGE */}
-          <input
-            className="w-full border p-2 rounded"
-            placeholder="Age"
-            value={newUser.memberDetails.age}
-            onChange={(e) =>
-              setNewUser({
-                ...newUser,
-                memberDetails: {
-                  ...newUser.memberDetails,
-                  age: e.target.value,
-                },
-              })
-            }
           />
 
           {/* GENDER */}

@@ -27,6 +27,10 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @Pattern(regexp = "^\\+[1-9]\\d{1,14}$", message = "Invalid phone number format. Must start with '+' and contain 1-15 digits.")
+    @Column(unique = true)
+    private String phoneNumber; // New field
+
     @NotBlank
     private String password;
 
@@ -35,6 +39,8 @@ public class User {
 
     @Column(updatable = false)
     private LocalDate createdAt;
+
+    private LocalDate dateOfBirth;
 
     // -------------------------
     // SOFT DELETE FIELDS
@@ -75,6 +81,8 @@ public class User {
 
     public boolean isDeleted() { return deleted; }
     public LocalDateTime getDeletedAt() { return deletedAt; }
+
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
 
     // ------- SETTERS -------
     public void setId(Long id) { this.id = id; }

@@ -1,6 +1,7 @@
 com\gym\workoutservice\dto\AssignedWorkoutPlanResponse.class
 com\gym\workoutservice\repository\WorkoutLogRepository.class
 com\gym\workoutservice\service\IWorkoutLogService.class
+com\gym\workoutservice\dto\WorkoutDayExerciseDTO.class
 com\gym\workoutservice\dto\WorkoutDayWithExercisesRequest.class
 com\gym\workoutservice\dto\WorkoutDayResponse.class
 com\gym\workoutservice\entity\WorkoutPlan.class
@@ -14,8 +15,10 @@ com\gym\workoutservice\entity\Exercise$Difficulty.class
 com\gym\workoutservice\exception\GlobalExceptionHandler.class
 com\gym\workoutservice\WorkoutServiceApplication.class
 com\gym\workoutservice\exception\ConflictException.class
+com\gym\workoutservice\scheduler\WorkoutReminderScheduler.class
 com\gym\workoutservice\client\UserClient.class
 com\gym\workoutservice\dto\WorkoutPlanResponse.class
+com\gym\workoutservice\client\NotificationClient.class
 com\gym\workoutservice\entity\Exercise$Equipment.class
 com\gym\workoutservice\controller\WorkoutPlanController.class
 com\gym\workoutservice\repository\WorkoutDayRepository.class
@@ -24,6 +27,7 @@ com\gym\workoutservice\dto\AssignedWorkoutPlanRequest.class
 com\gym\workoutservice\service\IWorkoutPlanService.class
 com\gym\workoutservice\entity\Exercise$BodyPart.class
 com\gym\workoutservice\entity\WorkoutLog.class
+com\gym\workoutservice\dto\NotificationRequest.class
 com\gym\workoutservice\exception\ResourceNotFoundException.class
 com\gym\workoutservice\config\CorsConfig$1.class
 com\gym\workoutservice\entity\AssignedWorkoutPlan$AssignmentStatus.class
@@ -49,4 +53,5 @@ com\gym\workoutservice\entity\WorkoutExercise.class
 com\gym\workoutservice\exception\BadRequestException.class
 com\gym\workoutservice\controller\WorkoutLogController.class
 com\gym\workoutservice\dto\WorkoutLogRequest.class
+com\gym\workoutservice\entity\WorkoutLog$WorkoutStatus.class
 com\gym\workoutservice\controller\AssignedWorkoutPlanController.class

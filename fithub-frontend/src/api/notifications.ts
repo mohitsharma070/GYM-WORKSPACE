@@ -40,7 +40,6 @@ export async function sendPromotionalNotification(data: PromotionalNotificationR
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Basic ${token}` } : {}),
     },
     body: JSON.stringify(data),
   });
@@ -59,7 +58,6 @@ export async function getPromotionalNotificationHistory(
   filters: NotificationHistoryFilter = {},
   sort: NotificationHistorySort = { sortBy: 'timestamp', sortOrder: 'desc' } // Changed 'sentAt' to 'timestamp'
 ): Promise<PaginatedResponse<NotificationLogResponse>> { // Changed to NotificationLogResponse
-  const token = localStorage.getItem("authToken");
   const queryParams = new URLSearchParams();
 
   queryParams.append('page', page.toString());
@@ -77,7 +75,6 @@ export async function getPromotionalNotificationHistory(
     {
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Basic ${token}` } : {}),
       },
     }
   );

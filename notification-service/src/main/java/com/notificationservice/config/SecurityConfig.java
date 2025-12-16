@@ -36,12 +36,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in API services
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/auth/**").permitAll() // Public endpoints, e.g., login, registration from user-service
-                .requestMatchers("/api/promotional-notifications").hasRole("ADMIN") // Admin endpoints for promotional notifications
-                .requestMatchers("/api/promotional-notifications/logs").hasRole("ADMIN") // Admin endpoints for promotional notifications history
-                .requestMatchers("/api/images/upload").hasRole("ADMIN") // Admin endpoints for image upload
-                .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin endpoints require ADMIN role
-                .requestMatchers("/api/trainer/**").hasRole("TRAINER") // Trainer endpoints require TRAINER role
-                .requestMatchers("/api/member/**").hasRole("MEMBER") // Member endpoints require MEMBER role
+                .requestMatchers("/api/promotional-notifications").permitAll() // Admin endpoints for promotional notifications
+                .requestMatchers("/api/promotional-notifications/logs").permitAll() // Admin endpoints for promotional notifications history
+                .requestMatchers("/api/images/upload").permitAll() // Admin endpoints for image upload
+                .requestMatchers("/api/admin/**").permitAll() // Admin endpoints require ADMIN role
+                .requestMatchers("/api/trainer/**").permitAll() // Trainer endpoints require TRAINER role
+                .requestMatchers("/api/member/**").permitAll() // Member endpoints require MEMBER role
                 .anyRequest().authenticated() // All other requests require authentication
             )
             .sessionManagement(session -> session

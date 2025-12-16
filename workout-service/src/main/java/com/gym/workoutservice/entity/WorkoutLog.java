@@ -40,6 +40,13 @@ public class WorkoutLog {
 
     private String notes;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private WorkoutStatus status = WorkoutStatus.IN_PROGRESS;
+
+    @Column(name = "completed_by_trainer_id")
+    private Long completedByTrainerId;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -47,4 +54,9 @@ public class WorkoutLog {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public enum WorkoutStatus {
+        IN_PROGRESS,
+        COMPLETED
+    }
 }

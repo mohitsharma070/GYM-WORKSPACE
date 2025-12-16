@@ -1,5 +1,6 @@
 package com.notificationservice.service;
 
+import com.notificationservice.dto.NotificationRequest;
 import com.notificationservice.dto.PromotionalNotificationRequest;
 import com.notificationservice.enums.TargetType;
 import com.notificationservice.model.NotificationLog;
@@ -56,6 +57,39 @@ public class WhatsAppNotificationService {
             log.error("Failed to send notification: {}", e.getMessage());
         } finally {
             logNotification(request, status);
+        }
+    }
+
+    /**
+     * Sends a transactional notification based on the request from another service.
+     * This method will simulate sending and log the notification.
+     *
+     * @param request The transactional notification request.
+     */
+    public void sendTransactionalNotification(NotificationRequest request) {
+        log.info("Processing transactional notification request for phone number {}: {}", request.getPhoneNumber(), request);
+
+        String status = "PENDING";
+        try {
+            // Simulate sending a WhatsApp message
+            log.info("Simulating sending WhatsApp message to phone number '{}'. Message: '{}'", request.getPhoneNumber(), request.getMessage());
+
+            status = "SENT";
+            log.info("Transactional notification successfully sent to {}.", request.getPhoneNumber());
+
+        } catch (Exception e) {
+            status = "FAILED";
+            log.error("Failed to send transactional notification to {}: {}", request.getPhoneNumber(), e.getMessage());
+        } finally {
+            // Log the transactional notification
+            NotificationLog logEntry = new NotificationLog();
+            logEntry.setTargetType(TargetType.SPECIFIC_PHONES); // Or a new appropriate type
+            logEntry.setTargetIdentifiers(request.getPhoneNumber());
+            logEntry.setMessageContent(request.getMessage());
+            logEntry.setStatus(status);
+            logEntry.setTimestamp(LocalDateTime.now());
+            notificationLogRepository.save(logEntry);
+            log.info("Transactional notification logged for phone number {} with status: {}", request.getPhoneNumber(), status);
         }
     }
 

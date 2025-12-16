@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AttendanceService {
-    Attendance checkInWithFingerprint(String fingerprintData);
+    Attendance checkIn(Long userId);
+    Attendance checkOut(Long id);
     List<Attendance> getAllAttendances();
     Optional<Attendance> getAttendanceById(Long id);
     List<Attendance> getAttendancesByUserId(Long userId);

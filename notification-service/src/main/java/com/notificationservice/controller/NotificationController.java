@@ -1,5 +1,6 @@
 package com.notificationservice.controller;
 
+import com.notificationservice.dto.NotificationRequest;
 import com.notificationservice.dto.NotificationLogResponse;
 import com.notificationservice.dto.PromotionalNotificationRequest;
 import com.notificationservice.enums.TargetType;
@@ -31,6 +32,13 @@ public class NotificationController {
     @Autowired
     private NotificationLogRepository notificationLogRepository; // Inject repository to fetch logs directly
 
+    @PostMapping("/notifications/send")
+    public ResponseEntity<String> sendTransactionalNotification(@RequestBody NotificationRequest request) {
+        log.info("Received request to send transactional notification: {}", request);
+        whatsAppNotificationService.sendTransactionalNotification(request);
+        return ResponseEntity.ok("Transactional notification request received and being processed.");
+    }
+
     @PostMapping("/promotional-notifications")
     public ResponseEntity<String> sendPromotionalNotification(@RequestBody PromotionalNotificationRequest request) {
         log.info("Received request to send promotional notification: {}", request);
@@ -38,21 +46,7 @@ public class NotificationController {
         return ResponseEntity.ok("Promotional notification request received and being processed.");
     }
 
-    @PostMapping("/images/upload")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("Please select an image file to upload.");
-        }
-        try {
-            String imageUrl = whatsAppNotificationService.uploadImage(file);
-            return ResponseEntity.ok(imageUrl);
-        } catch (Exception e) {
-            log.error("Error uploading image: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload image.");
-        }
-    }
-
-    @GetMapping("/promotional-notifications/history")
+    @GetMapping("/promotional-notifications/logs")
     public ResponseEntity<Page<NotificationLogResponse>> getNotificationHistory(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

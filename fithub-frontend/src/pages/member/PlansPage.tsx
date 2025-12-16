@@ -1,34 +1,15 @@
-import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllPlans } from "../../api/plans"; // For membership plans
 import { useSubscriptions } from "../../hooks/useSubscriptions"; // For membership subscription
 import { useAllWorkoutPlans, useAssignWorkoutPlan } from "../../hooks/useWorkoutPlans"; // For workout plans
-import { fetchProfile } from "../../api/profile";
-import { type UserProfile } from "../../api/profile";
 import { Dumbbell } from "lucide-react";
 import { type Plan as MembershipPlan } from "../../types/Plan"; // Renamed for clarity
+import { useAuth } from "../../hooks/useAuth"; // For membership subscription
+import { useToast } from "../../components/ToastProvider"; // Import useToast
 
 
 export default function PlansPage({ onPageChange }: { onPageChange: (page: string) => void }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-  const [errorUser, setErrorUser] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const data = await fetchProfile();
-        setUser(data);
-      } catch (err: any) {
-        setErrorUser(err.message || "Failed to load user profile.");
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-    loadProfile();
-  }, []);
-
-  const memberId = user?.id; // Get memberId from authenticated user
+  const { memberId } = useAuth(); // Get memberId from authenticated user
 
   // Membership Plans
   const {
@@ -56,23 +37,24 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
   } = useAllWorkoutPlans();
 
   const assignWorkoutPlanMutation = useAssignWorkoutPlan();
+  const { showToast } = useToast(); // Initialize useToast
 
   async function handleSubscribeMembership(planId: number) {
     if (!memberId) {
-      alert("User not logged in or member ID not available.");
+      showToast("User not logged in or member ID not available.", "error");
       return;
     }
     const success = await subscribe(memberId, planId);
     if (success) {
-      alert("Successfully subscribed to membership plan!");
+      showToast("Action completed. Notification sent.", "success");
     } else {
-      alert(`Failed to subscribe to membership plan: ${subscribeMembershipError}`);
+      showToast(`Failed to subscribe to membership plan: ${subscribeMembershipError}`, "error");
     }
   }
 
   async function handleAssignWorkoutPlan(planId: number) {
     if (!memberId) {
-      alert("User not logged in or member ID not available.");
+      showToast("User not logged in or member ID not available.", "error");
       return;
     }
 
@@ -89,9 +71,9 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
         startDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
         status: "ACTIVE", // Default status
       });
-      alert("Successfully assigned workout plan!");
+      showToast("Action completed. Notification sent.", "success");
     } catch (err: any) {
-      alert(`Failed to assign workout plan: ${err.message}`);
+      showToast(`Failed to assign workout plan: ${err.message}`, "error");
     }
   }
 
@@ -105,7 +87,7 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
     return `${remDays} days`;
   }
 
-  if (loadingUser || isLoadingMembershipPlans || isLoadingWorkoutPlans) {
+  if (isLoadingMembershipPlans || isLoadingWorkoutPlans) {
     return (
       <div className="mt-10">
         <h1 className="text-3xl font-bold">Plans</h1>
@@ -118,12 +100,12 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
     );
   }
 
-  if (errorUser || isErrorMembershipPlans || isErrorWorkoutPlans) {
+  if (isErrorMembershipPlans || isErrorWorkoutPlans) {
     return (
       <div className="mt-10">
         <p className="text-red-600 text-lg">
           Error:{" "}
-          {errorUser || membershipPlansError?.message || workoutPlansError?.message}
+          {membershipPlansError?.message || workoutPlansError?.message}
         </p>
         <button
           onClick={() => { /* Refetch queries */ }}

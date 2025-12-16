@@ -5,29 +5,20 @@ import com.notificationservice.dto.PromotionalNotificationRequest;
 import com.notificationservice.enums.TargetType;
 import com.notificationservice.model.NotificationLog;
 import com.notificationservice.repository.NotificationLogRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class WhatsAppNotificationService {
 
-    @Autowired
-    private NotificationLogRepository notificationLogRepository;
-
-    // Placeholder for user/member/trainer service client
-    // In a real application, these would be Feign Clients or similar to call other microservices
-    // private UserServiceClient userServiceClient;
-    // private MembershipServiceClient membershipServiceClient;
-    // private TrainerServiceClient trainerServiceClient;
+    private final NotificationLogRepository notificationLogRepository;
 
     /**
      * Sends a promotional notification based on the request.
@@ -103,24 +94,21 @@ public class WhatsAppNotificationService {
      */
     private List<String> resolveRecipients(TargetType targetType, List<String> targetIdentifiers) {
         // Placeholder logic for recipient resolution
-        switch (targetType) {
-            case ALL_USERS:
+        return switch (targetType) {
+            case ALL_USERS ->
                 // Call user-service to get all user phone numbers
                 // return userServiceClient.getAllUserPhoneNumbers();
-                return Arrays.asList("1234567890", "0987654321"); // Dummy data
-            case ALL_MEMBERS:
+                    Arrays.asList("1234567890", "0987654321"); // Dummy data
+            case ALL_MEMBERS ->
                 // Call membership-service to get all member phone numbers
                 // return membershipServiceClient.getAllMemberPhoneNumbers();
-                return Arrays.asList("1112223333", "4445556666"); // Dummy data
-            case ALL_TRAINERS:
+                    Arrays.asList("1112223333", "4445556666"); // Dummy data
+            case ALL_TRAINERS ->
                 // Call trainer-service to get all trainer phone numbers
                 // return trainerServiceClient.getAllTrainerPhoneNumbers();
-                return Arrays.asList("7778889999", "0001112222"); // Dummy data
-            case SPECIFIC_PHONES:
-                return targetIdentifiers != null ? targetIdentifiers : List.of();
-            default:
-                return List.of();
-        }
+                    Arrays.asList("7778889999", "0001112222"); // Dummy data
+            case SPECIFIC_PHONES -> targetIdentifiers != null ? targetIdentifiers : List.of();
+        };
     }
 
     /**
@@ -139,23 +127,5 @@ public class WhatsAppNotificationService {
         logEntry.setTimestamp(LocalDateTime.now());
         notificationLogRepository.save(logEntry);
         log.info("Notification logged with status: {}", status);
-    }
-
-    /**
-     * Placeholder method for image upload.
-     * In a real application, this would upload to AWS S3, Azure Blob Storage, etc.
-     *
-     * @param file The image file to upload.
-     * @return A public URL to the uploaded image.
-     */
-    public String uploadImage(MultipartFile file) {
-        log.info("Simulating image upload for file: {}", file.getOriginalFilename());
-        // In a real application:
-        // 1. Store file to cloud storage (S3, Azure Blob, Google Cloud Storage)
-        // 2. Generate a unique file name/path
-        // 3. Return the public URL
-
-        // For now, return a dummy URL
-        return "https://example.com/images/" + UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
     }
 }

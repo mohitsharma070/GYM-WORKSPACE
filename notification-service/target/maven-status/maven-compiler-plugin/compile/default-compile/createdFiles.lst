@@ -11,9 +11,9 @@ com\notificationservice\service\WhatsAppNotificationService$1.class
 com\notificationservice\service\IWhatsAppNotificationService.class
 com\notificationservice\model\PromotionalNotificationRequest.class
 com\notificationservice\controller\NotificationController.class
+com\notificationservice\dto\NotificationRequest.class
 com\notificationservice\model\NotificationType.class
 com\notificationservice\config\SecurityConfig.class
-com\notificationservice\controller\ImageUploadController.class
 com\notificationservice\model\NotificationRequest.class
 com\notificationservice\client\user\UserServiceClient.class
 com\notificationservice\config\WebMvcConfig.class

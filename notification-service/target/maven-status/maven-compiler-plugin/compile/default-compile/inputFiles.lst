@@ -9,13 +9,13 @@ D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\mode
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\model\PromotionalNotificationRequest.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\security\CustomUserDetailsService.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\config\SecurityConfig.java
-D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\controller\ImageUploadController.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\dto\PromotionalNotificationRequest.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\NotificationServiceApplication.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\model\NotificationResponse.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\service\WhatsAppNotificationService.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\model\TargetType.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\client\user\UserServiceClient.java
+D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\dto\NotificationRequest.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\service\IWhatsAppNotificationService.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\repository\NotificationLogRepository.java
 D:\GYM WORKSPACE\notification-service\src\main\java\com\notificationservice\service\CloudStorageService.java

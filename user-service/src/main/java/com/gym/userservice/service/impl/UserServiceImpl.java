@@ -1,8 +1,7 @@
 package com.gym.userservice.service.impl;
 
-import com.gym.userservice.dto.AdminRegisterRequest;
-import com.gym.userservice.dto.MemberRegisterRequest;
-import com.gym.userservice.dto.TrainerRegisterRequest;
+import com.gym.userservice.dto.*;
+import com.gym.userservice.enums.TargetType;
 import com.gym.userservice.entity.MemberDetails;
 import com.gym.userservice.entity.TrainerDetails;
 import com.gym.userservice.entity.User;
@@ -11,6 +10,7 @@ import com.gym.userservice.exception.BadRequestException;
 import com.gym.userservice.exception.ResourceNotFoundException;
 import com.gym.userservice.repository.MemberDetailsRepository;
 import com.gym.userservice.repository.TrainerDetailsRepository;
+import com.gym.userservice.feign.NotificationServiceClient;
 import com.gym.userservice.repository.UserRepository;
 import com.gym.userservice.service.IUserService;
 
@@ -22,7 +22,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional; // Import HashMap
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -31,16 +32,19 @@ public class UserServiceImpl implements IUserService {
     private final TrainerDetailsRepository trainerRepo;
     private final MemberDetailsRepository memberRepo;
     private final PasswordEncoder encoder;
+    private final NotificationServiceClient notificationClient;
 
     public UserServiceImpl(UserRepository repo,
                            TrainerDetailsRepository trainerRepo,
                            MemberDetailsRepository memberRepo,
-                           PasswordEncoder encoder) {
+                           PasswordEncoder encoder,
+                           NotificationServiceClient notificationClient) {
 
         this.repo = repo;
         this.trainerRepo = trainerRepo;
         this.memberRepo = memberRepo;
         this.encoder = encoder;
+        this.notificationClient = notificationClient;
     }
 
     // ============================================================
@@ -148,7 +152,7 @@ public class UserServiceImpl implements IUserService {
     // GET EMAIL
     // ============================================================
     @Override
-    public User getByEmail(String email) {
+    public UserResponse getByEmail(String email) {
         User user = repo.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -156,14 +160,14 @@ public class UserServiceImpl implements IUserService {
             throw new ResourceNotFoundException("User is deleted");
         }
 
-        return user;
+        return toUserResponse(user);
     }
 
     // ============================================================
     // GET BY ID
     // ============================================================
     @Override
-    public User getById(Long id) {
+    public UserResponse getById(Long id) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -171,7 +175,7 @@ public class UserServiceImpl implements IUserService {
             throw new ResourceNotFoundException("User is deleted");
         }
 
-        return user;
+        return toUserResponse(user);
     }
 
     @Override
@@ -183,14 +187,12 @@ public class UserServiceImpl implements IUserService {
     // LISTS (FILTER OUT DELETED)
     // ============================================================
     @Override
-    public List<User> getAllUsers() {
-        List<User> list = repo.findAll()
+    public List<UserResponse> getAllUsers() {
+        return repo.findAll()
                 .stream()
                 .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+                .map(this::toUserResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -409,5 +411,33 @@ public class UserServiceImpl implements IUserService {
         // accounting for variations and returning a confidence score.
         // For this example, we are using a simple string equality check.
         return memberDetails.getFingerprint().equals(fingerprint);
+    }
+
+    @Override
+    public void sendPromotionalMessage(String message) {
+        try {
+            PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
+            notification.setTargetType(TargetType.ALL_USERS);
+            notification.setMessageContent(message);
+            notificationClient.sendNotification(notification);
+        } catch (Exception e) {
+            System.err.println("Failed to send promotional message to all users: " + e.getMessage());
+        }
+    }
+
+    private UserResponse toUserResponse(User user) {
+        UserResponse res = new UserResponse();
+        res.setId(user.getId());
+        res.setName(user.getName());
+        res.setEmail(user.getEmail());
+        res.setRole(user.getRole());
+
+        if (user.getMemberDetails() != null && user.getMemberDetails().getPhone() != null) {
+            res.setPhone(user.getMemberDetails().getPhone());
+        } else if (user.getTrainerDetails() != null && user.getTrainerDetails().getPhone() != null) {
+            res.setPhone(user.getTrainerDetails().getPhone());
+        }
+
+        return res;
     }
 }

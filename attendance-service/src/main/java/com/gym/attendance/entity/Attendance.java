@@ -14,15 +14,18 @@ public class Attendance {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "check_in_time", nullable = false)
+    private LocalDateTime checkInTime;
+
+    @Column(name = "check_out_time")
+    private LocalDateTime checkOutTime;
 
     public Attendance() {
     }
 
-    public Attendance(Long userId, LocalDateTime timestamp) {
+    public Attendance(Long userId, LocalDateTime checkInTime) {
         this.userId = userId;
-        this.timestamp = timestamp;
+        this.checkInTime = checkInTime;
     }
 
     // Getters and setters
@@ -42,11 +45,19 @@ public class Attendance {
         this.userId = userId;
     }
 
-    public LocalDateTime getTimestamp() {
-        return timestamp;
+    public LocalDateTime getCheckInTime() {
+        return checkInTime;
     }
 
-    public void setTimestamp(LocalDateTime timestamp) {
-        this.timestamp = timestamp;
+    public void setCheckInTime(LocalDateTime checkInTime) {
+        this.checkInTime = checkInTime;
+    }
+
+    public LocalDateTime getCheckOutTime() {
+        return checkOutTime;
+    }
+
+    public void setCheckOutTime(LocalDateTime checkOutTime) {
+        this.checkOutTime = checkOutTime;
     }
 }

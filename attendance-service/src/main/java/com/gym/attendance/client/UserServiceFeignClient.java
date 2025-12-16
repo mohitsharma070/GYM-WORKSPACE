@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.List;
 import java.util.Map;
 
 @FeignClient(name = "user-service", url = "${user.service.url}")
@@ -20,4 +21,7 @@ public interface UserServiceFeignClient {
 
     @PostMapping("/auth/member/verify-fingerprint")
     UserResponse verifyFingerprint(@RequestBody Map<String, String> request);
+
+    @GetMapping("/auth/admin/all")
+    List<UserResponse> getAllUsers();
 }

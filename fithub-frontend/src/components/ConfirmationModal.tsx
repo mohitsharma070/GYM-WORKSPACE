@@ -6,7 +6,7 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: string;
+  message: React.ReactNode; // Change type to ReactNode
   confirmText?: string;
   cancelText?: string;
   isConfirming?: boolean; // To show loading state on confirm button

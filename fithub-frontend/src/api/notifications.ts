@@ -35,7 +35,6 @@ export interface NotificationHistorySort {
 }
 
 export async function sendPromotionalNotification(data: PromotionalNotificationRequest) {
-  const token = localStorage.getItem("authToken");
   const res = await fetch(`${API_BASE_NOTIFICATION}/api/promotional-notifications`, {
     method: "POST",
     headers: {

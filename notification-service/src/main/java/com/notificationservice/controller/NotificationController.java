@@ -7,30 +7,23 @@ import com.notificationservice.enums.TargetType;
 import com.notificationservice.model.NotificationLog;
 import com.notificationservice.repository.NotificationLogRepository;
 import com.notificationservice.service.WhatsAppNotificationService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
 @Slf4j
+@RequiredArgsConstructor
 public class NotificationController {
 
-    @Autowired
-    private WhatsAppNotificationService whatsAppNotificationService;
-
-    @Autowired
-    private NotificationLogRepository notificationLogRepository; // Inject repository to fetch logs directly
+    private final WhatsAppNotificationService whatsAppNotificationService;
+    private final NotificationLogRepository notificationLogRepository;
 
     @PostMapping("/notifications/send")
     public ResponseEntity<String> sendTransactionalNotification(@RequestBody NotificationRequest request) {

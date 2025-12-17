@@ -19,6 +19,7 @@ import java.util.List;
 public class WhatsAppNotificationService {
 
     private final NotificationLogRepository notificationLogRepository;
+    private final UserServiceClient userServiceClient;
 
     /**
      * Sends a promotional notification based on the request.
@@ -96,9 +97,7 @@ public class WhatsAppNotificationService {
         // Placeholder logic for recipient resolution
         return switch (targetType) {
             case ALL_USERS ->
-                // Call user-service to get all user phone numbers
-                // return userServiceClient.getAllUserPhoneNumbers();
-                    Arrays.asList("1234567890", "0987654321"); // Dummy data
+                userServiceClient.getAllUserPhoneNumbers();
             case ALL_MEMBERS ->
                 // Call membership-service to get all member phone numbers
                 // return membershipServiceClient.getAllMemberPhoneNumbers();
@@ -107,6 +106,8 @@ public class WhatsAppNotificationService {
                 // Call trainer-service to get all trainer phone numbers
                 // return trainerServiceClient.getAllTrainerPhoneNumbers();
                     Arrays.asList("7778889999", "0001112222"); // Dummy data
+            case SPECIFIC_USERS ->
+                userServiceClient.getPhoneNumbersByUserIds(targetIdentifiers);
             case SPECIFIC_PHONES -> targetIdentifiers != null ? targetIdentifiers : List.of();
         };
     }

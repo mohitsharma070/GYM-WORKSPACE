@@ -4,5 +4,6 @@ public enum TargetType {
     ALL_USERS,
     ALL_MEMBERS,
     ALL_TRAINERS,
+    SPECIFIC_USERS,
     SPECIFIC_PHONES
 }

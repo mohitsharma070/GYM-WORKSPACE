@@ -45,6 +45,21 @@ export default function AdminNotificationLogsPage() {
   const history = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case "SENT":
+        return "text-green-600 font-semibold";
+      case "FAILED":
+        return "text-red-600 font-semibold";
+      case "PENDING":
+        return "text-yellow-600 font-semibold";
+      case "PARTIAL": // Assuming backend might return this status for partial success
+        return "text-orange-600 font-semibold";
+      default:
+        return "text-gray-500";
+    }
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Promotional Notification Logs</h1>
@@ -75,6 +90,7 @@ export default function AdminNotificationLogsPage() {
             <option value="SENT">SENT</option>
             <option value="FAILED">FAILED</option>
             <option value="PENDING">PENDING</option>
+            <option value="PARTIAL">PARTIAL</option> {/* Added PARTIAL status filter */}
           </select>
 
           <select
@@ -137,7 +153,9 @@ export default function AdminNotificationLogsPage() {
                       "N/A"
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.status}</td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${getStatusClasses(item.status)}`}>
+                    {item.status}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.targetIdentifiers && item.targetIdentifiers.length > 0
                       ? item.targetIdentifiers.join(", ")

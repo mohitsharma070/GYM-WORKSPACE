@@ -1,5 +1,5 @@
 import { API_BASE_NOTIFICATION } from "../utils/config";
-import type { PromotionalNotificationRequest } from "../types/Notification";
+import type { NotificationRequest, PromotionalNotificationRequest, NotificationResult } from "../types/Notification"; // Updated import
 import { TargetType } from "../types/TargetType"; // Correct import for TargetType
 
 // Align with backend's NotificationLogResponse DTO
@@ -34,6 +34,29 @@ export interface NotificationHistorySort {
   sortOrder: 'asc' | 'desc';
 }
 
+export async function sendTransactionalNotification(data: NotificationRequest): Promise<NotificationResult> {
+  const res = await fetch(`${API_BASE_NOTIFICATION}/api/notifications/send`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  // Backend now returns success/failure string, not JSON with result object directly
+  const textResponse = await res.text(); // Read as text
+
+  if (res.ok) {
+    // Attempt to extract message ID from success string if available
+    const match = textResponse.match(/Message ID: (\S+)/);
+    const externalMessageId = match ? match[1] : undefined;
+    return { success: true, message: textResponse, externalMessageId };
+  } else {
+    // Treat any !res.ok as a failure
+    return { success: false, message: textResponse || "Failed to send transactional notification." };
+  }
+}
+
 export async function sendPromotionalNotification(data: PromotionalNotificationRequest) {
   const res = await fetch(`${API_BASE_NOTIFICATION}/api/promotional-notifications`, {
     method: "POST",
@@ -43,12 +66,14 @@ export async function sendPromotionalNotification(data: PromotionalNotificationR
     body: JSON.stringify(data),
   });
 
-  if (!res.ok) {
-    const errorBody = await res.json();
-    throw new Error(errorBody.message || "Failed to send promotional notification.");
-  }
+  // Backend now returns success/failure string for promotional
+  const textResponse = await res.text();
 
-  return res.json();
+  if (res.ok || res.status === 207) { // 207 Multi-Status for partial success/failure
+    return { success: true, message: textResponse }; // Success or partial success message
+  } else {
+    return { success: false, message: textResponse || "Failed to send promotional notification." };
+  }
 }
 
 export async function getPromotionalNotificationHistory(

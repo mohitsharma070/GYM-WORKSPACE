@@ -34,18 +34,30 @@ export default function AdminPromotionalNotificationsPage() {
   });
   const sendNotificationMutation = useMutation({
     mutationFn: (data: PromotionalNotificationRequest) => sendPromotionalNotification(data), // Use PromotionalNotificationRequest
-    onSuccess: () => {
-      setMessageContent(""); // Reset messageContent
+    onSuccess: (result) => {
+      setMessageContent("");
       setSpecificTargetInput("");
-      setSelectedFile(null); // Reset selected file
-      setUploadedImageUrl(null); // Reset uploaded image URL
-      setShowConfirmationModal(false); // Close modal on success
-      showToast("Promotional notification sent successfully!", "success"); // Use toast
+      setSelectedFile(null);
+      setUploadedImageUrl(null);
+      setShowConfirmationModal(false);
+      // Check the success status and message to determine the toast type
+      if (result.success) {
+        if (result.message.includes("Failed")) {
+          // Partial success scenario
+          showToast(result.message, "warn");
+        } else {
+          // Full success
+          showToast(result.message, "success");
+        }
+      } else {
+        // Explicit failure from the backend
+        showToast(result.message || "Failed to send promotional notification.", "error");
+      }
       queryClient.invalidateQueries({ queryKey: ["adminNotificationLogs"] });
     },
     onError: (error: any) => {
-      setShowConfirmationModal(false); // Close modal on error
-      showToast(error?.message || "Failed to send promotional notification.", "error"); // Use toast
+      setShowConfirmationModal(false);
+      showToast(error?.message || "Failed to send promotional notification.", "error");
     },
   });
 

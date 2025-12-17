@@ -10,4 +10,16 @@ public class PromotionalNotificationRequest {
     private List<String> targetIdentifiers;
     private String messageContent;
     private String imageUrl;
+
+    public void setTargetType(TargetType targetType) {
+        this.targetType = targetType;
+    }
+
+    public void setMessageContent(String messageContent) {
+        this.messageContent = messageContent;
+    }
+
+    public void setTargetIdentifiers(List<String> targetIdentifiers) {
+        this.targetIdentifiers = targetIdentifiers;
+    }
 }

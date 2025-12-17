@@ -35,6 +35,12 @@ public class NotificationLog {
     @Column(name = "status", nullable = false)
     private String status; // e.g., "SENT", "FAILED", "PENDING"
 
+    @Column(name = "failure_reason", columnDefinition = "TEXT")
+    private String failureReason; // Stores the reason if status is FAILED
+
+    @Column(name = "external_message_id")
+    private String externalMessageId; // Stores the ID from WhatsApp API if status is SENT
+
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
 }

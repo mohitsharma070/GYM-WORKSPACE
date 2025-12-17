@@ -20,4 +20,10 @@ public interface UserServiceClient {
 
     @GetMapping("/auth/admin/trainers")
     List<User> getAllTrainers();
+
+    @GetMapping("/api/users/phone-numbers/all")
+    List<String> getAllUserPhoneNumbers();
+
+    @GetMapping("/api/users/phone-numbers/by-ids")
+    List<String> getPhoneNumbersByUserIds(@RequestParam("userIds") List<String> userIds);
 }

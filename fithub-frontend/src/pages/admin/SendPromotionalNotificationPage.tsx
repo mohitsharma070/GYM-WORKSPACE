@@ -68,9 +68,14 @@ const SendPromotionalNotificationPage: React.FC = () => {
     }
 
     try {
-      await sendPromotionalNotification(requestBody);
-      showToast('Promotional notification sent successfully!', 'success');
-      // Optionally reset form
+      const result = await sendPromotionalNotification(requestBody); // result is now { success: boolean, message: string }
+
+      if (result.success) {
+        showToast(result.message, 'success');
+      } else {
+        showToast(result.message, 'error');
+      }
+      // Optionally reset form regardless of success or failure
       setTargetType(TargetType.ALL_USERS);
       setTargetIdentifiers('');
       setMessageContent('');
@@ -78,7 +83,7 @@ const SendPromotionalNotificationPage: React.FC = () => {
       setUploadedImageUrl(null); // Reset uploaded image URL
     } catch (error: any) {
       console.error('Failed to send promotional notification:', error);
-      showToast(error.message || 'Failed to send promotional notification.', 'error');
+      showToast(error.message || 'An unexpected error occurred while sending promotional notification.', 'error');
     } finally {
       setIsLoading(false);
     }

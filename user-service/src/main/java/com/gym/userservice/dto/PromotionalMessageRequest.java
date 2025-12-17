@@ -7,4 +7,8 @@ import lombok.Setter;
 @Setter
 public class PromotionalMessageRequest {
     private String message;
+
+    public String getMessage() {
+        return this.message;
+    }
 }

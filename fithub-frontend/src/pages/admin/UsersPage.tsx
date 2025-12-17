@@ -126,18 +126,40 @@ export default function UsersPage() {
       queryClient.setQueryData(["users"], (oldUsers: any) => {
         if (!oldUsers) return oldUsers;
 
-        return oldUsers.map((u: User) =>
-          u.id === vars.id
-            ? {
-                ...u,
-                ...vars.data,
-                memberDetails: {
-                  ...u.memberDetails,
-                  ...(vars.data.memberDetails || {}),
-                },
-              }
-            : u
-        );
+        return oldUsers.map((u: User) => {
+          if (u.id !== vars.id) return u;
+
+          // Separate top-level and nested properties from the form data
+          const {
+            age,
+            gender,
+            height,
+            weight,
+            goal,
+            membershipType,
+            phone,
+            ...topLevelProps
+          } = vars.data;
+
+          const memberDetailsUpdate = {
+            ...(age && { age }),
+            ...(gender && { gender }),
+            ...(height && { height }),
+            ...(weight && { weight }),
+            ...(goal && { goal }),
+            ...(membershipType && { membershipType }),
+            ...(phone && { phone }),
+          };
+
+          return {
+            ...u,
+            ...topLevelProps,
+            memberDetails: {
+              ...u.memberDetails,
+              ...memberDetailsUpdate,
+            },
+          };
+        });
       });
 
       queryClient.invalidateQueries({ queryKey: ["users"] });

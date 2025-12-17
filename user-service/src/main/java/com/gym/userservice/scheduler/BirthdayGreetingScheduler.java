@@ -5,7 +5,6 @@ import com.gym.userservice.entity.User;
 import com.gym.userservice.enums.TargetType;
 import com.gym.userservice.feign.NotificationServiceClient;
 import com.gym.userservice.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,11 +12,15 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class BirthdayGreetingScheduler {
 
     private final UserRepository userRepository;
     private final NotificationServiceClient notificationClient;
+
+    public BirthdayGreetingScheduler(UserRepository userRepository, NotificationServiceClient notificationClient) {
+        this.userRepository = userRepository;
+        this.notificationClient = notificationClient;
+    }
 
     @Scheduled(cron = "0 0 9 * * *") // Runs every day at 9 AM
     public void sendBirthdayGreetings() {

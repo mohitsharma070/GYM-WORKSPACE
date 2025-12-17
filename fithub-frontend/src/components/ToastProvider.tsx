@@ -5,12 +5,12 @@ import { AnimatePresence, motion } from 'framer-motion'; // Assuming framer-moti
 interface ToastMessage {
   id: string;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warn';
 }
 
 // Define the shape of the context value
 interface ToastContextType {
-  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warn') => void;
 }
 
 // Create the context
@@ -25,7 +25,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const TOAST_TIMEOUT = 3000; // 3 seconds
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warn' = 'info') => {
     const id = Date.now().toString();
     setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
   };
@@ -54,6 +54,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
               className={`p-4 rounded-lg shadow-lg text-white max-w-xs break-words ${
                 toast.type === 'success' ? 'bg-green-500' :
                 toast.type === 'error' ? 'bg-red-500' :
+                toast.type === 'warn' ? 'bg-yellow-500' : // Added warning style
                 'bg-blue-500'
               }`}
             >

@@ -4,7 +4,8 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Login from "../pages/Login"; // Assuming Login is directly handled in App.tsx
 
 import AdminNotificationLogsPage from "../pages/admin/AdminNotificationLogsPage";
-import SendPromotionalNotificationPage from "../pages/admin/SendPromotionalNotificationPage"; // New import
+import SendPromotionalNotificationPage from "../pages/admin/SendPromotionalNotificationPage";
+import AdminWhatsAppConfigPage from "../pages/admin/AdminWhatsAppConfigPage"; // New import
 
 // ADMIN PAGES
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -66,6 +67,7 @@ export default function DashboardRoutes({ userRole, isAuthenticated, onLoginSucc
                         <Route path="admin/profile" element={<ProfilePage />} />
                         <Route path="admin/notifications/logs" element={<AdminNotificationLogsPage />} />
                         <Route path="admin/notifications/send" element={<SendPromotionalNotificationPage />} />
+                        <Route path="admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} /> {/* New route for WhatsApp config */}
                         <Route path="*" element={<AdminDashboard />} /> {/* Default admin route */}
                     </>
                 )}

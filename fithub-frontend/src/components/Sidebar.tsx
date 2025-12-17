@@ -1,5 +1,17 @@
-import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3, Mail } from 'lucide-react';
+import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3, Megaphone, type LucideProps } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import type { ForwardRefExoticComponent, RefAttributes, SVGProps } from 'react'; // Import necessary types with 'type' keyword
+
+// Define a type for the Lucide icon components
+type IconComponent = ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & RefAttributes<SVGSVGElement> & LucideProps>; // Add LucideProps
+
+// Define the MenuItem interface
+interface MenuItem {
+  path: string;
+  label: string;
+  icon: IconComponent; // Use the defined IconComponent type
+  badge?: string; // Make badge optional
+}
 
 interface SidebarProps {
   userType: 'admin' | 'trainer' | 'member' | null;
@@ -8,7 +20,7 @@ interface SidebarProps {
 export function Sidebar({ userType }: SidebarProps) {
   const location = useLocation();
 
-  const getMenuItems = () => {
+  const getMenuItems = (): MenuItem[] => { // Specify return type as MenuItem[]
     if (userType === 'admin') {
       return [
         { path: '/admin', label: 'Dashboard', icon: Home },
@@ -19,8 +31,9 @@ export function Sidebar({ userType }: SidebarProps) {
         { path: '/admin/workout-plans', label: 'Workout Plans', icon: Dumbbell },
         { path: '/admin/attendance', label: 'Attendance', icon: Calendar },
         { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-        { path: '/admin/notifications/send', label: 'Send Promotional Notification', icon: Mail },
+        { path: '/admin/notifications/send', label: 'Broadcast Notifications', icon: Megaphone },
         { path: '/admin/notifications/logs', label: 'Notification Logs', icon: FileText },
+        { path: '/admin/whatsapp-config', label: 'WhatsApp API Config', icon: Settings }, // New link for WhatsApp config
         { path: '/admin/profile', label: 'Profile', icon: Settings },
       ];
     } else if (userType === 'trainer') {

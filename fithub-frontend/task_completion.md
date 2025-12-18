@@ -12,11 +12,11 @@ Avoid heavy borders or strong colors.
 1.  **Analyzed `Login.tsx`:** Determined that the existing structure already provided sufficient visual separation for its focused content, requiring no further modifications.
 2.  **Modified `src/pages/admin/AdminDashboard.tsx`:**
     *   Wrapped the "Stat Cards" section in a new `div` with classes `bg-white shadow-sm rounded-lg p-6 mb-8` and added a `h2` title "Dashboard Overview".
-    *   Wrapped the "Quick Links" section in a new `div` with classes `bg-white shadow-sm rounded-lg p-6 mb-8` and added a `h2` title "Quick Actions".
+    *   Wrapped the "Quick Links" section in a new `div` with classes `bg-white shadow-lg rounded-lg p-6 mb-8` and added a `h2` title "Quick Actions".
     *   Added `mb-8` to the "Recent Members" section's container for consistent spacing.
 3.  **Modified `src/pages/member/MemberDashboard.tsx`:**
-    *   Wrapped the "Summary Cards" section in a new `div` with classes `bg-white shadow-sm rounded-lg p-6 mb-8` and added a `h2` title "Your Overview".
-    *   Wrapped the "Quick Actions" section in a new `div` with classes `bg-white shadow-sm rounded-lg p-6 mb-8` and added a `h2` title "Quick Actions".
+    *   Wrapped the "Summary Cards" section in a new `div` with classes `bg-white shadow-lg rounded-lg p-6 mb-8` and added a `h2` title "Your Overview".
+    *   Wrapped the "Quick Actions" section in a new `div` with classes `bg-white shadow-lg rounded-lg p-6 mb-8` and added a `h2` title "Quick Actions".
     *   Added `mb-8` to the "Recent Activity" section's container for consistent spacing.
 
 ---
@@ -58,3 +58,29 @@ Add:
 
 **Rationale:**
 The changes to `Table.tsx` enhance the visual and ergonomic quality of tables by enforcing a fixed table layout for column stability, applying consistent vertical alignment, and now, ensuring all headings are horizontally centered. While the core `Table` component sets a strong foundation, optimal rendering for specific data types and action buttons requires cooperation from the components consuming the `Table` and providing the `renderRow` implementation. This approach ensures a generic yet powerful table component.
+
+---
+
+**Date:** 2025-12-18
+
+**Task:** Apply a "Dark Power Gym" theme to the admin dashboard.
+
+**Implementation Details:**
+
+1.  **Identified Styling:** Located `tailwind.config.ts` and `src/styles/global.css` as the primary files for theme definition. The application uses CSS variables defined in `global.css` within Tailwind CSS classes.
+2.  **Modified `src/styles/global.css` (Dark Theme):**
+    *   Updated the CSS variables within the `.dark` selector to implement a "Dark Power Gym" theme.
+    *   Set `--background` to a dark slate (`220 20% 10%`).
+    *   Set `--foreground` (text) to a light color (`210 40% 98%`).
+    *   Set `--card` background to be slightly lighter than the main background (`220 20% 15%`).
+    *   Introduced an energetic orange (`30 100% 50%`) for `--primary` and `--accent` colors for actions and highlights.
+    *   Adjusted other colors (`--secondary`, `--muted`, `--border`, `--input`, `--ring`) to complement the dark slate and energetic orange palette, ensuring high contrast.
+3.  **Modified `src/styles/global.css` (Light Theme):**
+    *   Updated the CSS variables within the `:root` selector (light theme) for better visual consistency with the new dark theme.
+    *   Set `--background` to a soft light gray (`0 0% 95%`).
+    *   Set `--card` to pure white (`0 0% 100%`).
+    *   Maintained the energetic orange (`30 100% 50%`) for `--primary` and `--accent` to ensure visual consistency across themes for interactive elements.
+    *   Adjusted other light theme colors for a softer, more cohesive appearance.
+
+**Rationale:**
+These changes establish a distinct "Dark Power Gym" theme for the application's dark mode, characterized by dark slate backgrounds, light text, high contrast, and an energetic orange accent. The light theme has also been refined to be less stark and more visually harmonious, ensuring a polished user experience regardless of the selected theme. Since the application components already utilize these CSS variables via Tailwind, the theme changes are applied globally without requiring modifications to individual components or layout.

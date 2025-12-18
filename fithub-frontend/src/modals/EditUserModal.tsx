@@ -1,21 +1,22 @@
-import { useState } from "react";
+import { useState } from 'react';
+import { Button } from '../components/Button';
 import type { User } from "../types/User";
 import type { Plan } from "../types/Plan";
 
 interface Props {
   user: User;
   plans: Plan[];
-  updating: boolean;
+  loading: boolean;
   onClose: () => void;
-  onSave: (updated: any) => void;
+  handleSubmit: (updated: any) => void;
 }
 
 export default function EditUserModal({
   user,
   plans,
-  updating,
+  loading,
   onClose,
-  onSave,
+  handleSubmit,
 }: Props) {
   const [form, setForm] = useState<any>({
     name: user.name,
@@ -48,7 +49,7 @@ export default function EditUserModal({
       membershipType: form.membershipType,
     };
 
-    onSave(payload);
+    handleSubmit(payload);
   }
 
   return (
@@ -144,16 +145,12 @@ export default function EditUserModal({
         </div>
 
         <div className="flex justify-end gap-3 mt-4">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={updating}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            {updating ? "Updating..." : "Save Changes"}
-          </button>
+          </Button>
+          <Button type="submit" variant="default" onClick={handleSave} disabled={loading}>
+            {loading ? 'Saving...' : 'Save Changes'}
+          </Button>
         </div>
       </div>
     </div>

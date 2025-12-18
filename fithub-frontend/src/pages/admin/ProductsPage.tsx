@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { ShoppingCart } from 'lucide-react'; // Import the icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
+import Table from "../../components/Table";
 
 interface Product {
   id: number;
@@ -27,6 +30,11 @@ export default function ProductsPage() {
     category: "",
   });
 
+  /* SEARCH AND PAGINATION STATE */
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10; // You can adjust this number
+
   // -------------------------------
   // Load Products
   // -------------------------------
@@ -54,6 +62,18 @@ export default function ProductsPage() {
   useEffect(() => {
     loadProducts();
   }, []);
+
+  /* FILTER AND PAGINATE PRODUCTS */
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // -------------------------------
   // Handle Input
@@ -150,66 +170,62 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <div className="flex justify-between mb-6">
-        <h1 className="text-3xl font-bold">Products</h1>
-
-        <button
-          onClick={() => openModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          + Add Product
-        </button>
-      </div>
+      <PageHeader
+        icon={ShoppingCart}
+        title="Products"
+        subtitle="Manage gym products and inventory."
+        actions={
+          <button
+            onClick={() => openModal()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            + Add Product
+          </button>
+        }
+      />
 
       <div className="bg-white shadow rounded-lg p-6 overflow-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b bg-gray-100 text-left">
-              <th className="p-3">#</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Price</th>
-              <th className="p-3">Qty</th>
-              <th className="p-3">Category</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {products.map((p, index) => (
-              <tr key={p.id} className="border-b hover:bg-gray-50">
-                <td className="p-3">{index + 1}</td>
-                <td className="p-3 font-semibold">{p.name}</td>
-                <td className="p-3">₹{p.price}</td>
-                <td className="p-3">{p.quantity}</td>
-                <td className="p-3">{p.category}</td>
-
-                <td className="p-3 flex gap-2">
-                  <button
-                    onClick={() => openModal(p)}
-                    className="px-3 py-1 bg-green-600 text-white rounded"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => deleteProduct(p.id)}
-                    className="px-3 py-1 bg-red-600 text-white rounded"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-
-            {products.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center text-gray-500 p-6">
-                  No products found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        {loading ? (
+          <div className="p-6 text-center">Loading products...</div>
+        ) : error ? (
+          <div className="p-6 text-center text-red-600">Error: {error}</div>
+        ) : paginatedProducts.length === 0 ? (
+          <div className="text-center text-gray-500 p-6">No products found.</div>
+        ) : (
+          <Table
+            headers={["#", "Name", "Price", "Qty", "Category", "Actions"]}
+            columnClasses={['w-1/12 text-center', 'w-3/12', 'w-2/12', 'w-1/12', 'w-2/12', 'w-3/12 text-center']}
+            data={paginatedProducts}
+            renderCells={(p, index) => [
+              index + 1 + (currentPage - 1) * itemsPerPage,
+              <span className="font-semibold">{p.name}</span>,
+              `₹${p.price}`,
+              p.quantity,
+              p.category,
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={() => openModal(p)}
+                  className="px-3 py-1 bg-green-600 text-white rounded"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => deleteProduct(p.id)}
+                  className="px-3 py-1 bg-red-600 text-white rounded"
+                >
+                  Delete
+                </button>
+              </div>,
+            ]}
+            keyExtractor={(p) => p.id}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            searchPlaceholder="Search products by name or category..."
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
+        )}
       </div>
 
       {/* Modal */}

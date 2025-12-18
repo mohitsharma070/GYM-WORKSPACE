@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useToast } from '../../components/ToastProvider';
+import { MessageSquareText } from 'lucide-react'; // Import the icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 // Placeholder API function to send credentials to the backend
 // In a real scenario, this would call a secure admin API endpoint
@@ -49,7 +51,11 @@ const AdminWhatsAppConfigPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Admin: WhatsApp API Configuration</h1>
+      <PageHeader
+        icon={MessageSquareText}
+        title="WhatsApp Configuration"
+        subtitle="Configure Meta WhatsApp Business API credentials."
+      />
       <p className="mb-4 text-gray-700">
         Securely configure the Meta WhatsApp Business API credentials. These credentials are sent to the
         backend once for storage and are never displayed again.

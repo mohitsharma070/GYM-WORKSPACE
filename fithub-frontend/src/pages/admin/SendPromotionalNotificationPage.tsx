@@ -5,6 +5,8 @@ import type { PromotionalNotificationRequest } from '../../types/Notification';
 import { TargetType } from '../../types/TargetType'; // Correct import for TargetType
 import { useToast } from '../../components/ToastProvider';
 import { useMutation } from "@tanstack/react-query"; // Import useMutation
+import { Megaphone } from 'lucide-react'; // Import Megaphone icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 const SendPromotionalNotificationPage: React.FC = () => {
   const [targetType, setTargetType] = useState<TargetType>(TargetType.ALL_USERS);
@@ -91,7 +93,11 @@ const SendPromotionalNotificationPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Send Promotional Notification</h1>
+      <PageHeader
+        icon={Megaphone}
+        title="Broadcast Notification"
+        subtitle="Send messages to users"
+      />
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
         <div className="mb-4">
           <label htmlFor="targetType" className="block text-gray-700 text-sm font-bold mb-2">
@@ -180,7 +186,7 @@ const SendPromotionalNotificationPage: React.FC = () => {
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
             disabled={isLoading || imageUploadMutation.isPending}
           >
-            {isLoading ? 'Sending...' : 'Send Notification'}
+            {isLoading ? 'Sending...' : 'Broadcast Notification'}
           </button>
         </div>
       </form>

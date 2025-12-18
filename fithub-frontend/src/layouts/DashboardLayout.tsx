@@ -11,7 +11,7 @@ export default function DashboardLayout({
     <div className="flex h-screen">
       <Sidebar userType={userRole} />
 
-      <div className="flex-1 bg-gray-50 p-6 overflow-auto">
+      <div className="flex-1 bg-gray-50 p-6 overflow-auto rounded-lg">
         {children}
       </div>
     </div>

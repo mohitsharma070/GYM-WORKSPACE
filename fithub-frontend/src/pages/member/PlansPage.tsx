@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllPlans } from "../../api/plans"; // For membership plans
 import { useSubscriptions } from "../../hooks/useSubscriptions"; // For membership subscription
@@ -6,10 +7,16 @@ import { Dumbbell } from "lucide-react";
 import { type Plan as MembershipPlan } from "../../types/Plan"; // Renamed for clarity
 import { useAuth } from "../../hooks/useAuth"; // For membership subscription
 import { useToast } from "../../components/ToastProvider"; // Import useToast
+import Table from "../../components/Table";
 
 
 export default function PlansPage({ onPageChange }: { onPageChange: (page: string) => void }) {
   const { memberId } = useAuth(); // Get memberId from authenticated user
+
+  /* SEARCH AND PAGINATION STATE FOR MEMBERSHIP PLANS */
+  const [membershipSearchTerm, setMembershipSearchTerm] = useState<string>("");
+  const [membershipCurrentPage, setMembershipCurrentPage] = useState<number>(1);
+  const membershipItemsPerPage = 5; // You can adjust this number
 
   // Membership Plans
   const {
@@ -27,6 +34,17 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
     loading: subscribingMembership,
     error: subscribeMembershipError,
   } = useSubscriptions();
+
+  /* FILTER AND PAGINATE MEMBERSHIP PLANS */
+  const filteredMembershipPlans = membershipPlans?.filter(plan =>
+    plan.name.toLowerCase().includes(membershipSearchTerm.toLowerCase())
+  ) || [];
+
+  const membershipTotalPages = Math.ceil(filteredMembershipPlans.length / membershipItemsPerPage);
+  const paginatedMembershipPlans = filteredMembershipPlans.slice(
+    (membershipCurrentPage - 1) * membershipItemsPerPage,
+    membershipCurrentPage * membershipItemsPerPage
+  );
 
   // Workout Plans
   const {
@@ -122,45 +140,41 @@ export default function PlansPage({ onPageChange }: { onPageChange: (page: strin
       {/* Membership Plans Section */}
       <h1 className="text-3xl font-bold mb-6">Membership Plans</h1>
       <div className="bg-white shadow rounded-lg p-6 overflow-x-auto mb-10">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-left border-b bg-gray-100">
-              <th className="p-3">#</th>
-              <th className="p-3">Plan Name</th>
-              <th className="p-3">Price (₹)</th>
-              <th className="p-3">Duration</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {membershipPlans && membershipPlans.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-5 text-center text-gray-500">
-                  No membership plans available.
-                </td>
-              </tr>
-            )}
-            {membershipPlans?.map((p, index) => (
-              <tr key={p.id} className="border-b hover:bg-gray-50 transition">
-                <td className="p-3">{index + 1}</td>
-                <td className="p-3 font-medium">{p.name}</td>
-                <td className="p-3 font-semibold text-green-700">₹{p.price}</td>
-                <td className="p-3 flex items-center gap-2">
-                  {formatDuration(p.durationDays)}
-                </td>
-                <td className="p-3">
-                  <button
-                    onClick={() => handleSubscribeMembership(p.id)}
-                    disabled={subscribingMembership}
-                    className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
-                  >
-                    {subscribingMembership ? "Subscribing..." : "Subscribe"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {isLoadingMembershipPlans ? (
+          <div className="p-5 text-center text-gray-500">Loading membership plans...</div>
+        ) : isErrorMembershipPlans ? (
+          <div className="p-5 text-center text-red-600">Failed to load membership plans</div>
+        ) : paginatedMembershipPlans.length === 0 ? (
+          <div className="p-5 text-center text-gray-600">No membership plans available.</div>
+        ) : (
+          <Table
+            headers={["#", "Plan Name", "Price (₹)", "Duration", "Actions"]}
+            columnClasses={['w-1/12 text-center', 'w-3/12', 'w-2/12', 'w-3/12', 'w-3/12 text-center']}
+            data={paginatedMembershipPlans}
+            renderCells={(p, index) => [
+              index + 1 + (membershipCurrentPage - 1) * membershipItemsPerPage,
+              <span className="font-medium">{p.name}</span>,
+              <span className="font-semibold text-green-700">₹{p.price}</span>,
+              <span className="flex items-center gap-2">
+                {formatDuration(p.durationDays)}
+              </span>,
+              <button
+                onClick={() => handleSubscribeMembership(p.id)}
+                disabled={subscribingMembership}
+                className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+              >
+                {subscribingMembership ? "Subscribing..." : "Subscribe"}
+              </button>,
+            ]}
+            keyExtractor={(p) => p.id}
+            currentPage={membershipCurrentPage}
+            totalPages={membershipTotalPages}
+            onPageChange={setMembershipCurrentPage}
+            searchPlaceholder="Search membership plans by name..."
+            searchTerm={membershipSearchTerm}
+            onSearchChange={setMembershipSearchTerm}
+          />
+        )}
       </div>
 
       {/* Workout Plans Section */}

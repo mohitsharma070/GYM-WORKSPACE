@@ -171,13 +171,12 @@ export default function AdminDashboard() {
           <Table
             headers={["#", "Name", "Email"]}
             data={members.slice(0, 5)}
-            renderRow={(m, index) => (
-              <>
-                <td className="p-3">{index + 1}</td>
-                <td className="p-3 font-medium">{m.name}</td>
-                <td className="p-3">{m.email}</td>
-              </>
-            )}
+            columnClasses={['w-1/12 text-center', 'w-4/12 text-left', 'w-7/12 text-left']}
+            renderCells={(m, index) => [
+              index + 1,
+              <span className="font-medium">{m.name}</span>,
+              m.email,
+            ]}
             keyExtractor={(m) => m.id}
             currentPage={1} // Static for embedded table
             totalPages={1} // Static for embedded table

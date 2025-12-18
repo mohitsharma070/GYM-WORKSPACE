@@ -1,9 +1,11 @@
 import React from 'react';
+import { Button } from './Button';
 
 interface TableProps<T> {
   headers: string[];
+  columnClasses?: string[]; // New prop for column-specific Tailwind classes
   data: T[];
-  renderRow: (item: T, index: number) => React.ReactNode;
+  renderCells: (item: T, index: number) => React.ReactNode[]; // Changed from renderRow
   renderExpandedContent?: (item: T, index: number) => React.ReactNode;
   keyExtractor: (item: T) => string | number;
   openRowIndex?: number | null;
@@ -20,8 +22,9 @@ interface TableProps<T> {
 
 const Table = <T extends object>({
   headers,
+  columnClasses, // Destructure new prop
   data,
-  renderRow,
+  renderCells, // Destructure new prop
   renderExpandedContent,
   keyExtractor,
   openRowIndex,
@@ -53,11 +56,11 @@ const Table = <T extends object>({
         </div>
       )}
 
-      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-fixed">
         <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
           <tr>
             {headers.map((header, index) => (
-              <th key={index} scope="col" className="p-4">
+              <th key={index} scope="col" className={`p-4 align-middle ${columnClasses?.[index] || 'text-left'}`}>
                 {header}
               </th>
             ))}
@@ -66,7 +69,7 @@ const Table = <T extends object>({
         <tbody>
           {data.length === 0 ? (
             <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-              <td colSpan={headers.length} className="p-4 text-center">
+              <td colSpan={headers.length} className="p-4 text-center align-middle">
                 No data available.
               </td>
             </tr>
@@ -77,11 +80,15 @@ const Table = <T extends object>({
                   className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600`}
                   onClick={() => toggleRow && toggleRow(index)}
                 >
-                  {renderRow(item, index)}
+                  {renderCells(item, index).map((cellContent, cellIndex) => (
+                    <td key={cellIndex} className={`p-4 align-middle ${columnClasses?.[cellIndex] || 'text-left'}`}>
+                      {cellContent}
+                    </td>
+                  ))}
                 </tr>
                 {openRowIndex === index && renderExpandedContent && (
                   <tr className="bg-gray-100 dark:bg-gray-700">
-                    <td colSpan={headers.length} className="p-4">
+                    <td colSpan={headers.length} className="p-4 align-middle">
                       {renderExpandedContent(item, index)}
                     </td>
                   </tr>
@@ -95,33 +102,29 @@ const Table = <T extends object>({
       {/* Pagination */}
       {totalPages > 1 && (
         <nav className="flex justify-center items-center space-x-2 p-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
             Previous
-          </button>
+          </Button>
           {pageNumbers.map((page) => (
-            <button
+            <Button
               key={page}
+              variant={currentPage === page ? 'default' : 'outline'}
               onClick={() => onPageChange(page)}
-              className={`px-3 py-1 rounded-md ${
-                currentPage === page
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
-              }`}
             >
               {page}
-            </button>
+            </Button>
           ))}
-          <button
+          <Button
+            variant="outline"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
           >
             Next
-          </button>
+          </Button>
         </nav>
       )}
     </div>

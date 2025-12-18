@@ -38,7 +38,8 @@ Add:
 - Prevent content overflow and accidental column shifting.
 - Heading always comes in center.
 
-**Implementation Details (Current Task - Table Improvements):**
+**Implementation Details (Current Task - Table Improvements):
+**
 
 1.  **Analyzed `src/components/Table.tsx`:** Confirmed this as the central component for table rendering.
 2.  **Zebra Striping & Row Hover Effects:** Confirmed these were already implemented in `Table.tsx`. No further changes needed.

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dumbbell } from 'lucide-react'; // Import the icon
+import { Dumbbell, Plus, Edit, Trash } from 'lucide-react'; // Import the icons
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
+import { Button } from '../../components/Button';
 
 import type { Trainer } from "../../types/Trainer";
 import {
@@ -97,61 +98,85 @@ export default function TrainersPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={Dumbbell}
         title="Trainers"
         subtitle="Manage gym trainers and their specializations."
         actions={
-          <button
+          <Button
             onClick={() => setShowAddTrainerModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700"
+            size="default"
           >
-            + Add Trainer
-          </button>
+            <Plus size={18} className="mr-2" /> Add Trainer
+          </Button>
         }
       />
 
       {/* TABLE */}
-      <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         {trainersQuery.isLoading ? (
-          <div className="p-6 text-center">Loading trainers...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading trainers...</p>
+            </div>
+          </div>
         ) : trainersQuery.error ? (
-          <div className="p-6 text-center text-red-600">Failed to load trainers</div>
+          <div className="text-center py-12">
+            <div className="text-red-600 mb-4">Failed to load trainers</div>
+            <Button
+              onClick={() => trainersQuery.refetch()}
+              variant="outline"
+            >
+              Try Again
+            </Button>
+          </div>
         ) : paginatedTrainers.length === 0 ? (
-          <div className="text-center p-6 text-gray-600">No trainers found.</div>
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-3">
+              <Dumbbell size={48} className="mx-auto" />
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No trainers found</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {searchTerm ? 'Try adjusting your search terms' : 'Add trainers to get started'}
+            </p>
+          </div>
         ) : (
           <Table
             headers={["#", "Name", "Email", "Actions", "▾"]}
             columnClasses={['w-1/12 text-center', 'w-3/12', 'w-3/12', 'w-3/12 text-center', 'w-1/12 text-center']}
             data={paginatedTrainers}
             renderCells={(trainer, index) => [
-              index + 1 + (currentPage - 1) * itemsPerPage,
-              <span className="font-medium">{trainer.name}</span>,
-              trainer.email,
+              <span className="text-gray-500 font-medium">{index + 1 + (currentPage - 1) * itemsPerPage}</span>,
+              <span className="font-semibold text-gray-900">{trainer.name}</span>,
+              <span className="text-gray-600">{trainer.email}</span>,
               <div className="flex gap-2 justify-center">
                 {/* EDIT BUTTON */}
-                <button
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedTrainer(trainer);
                     setShowEditTrainerModal(true);
                   }}
                 >
-                  Edit
-                </button>
+                  <Edit size={14} className="mr-1" /> Edit
+                </Button>
 
                 {/* DELETE BUTTON */}
-                <button
-                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(trainer.id);
                   }}
                 >
-                  Delete
-                </button>
+                  <Trash size={14} className="mr-1" /> Delete
+                </Button>
               </div>,
               <span
                 className={`inline-block transform transition-transform ${
@@ -162,22 +187,22 @@ export default function TrainersPage() {
               </span>,
             ]}
             renderExpandedContent={(trainer) => (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Specialization</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.specialization ?? "-"}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-sm font-medium text-gray-500 mb-1">Specialization</p>
+                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.specialization ?? "-"}</p>
                 </div>
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Experience (Years)</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.experienceYears ?? "-"}</p>
+                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-sm font-medium text-gray-500 mb-1">Experience (Years)</p>
+                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.experienceYears ?? "-"}</p>
                 </div>
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Certification</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.certification ?? "-"}</p>
+                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-sm font-medium text-gray-500 mb-1">Certification</p>
+                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.certification ?? "-"}</p>
                 </div>
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Phone</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.phone ?? "-"}</p>
+                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                  <p className="text-sm font-medium text-gray-500 mb-1">Phone</p>
+                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.phone ?? "-"}</p>
                 </div>
               </div>
             )}

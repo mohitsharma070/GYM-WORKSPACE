@@ -10,17 +10,17 @@ interface PageHeaderProps {
 
 const PageHeader: React.FC<PageHeaderProps> = ({ icon: Icon, title, subtitle, actions }) => {
   return (
-    <div className="flex justify-between items-center mb-6">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
       <div className="flex items-center space-x-4">
-        <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+        <div className="p-3 bg-blue-100 rounded-lg text-blue-600 shadow-sm">
           <Icon size={24} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold">{title}</h1>
-          <p className="text-gray-600">{subtitle}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{title}</h1>
+          <p className="text-gray-600 mt-1">{subtitle}</p>
         </div>
       </div>
-      {actions && <div>{actions}</div>}
+      {actions && <div className="flex-shrink-0">{actions}</div>}
     </div>
   );
 };

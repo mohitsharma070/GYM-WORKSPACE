@@ -8,19 +8,27 @@ import {
   type NotificationHistorySort,
 } from "../../api/notifications";
 import { TargetType } from "../../types/TargetType"; // Import TargetType
+import { ScrollText, BellOff } from 'lucide-react'; // Import the icon and BellOff
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
+import EmptyState from "../../components/EmptyState"; // Import EmptyState
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import Table from "../../components/Table";
 
 export default function AdminNotificationLogsPage() {
   const [page, setPage] = useState<number>(0);
   const [size] = useState<number>(10);
   const [filters, setFilters] = useState<NotificationHistoryFilter>({});
   const [sort, setSort] = useState<NotificationHistorySort>({ sortBy: "timestamp", sortOrder: "desc" }); // Changed sentAt to timestamp
+  const [searchTerm, setSearchTerm] = useState<string>(''); // New state for search term
 
-  const { data, isLoading, isError, error } = useQuery<
+  const navigate = useNavigate(); // Initialize navigate
+
+  const { data, isLoading, isError, error, refetch } = useQuery< // Added refetch
     PaginatedResponse<NotificationLogResponse>, // Changed from PromotionalNotificationHistoryItem
     Error
   >({
-    queryKey: ["promotionalNotificationHistory", page, size, filters, sort],
-    queryFn: () => getPromotionalNotificationHistory(page, size, filters, sort),
+    queryKey: ["promotionalNotificationHistory", page, size, filters, sort, searchTerm], // Include searchTerm in queryKey
+    queryFn: () => getPromotionalNotificationHistory(page, size, { ...filters, searchTerm }, sort), // Pass searchTerm to filters
   });
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -34,12 +42,28 @@ export default function AdminNotificationLogsPage() {
     setPage(0); // Reset to first page on sort change
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setPage(0); // Reset to first page on search term change
+  };
+
+
   if (isLoading) {
     return <div className="p-6">Loading promotional notification logs...</div>;
   }
 
   if (isError) {
-    return <div className="p-6 text-red-600">Error: {error?.message || "Failed to fetch notification logs"}</div>;
+    return (
+      <div className="p-6 text-red-600">
+        <EmptyState
+          icon={BellOff} // Using BellOff for error state as well, or another appropriate icon
+          title="Failed to load notification logs"
+          description={error?.message || "An unexpected error occurred while fetching notification logs. Please try again."}
+          buttonText="Retry"
+          onButtonClick={() => refetch()}
+        />
+      </div>
+    );
   }
 
   const history = data?.content || [];
@@ -62,10 +86,24 @@ export default function AdminNotificationLogsPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Promotional Notification Logs</h1>
+      <PageHeader
+        icon={ScrollText}
+        title="Broadcast Logs"
+        subtitle="Review the history of all broadcast notifications sent."
+      />
 
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                    {/* Search Input */}
+                    <div className="w-full md:w-1/3">
+                      <input
+                        type="text"
+                        placeholder="Search message content or target identifiers..."
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                      />
+                    </div>        {/* Filters and Sort */}
+        <div className="flex flex-wrap gap-4">
           <select
             name="targetType"
             onChange={handleFilterChange}
@@ -111,85 +149,61 @@ export default function AdminNotificationLogsPage() {
 
       {history.length > 0 ? (
         <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sent At
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Target Type
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Message Content
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Image
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Target Identifiers
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {history.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {new Date(item.timestamp).toLocaleString()} {/* Changed sentAt to timestamp */}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.targetType}</td>
-                  <td className="px-6 py-4 max-w-xs truncate text-sm text-gray-500" title={item.messageContent}> {/* Changed message to messageContent */}
-                    {item.messageContent} {/* Changed message to messageContent */}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.imageUrl ? (
-                      <a href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        View Image
-                      </a>
-                    ) : (
-                      "N/A"
-                    )}
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${getStatusClasses(item.status)}`}>
-                    {item.status}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.targetIdentifiers && item.targetIdentifiers.length > 0
-                      ? item.targetIdentifiers.join(", ")
-                      : "N/A"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table
+            headers={[
+              "Sent At",
+              "Target Type",
+              "Message Content",
+              "Image",
+              "Status",
+              "Target Identifiers",
+            ]}
+            columnClasses={[
+              "w-1/6 whitespace-nowrap",
+              "w-1/6 whitespace-nowrap",
+              "w-2/6 truncate",
+              "w-1/12 whitespace-nowrap",
+              "w-1/12 whitespace-nowrap",
+              "w-1/6 whitespace-nowrap",
+            ]}
+            data={history}
+            renderCells={(item: NotificationLogResponse) => [
+              new Date(item.timestamp).toLocaleString(),
+              item.targetType,
+              <span title={item.messageContent}>{item.messageContent}</span>,
+              item.imageUrl ? (
+                <a href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  View Image
+                </a>
+              ) : (
+                "N/A"
+              ),
+              <span className={getStatusClasses(item.status)}>{item.status}</span>,
+              item.targetIdentifiers && item.targetIdentifiers.length > 0
+                ? item.targetIdentifiers.join(", ")
+                : "N/A",
+            ]}
+            keyExtractor={(item) => item.id}
+            searchPlaceholder="Search message content or target identifiers..."
+            searchTerm={searchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setPage(0);
+            }}
+            currentPage={page + 1}
+            totalPages={totalPages}
+            onPageChange={(newPage) => setPage(newPage - 1)}
+          />
         </div>
       ) : (
-        <p className="text-gray-600">No promotional notification logs found.</p>
+        <EmptyState
+          icon={BellOff}
+          title="No logs yet"
+          description={searchTerm ? "No results found for your search criteria. Try a different search term." : "Once you send a broadcast, its details and status will appear here."}
+          buttonText={searchTerm ? "Clear Search" : "Send New"}
+          onButtonClick={searchTerm ? () => setSearchTerm('') : () => navigate('/admin/promotional-notifications')}
+        />
       )}
-
-      {/* Pagination Controls */}
-      <div className="flex justify-between items-center mt-4">
-        <button
-          onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
-          disabled={page === 0}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md disabled:bg-gray-300"
-        >
-          Previous
-        </button>
-        <span>
-          Page {page + 1} of {totalPages}
-        </span>
-        <button
-          onClick={() => setPage((prev) => Math.min(prev + 1, totalPages - 1))}
-          disabled={page >= totalPages - 1}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md disabled:bg-gray-300"
-        >
-          Next
-        </button>
-      </div>
     </div>
   );
 }

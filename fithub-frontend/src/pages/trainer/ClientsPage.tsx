@@ -7,10 +7,8 @@ import {
   useCurrentAssignedWorkoutPlanForMember,
   useCancelAssignedWorkoutPlan,
 } from "../../hooks/useAssignedWorkoutPlans";
-
-
-import AssignWorkoutPlanModal from "../../modals/AssignWorkoutPlanModal"; // Will create this modal
-
+import Table from "../../components/Table";
+import AssignWorkoutPlanModal from "../../modals/AssignWorkoutPlanModal";
 
 interface Client {
   id: number;
@@ -24,6 +22,11 @@ export default function ClientsPage() {
   const [errorUser, setErrorUser] = useState<string | null>(null);
   const [showAssignPlanModal, setShowAssignPlanModal] = useState(false);
   const [selectedClientForPlan, setSelectedClientForPlan] = useState<number | null>(null);
+
+  /* SEARCH AND PAGINATION STATE */
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10; // You can adjust this number
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -65,6 +68,18 @@ export default function ClientsPage() {
   // Fetch all workout plans created by this trainer, or all active plans
   const { data: allWorkoutPlans } = useAllWorkoutPlans(trainerId); // Fetch plans created by this trainer
 
+  /* FILTER AND PAGINATE CLIENTS */
+  const filteredClients = clients?.filter(client =>
+    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    client.email.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const paginatedClients = filteredClients.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
 
   if (loadingUser || isLoadingClients) {
     return <p className="text-gray-600 mt-6">Loading clients...</p>;
@@ -91,38 +106,83 @@ export default function ClientsPage() {
 
       {/* Table */}
       <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Plan</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {clients && clients.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                  No clients found.
-                </td>
-              </tr>
-            ) : (
-              clients?.map((client, index) => (
-                <ClientRow
-                  key={client.id}
-                  client={client}
-                  index={index}
-                  onAssignPlanClick={() => {
-                    setSelectedClientForPlan(client.id);
-                    setShowAssignPlanModal(true);
-                  }}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+        {isLoadingClients ? (
+          <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Loading clients...</div>
+        ) : isErrorClients ? (
+          <div className="px-6 py-4 whitespace-nowrap text-sm text-red-600 text-center">Failed to load clients</div>
+        ) : paginatedClients.length === 0 ? (
+          <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No clients found.</div>
+        ) : (
+          <Table
+            headers={["#", "Name", "Email", "Assigned Plan", "Actions"]}
+            columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-3/12', 'w-3/12 text-center']}
+            data={paginatedClients}
+            renderCells={(client, index) => {
+              const {
+                data: currentAssignedPlan,
+                isLoading: isLoadingAssignedPlan,
+                refetch: refetchAssignedPlan,
+              } = useCurrentAssignedWorkoutPlanForMember(client.id);
+
+              const cancelPlanMutation = useCancelAssignedWorkoutPlan();
+
+              const handleCancelPlan = async (e: React.MouseEvent) => {
+                e.stopPropagation();
+                if (!currentAssignedPlan || !confirm("Are you sure you want to cancel this assigned plan?")) {
+                  return;
+                }
+                try {
+                  await cancelPlanMutation.mutateAsync(currentAssignedPlan.id);
+                  alert("Assigned plan cancelled successfully!");
+                  refetchAssignedPlan();
+                } catch (err: any) {
+                  alert(`Failed to cancel plan: ${err.message}`);
+                }
+              };
+
+              return [
+                index + 1 + (currentPage - 1) * itemsPerPage,
+                <span className="font-medium">{client.name}</span>,
+                client.email,
+                isLoadingAssignedPlan ? (
+                  "Loading..."
+                ) : currentAssignedPlan ? (
+                  `${currentAssignedPlan.workoutPlan.name} (${currentAssignedPlan.status})`
+                ) : (
+                  "No Active Plan"
+                ),
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedClientForPlan(client.id);
+                      setShowAssignPlanModal(true);
+                    }}
+                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Assign Plan
+                  </button>
+                  {currentAssignedPlan && (
+                    <button
+                      onClick={handleCancelPlan}
+                      disabled={cancelPlanMutation.isPending}
+                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                      Cancel Plan
+                    </button>
+                  )}
+                </div>,
+              ];
+            }}
+            keyExtractor={(client) => client.id}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            searchPlaceholder="Search clients by name or email..."
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+          />
+        )}
       </div>
 
       {showAssignPlanModal && selectedClientForPlan && (
@@ -143,76 +203,5 @@ export default function ClientsPage() {
         />
       )}
     </div>
-  );
-}
-
-// --- ClientRow Component ---
-interface ClientRowProps {
-  client: Client;
-  index: number;
-  onAssignPlanClick: () => void;
-}
-
-function ClientRow({ client, index, onAssignPlanClick }: ClientRowProps) {
-  const {
-    data: currentAssignedPlan,
-    isLoading: isLoadingAssignedPlan,
-    refetch: refetchAssignedPlan,
-  } = useCurrentAssignedWorkoutPlanForMember(client.id);
-
-  const cancelPlanMutation = useCancelAssignedWorkoutPlan();
-
-  const handleCancelPlan = async () => {
-    if (!currentAssignedPlan || !confirm("Are you sure you want to cancel this assigned plan?")) {
-      return;
-    }
-    try {
-      await cancelPlanMutation.mutateAsync(currentAssignedPlan.id);
-      alert("Assigned plan cancelled successfully!");
-      refetchAssignedPlan();
-    } catch (err: any) {
-      alert(`Failed to cancel plan: ${err.message}`);
-    }
-  };
-
-
-  return (
-    <>
-      <tr className="border-b hover:bg-gray-50 transition">
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.name}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.email}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-          {isLoadingAssignedPlan ? (
-            "Loading..."
-          ) : currentAssignedPlan ? (
-            `${currentAssignedPlan.workoutPlan.name} (${currentAssignedPlan.status})`
-          ) : (
-            "No Active Plan"
-          )}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <div className="flex gap-2">
-            <button
-              onClick={onAssignPlanClick}
-              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Assign Plan
-            </button>
-            {currentAssignedPlan && (
-              <button
-                onClick={handleCancelPlan}
-                disabled={cancelPlanMutation.isPending}
-                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Cancel Plan
-              </button>
-            )}
-            {/* Add button to view workout logs */}
-          </div>
-        </td>
-      </tr>
-      {/* Expandable row for workout logs can be added here */}
-    </>
   );
 }

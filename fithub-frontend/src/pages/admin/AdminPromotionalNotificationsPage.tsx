@@ -7,6 +7,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"; // Ensure u
 import { useToast } from "../../components/ToastProvider"; // Import useToast
 import { TargetType } from "../../types/TargetType"; // Import TargetType enum
 import type { PromotionalNotificationRequest } from "../../types/Notification"; // Import PromotionalNotificationRequest type
+import { Megaphone, Send } from 'lucide-react'; // Import the icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 export default function AdminPromotionalNotificationsPage() {
   const queryClient = useQueryClient();
@@ -107,7 +109,11 @@ export default function AdminPromotionalNotificationsPage() {
   }; // Closing brace for handleSubmit
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6 text-[var(--color-text)]">Admin Promotional Notifications</h1>
+      <PageHeader
+        icon={Megaphone}
+        title="Broadcast"
+        subtitle="Send promotional messages to members and trainers."
+      />
 
       <div className="bg-white shadow-md rounded-lg p-6 max-w-md">
         <form onSubmit={handleSubmit}>
@@ -125,7 +131,7 @@ export default function AdminPromotionalNotificationsPage() {
                 setMessageContent(text);
                 setMessageCharCount(text.length);
               }}
-              placeholder="Enter your promotional message here..."
+              placeholder="Enter your broadcast message here..."
               required
             ></textarea>
             <p className="text-sm text-gray-500 mt-1">
@@ -234,21 +240,21 @@ export default function AdminPromotionalNotificationsPage() {
 
           <button
             type="submit"
-            className="w-full bg-[var(--color-primary)] text-white py-2 px-4 rounded-md hover:bg-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 transition-colors"
+            className="w-full bg-[var(--color-primary)] text-white py-2 px-4 rounded-md hover:bg-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 transition-colors flex items-center justify-center gap-2"
             disabled={sendNotificationMutation.isPending || imageUploadMutation.isPending || !messageContent.trim() || (selectedTargetType === TargetType.SPECIFIC_PHONES && !specificTargetInput.trim())} // Use messageContent and enum
           >
-            {sendNotificationMutation.isPending ? "Sending..." : "Send Promotional Notification"}
+            {sendNotificationMutation.isPending ? "Sending..." : <> <Send size={20} /> Send Broadcast</>}
           </button>
         </form>
         {sendNotificationMutation.isSuccess && (
           <div className="mt-4 text-center">
-            <p className="text-sm text-green-600 mb-2">Notification sent successfully!</p>
+            <p className="text-sm text-green-600 mb-2">Broadcast notification sent successfully!</p>
             <Link 
               to="/admin/notifications/logs" 
               className="text-[var(--color-primary)] hover:underline text-sm font-medium"
               onClick={() => sendNotificationMutation.reset()} // Reset state to allow sending new notification
             >
-              View Notification Logs
+              View Broadcast Logs
             </Link>
           </div>
         )}
@@ -258,10 +264,10 @@ export default function AdminPromotionalNotificationsPage() {
         isOpen={showConfirmationModal}
         onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleConfirmSend}
-        title="Confirm Promotional Notification"
+        title="Confirm Broadcast"
         message={
           <>
-            <p>You are about to send the following promotional notification:</p>
+            <p>You are about to send the following broadcast notification:</p>
             <p className="mt-2 font-semibold">Message:</p>
             <p className="p-2 border rounded-md bg-gray-50">{messageContent}</p> // Use messageContent
             <p className="mt-2 font-semibold">Target:</p>

@@ -10,7 +10,7 @@ import type { PromotionalNotificationRequest } from "../../types/Notification"; 
 import { Megaphone, Send } from 'lucide-react'; // Import the icon
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
-export default function AdminPromotionalNotificationsPage() {
+export default function BroadcastPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast(); // Initialize useToast
   const [showConfirmationModal, setShowConfirmationModal] = useState(false); // State for confirmation modal
@@ -53,13 +53,13 @@ export default function AdminPromotionalNotificationsPage() {
         }
       } else {
         // Explicit failure from the backend
-        showToast(result.message || "Failed to send promotional notification.", "error");
+        showToast(result.message || "Failed to send broadcast.", "error");
       }
       queryClient.invalidateQueries({ queryKey: ["adminNotificationLogs"] });
     },
     onError: (error: any) => {
       setShowConfirmationModal(false);
-      showToast(error?.message || "Failed to send promotional notification.", "error");
+      showToast(error?.message || "Failed to send broadcast.", "error");
     },
   });
 
@@ -248,7 +248,7 @@ export default function AdminPromotionalNotificationsPage() {
         </form>
         {sendNotificationMutation.isSuccess && (
           <div className="mt-4 text-center">
-            <p className="text-sm text-green-600 mb-2">Broadcast notification sent successfully!</p>
+            <p className="text-sm text-green-600 mb-2">Broadcast sent successfully!</p>
             <Link 
               to="/admin/notifications/logs" 
               className="text-[var(--color-primary)] hover:underline text-sm font-medium"
@@ -267,7 +267,7 @@ export default function AdminPromotionalNotificationsPage() {
         title="Confirm Broadcast"
         message={
           <>
-            <p>You are about to send the following broadcast notification:</p>
+            <p>You are about to send the following broadcast:</p>
             <p className="mt-2 font-semibold">Message:</p>
             <p className="p-2 border rounded-md bg-gray-50">{messageContent}</p> // Use messageContent
             <p className="mt-2 font-semibold">Target:</p>

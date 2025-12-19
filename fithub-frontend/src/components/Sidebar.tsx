@@ -1,4 +1,4 @@
-import { Home, Users, Dumbbell, CreditCard, Calendar, Settings, LogOut, BarChart3, Megaphone, ClipboardList, Package, ListChecks, Book, ClipboardCheck, type LucideProps } from 'lucide-react';
+import { Home, Users, Dumbbell, CreditCard, Calendar, Settings, LogOut, BarChart3, Megaphone, ClipboardList, Package, ListChecks, Book, ClipboardCheck, User, type LucideProps } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import type { ForwardRefExoticComponent, RefAttributes, SVGProps } from 'react'; // Import necessary types with 'type' keyword
 
@@ -34,14 +34,14 @@ export function Sidebar({ userType }: SidebarProps) {
         { path: '/admin/notifications/send', label: 'Broadcast', icon: Megaphone },
         { path: '/admin/notifications/logs', label: 'Notification Logs', icon: ListChecks },
         { path: '/admin/whatsapp-config', label: 'WhatsApp Config', icon: Settings }, // New link for WhatsApp config
-        { path: '/admin/profile', label: 'Profile', icon: Settings },
+        { path: '/admin/profile', label: 'Profile', icon: User },
       ];
     } else if (userType === 'trainer') {
       return [
         { path: '/trainer', label: 'Dashboard', icon: Home },
         { path: '/trainer/clients', label: 'My Clients', icon: Users, badge: '24' },
         { path: '/trainer/schedule', label: 'Schedule', icon: Calendar, badge: '8' },
-        { path: '/trainer/profile', label: 'Profile', icon: Settings },
+        { path: '/trainer/profile', label: 'Profile', icon: User },
       ];
     } else if (userType === 'member') {
       return [
@@ -51,7 +51,7 @@ export function Sidebar({ userType }: SidebarProps) {
         { path: '/member/subscriptions', label: 'My Subscription', icon: CreditCard },
         { path: '/member/mark-attendance', label: 'Mark Attendance', icon: ClipboardCheck },
         { path: '/member/schedule', label: 'Schedule', icon: Calendar },
-        { path: '/member/profile', label: 'Profile', icon: Settings },
+        { path: '/member/profile', label: 'Profile', icon: User },
       ];
     } else {
       return []; // Return an empty array if userType is null or unrecognized

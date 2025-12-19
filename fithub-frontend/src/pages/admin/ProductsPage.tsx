@@ -169,7 +169,7 @@ export default function ProductsPage() {
     return <p className="text-red-600 text-lg">{error}</p>;
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={ShoppingCart}
         title="Products"
@@ -177,41 +177,66 @@ export default function ProductsPage() {
         actions={
           <button
             onClick={() => openModal()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm flex items-center gap-2"
           >
             + Add Product
           </button>
         }
       />
 
-      <div className="bg-white shadow rounded-lg p-6 overflow-auto">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         {loading ? (
-          <div className="p-6 text-center">Loading products...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading products...</p>
+            </div>
+          </div>
         ) : error ? (
-          <div className="p-6 text-center text-red-600">Error: {error}</div>
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <p className="text-red-600 text-lg font-medium mb-4">Error: {error}</p>
+              <button
+                onClick={loadProducts}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
         ) : paginatedProducts.length === 0 ? (
-          <div className="text-center text-gray-500 p-6">No products found.</div>
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-3">
+              <ShoppingCart size={48} className="mx-auto" />
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No products found</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {searchTerm ? 'Try adjusting your search terms' : 'Add products to get started'}
+            </p>
+          </div>
         ) : (
           <Table
             headers={["#", "Name", "Price", "Qty", "Category", "Actions"]}
             columnClasses={['w-1/12 text-center', 'w-3/12', 'w-2/12', 'w-1/12', 'w-2/12', 'w-3/12 text-center']}
             data={paginatedProducts}
             renderCells={(p, index) => [
-              index + 1 + (currentPage - 1) * itemsPerPage,
-              <span className="font-semibold">{p.name}</span>,
-              `₹${p.price}`,
-              p.quantity,
-              p.category,
+              <span className="text-gray-500 font-medium">{index + 1 + (currentPage - 1) * itemsPerPage}</span>,
+              <span className="font-semibold text-gray-900">{p.name}</span>,
+              <span className="text-gray-900 font-medium">₹{p.price}</span>,
+              <span className={`font-medium ${
+                p.quantity < 10 ? 'text-red-600' : p.quantity < 50 ? 'text-yellow-600' : 'text-green-600'
+              }`}>{p.quantity}</span>,
+              <span className="text-gray-600">{p.category}</span>,
               <div className="flex gap-2 justify-center">
                 <button
                   onClick={() => openModal(p)}
-                  className="px-3 py-1 bg-green-600 text-white rounded"
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => deleteProduct(p.id)}
-                  className="px-3 py-1 bg-red-600 text-white rounded"
+                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-colors"
                 >
                   Delete
                 </button>

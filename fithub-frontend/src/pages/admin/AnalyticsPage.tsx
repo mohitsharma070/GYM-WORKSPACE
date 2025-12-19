@@ -25,21 +25,53 @@ export default function AnalyticsPage() {
   const loading = analyticsQuery.isLoading || trendQuery.isLoading;
   const error = analyticsQuery.error || trendQuery.error;
 
-  if (loading) return <p className="text-gray-600 mt-10">Loading analytics…</p>;
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          icon={BarChart}
+          title="Analytics"
+          subtitle="View your gym's performance and trends."
+        />
+        
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="animate-pulse space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error)
     return (
-      <div className="mt-10">
-        <p className="text-red-600">Unable to load analytics data.</p>
-        <button
-          onClick={() => {
-            analyticsQuery.refetch();
-            trendQuery.refetch();
-          }}
-          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Retry
-        </button>
+      <div className="space-y-8">
+        <PageHeader
+          icon={BarChart}
+          title="Analytics"
+          subtitle="View your gym's performance and trends."
+        />
+        
+        <div className="bg-white rounded-lg p-8 shadow-sm text-center">
+          <div className="max-w-md mx-auto">
+            <p className="text-red-600 text-lg font-medium mb-4">Unable to load analytics data</p>
+            <button
+              onClick={() => {
+                analyticsQuery.refetch();
+                trendQuery.refetch();
+              }}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
 
@@ -51,7 +83,7 @@ export default function AnalyticsPage() {
 
   if (noData) {
     return (
-      <div>
+      <div className="space-y-8">
         <PageHeader
           icon={BarChart}
           title="Analytics"
@@ -67,16 +99,18 @@ export default function AnalyticsPage() {
             trendQuery.refetch();
           }}
         />
-        <EmptyState
-          icon={BarChart} // Using BarChart icon for consistency
-          title="No analytics data available"
-          description={`There's no data for ${selectedMonth}/${selectedYear}. Try selecting a different month or year.`}
-          buttonText="Reset to Current Month"
-          onButtonClick={() => {
-            setSelectedMonth(now.getMonth() + 1);
-            setSelectedYear(now.getFullYear());
-          }}
-        />
+        <div className="bg-white rounded-lg p-8 shadow-sm">
+          <EmptyState
+            icon={BarChart}
+            title="No analytics data available"
+            description={`There's no data for ${selectedMonth}/${selectedYear}. Try selecting a different month or year.`}
+            buttonText="Reset to Current Month"
+            onButtonClick={() => {
+              setSelectedMonth(now.getMonth() + 1);
+              setSelectedYear(now.getFullYear());
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -99,7 +133,7 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={BarChart}
         title="Analytics"
@@ -121,11 +155,11 @@ export default function AnalyticsPage() {
       {/* STAT CARDS */}
       <AnalyticsStatCards stats={stats} />
 
-      <RevenueChart data={revenueChartData} />
-
-      <MemberChart data={memberChartData} />
-
-      <TrendChart data={trend} />
+      <div className="space-y-8">
+        <RevenueChart data={revenueChartData} />
+        <MemberChart data={memberChartData} />
+        <TrendChart data={trend} />
+      </div>
     </div>
   );
 }

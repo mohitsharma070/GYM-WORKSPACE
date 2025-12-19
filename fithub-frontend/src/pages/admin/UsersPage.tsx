@@ -328,7 +328,7 @@ export default function UsersPage() {
     <div className="flex gap-2 justify-center">
       {/* EDIT USER BUTTON */}
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => {
                       setSelectedUser(user);
@@ -351,9 +351,13 @@ export default function UsersPage() {
                     <Trash size={16} /> Delete
                   </Button>
     </div>,
-    <button className="hover:text-black">
-      {openRowIndex === index ? "▴" : "▾"}
-    </button>,
+    <span
+      className={`inline-block transform transition-transform ${
+        openRowIndex === index ? "rotate-180" : ""
+      }`}
+    >
+      ▼
+    </span>,
   ];
 
   const renderExpandedUserContent = (user: User, index: number) => {
@@ -398,7 +402,7 @@ export default function UsersPage() {
 
             <div className="mt-3 flex gap-3">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => {
                               setEditPlanMemberId(user.id);
@@ -485,24 +489,30 @@ export default function UsersPage() {
     );
   };
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={Users}
         title="Members"
         subtitle="Manage gym members and their details."
         actions={
-          <button
+          <Button
             onClick={() => setShowAddUserModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2"
+            className="bg-green-600 hover:bg-green-700"
+            size="default"
           >
-            <Plus size={18} /> Add User
-          </button>
+            <Plus size={18} className="mr-2" /> Add Member
+          </Button>
         }
       />
 
-      <div className="bg-white shadow rounded p-6 overflow-x-auto">
+      <div className="bg-white shadow-sm rounded-lg p-6">
         {usersQuery.isLoading ? (
-          <div className="p-6 text-center">Loading users...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading members...</p>
+            </div>
+          </div>
         ) : (
           <Table
             headers={tableHeaders}
@@ -513,7 +523,7 @@ export default function UsersPage() {
             keyExtractor={(user) => user.id}
             openRowIndex={openRowIndex}
             toggleRow={toggleRow}
-            searchPlaceholder="Search users by name or email..."
+            searchPlaceholder="Search members by name or email..."
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             currentPage={currentPage}
@@ -582,30 +592,32 @@ export default function UsersPage() {
 
       {/* CONFIRM REACTIVATION */}
       {deactivatedEmail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Reactivate Account?</h2>
-            <p>
-              An account with the email <strong>{deactivatedEmail}</strong> is
-              currently deactivated.
-            </p>
-            <p className="mt-2">Would you like to reactivate it?</p>
-            <div className="mt-6 flex justify-end gap-4">
-              <button
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Reactivate Account?</h2>
+            <div className="text-gray-600 space-y-3">
+              <p>
+                An account with the email <strong className="text-gray-900">{deactivatedEmail}</strong> is
+                currently deactivated.
+              </p>
+              <p>Would you like to reactivate it?</p>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <Button
+                variant="outline"
                 onClick={() => setDeactivatedEmail(null)}
-                className="px-4 py-2 bg-gray-300 rounded"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
                 onClick={() => {
                   reactivateUserMutation.mutate(deactivatedEmail);
                   setDeactivatedEmail(null);
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded"
               >
                 Reactivate
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -50,53 +50,56 @@ export default function AdminWhatsAppConfigPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className="space-y-8">
       <PageHeader
         icon={MessageSquareText}
         title="WhatsApp Configuration"
         subtitle="Configure Meta WhatsApp Business API credentials."
       />
-      <div className="bg-white shadow-md rounded-lg p-6 max-w-md">
-        <p className="mb-4 text-sm text-gray-600">
-          Securely configure the Meta WhatsApp Business API credentials. These credentials are sent to the
-          backend once for storage and are never displayed again.
-        </p>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+      <div className="bg-white shadow-sm rounded-lg p-8 max-w-2xl">
+        <div className="mb-6">
+          <p className="text-gray-600 leading-relaxed">
+            Securely configure the Meta WhatsApp Business API credentials. These credentials are sent to the
+            backend once for storage and are never displayed again.
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
             <label htmlFor="apiUrl" className="block text-sm font-medium text-gray-700 mb-2">
-              WhatsApp API URL:
+              WhatsApp API URL
             </label>
             <input
               type="text"
               id="apiUrl"
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
               placeholder="e.g., https://graph.facebook.com/v19.0/"
               required
             />
           </div>
-          <div className="mb-4">
+          <div>
             <label htmlFor="accessToken" className="block text-sm font-medium text-gray-700 mb-2">
-              WhatsApp Access Token:
+              WhatsApp Access Token
             </label>
             <input
               type="password" // Use type="password" for security
               id="accessToken"
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={accessToken}
               onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="Enter your access token"
               required
             />
           </div>
-          <div className="mb-4">
+          <div>
             <label htmlFor="phoneNumberId" className="block text-sm font-medium text-gray-700 mb-2">
-              WhatsApp Phone Number ID:
+              WhatsApp Phone Number ID
             </label>
             <input
               type="text"
               id="phoneNumberId"
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={phoneNumberId}
               onChange={(e) => setPhoneNumberId(e.target.value)}
               placeholder="e.g., 10XXXXXXXXXXX"
@@ -104,13 +107,20 @@ export default function AdminWhatsAppConfigPage() {
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="pt-4">
             <button
               type="submit"
-              className="w-full bg-[var(--color-primary)] text-white py-2 px-4 rounded-md hover:bg-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-sm"
               disabled={isLoading}
             >
-              {isLoading ? 'Saving...' : 'Save Credentials'}
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save Credentials'
+              )}
             </button>
           </div>
         </form>

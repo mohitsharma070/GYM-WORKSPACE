@@ -26,18 +26,20 @@ export const StatCard: React.FC<StatCardProps> = ({
                            microMetricType === 'negative' ? 'text-red-600' : 'text-gray-500';
 
   return (
-    <div className="bg-white shadow p-6 rounded-lg flex flex-col justify-between h-full">
+    <div className="bg-white shadow-sm border border-gray-200 p-6 rounded-lg flex flex-col justify-between h-full hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-700 text-lg">{title}</h3>
+        <h3 className="font-medium text-gray-700 text-base">{title}</h3>
         {Icon && (
-          <div className="p-2 bg-blue-100 rounded-full text-blue-600">
-            <Icon size={20} />
+          <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+            <Icon size={18} />
           </div>
         )}
       </div>
-      <p className="text-3xl font-bold mb-1">{currency}{value}</p>
-      {description && <p className="text-sm text-gray-500 mb-2">{description}</p>}
-      {microMetric && <p className={`text-sm font-medium ${microMetricColor}`}>{microMetric}</p>}
+      <div className="flex-1">
+        <p className="text-2xl font-bold text-gray-900 mb-2">{currency}{value}</p>
+        {description && <p className="text-sm text-gray-500 mb-2">{description}</p>}
+        {microMetric && <p className={`text-sm font-medium ${microMetricColor}`}>{microMetric}</p>}
+      </div>
     </div>
   );
 };

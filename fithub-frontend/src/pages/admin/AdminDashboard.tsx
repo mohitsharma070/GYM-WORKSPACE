@@ -60,17 +60,22 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="mt-10">
+      <div className="space-y-8">
         <PageHeader
           icon={LayoutDashboard}
           title="Admin Dashboard"
           subtitle="Overview of your gym's performance and user activities."
         />
 
-        <div className="animate-pulse grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-gray-200 rounded"></div>
-          ))}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="animate-pulse space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+          </div>
         </div>
       </div>
     );
@@ -78,28 +83,38 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="mt-10">
-        <p className="text-red-600">{error}</p>
-        <button
-          onClick={loadDashboard}
-          className="mt-3 px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Retry
-        </button>
+      <div className="space-y-8">
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Admin Dashboard"
+          subtitle="Overview of your gym's performance and user activities."
+        />
+        
+        <div className="bg-white rounded-lg p-8 shadow-sm text-center">
+          <div className="max-w-md mx-auto">
+            <p className="text-red-600 text-lg font-medium mb-4">{error}</p>
+            <button
+              onClick={loadDashboard}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={LayoutDashboard}
         title="Admin Dashboard"
         subtitle="Overview of your gym's performance and user activities."
       />
 
-      <div className="bg-white shadow-sm rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">Dashboard Overview</h2>
+      <div className="bg-white shadow-sm rounded-lg p-8">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard 
             title="Total Members"
@@ -122,50 +137,60 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-            <div className="bg-white shadow-sm rounded-lg p-6 mb-8">
-              <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+            <div className="bg-white shadow-sm rounded-lg p-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <a
                   href="/members"
-                  className="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm hover:bg-blue-100 transition flex items-center space-x-3"
+                  className="group bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm hover:bg-blue-100 hover:shadow-md transition-all flex items-center space-x-4"
                 >
-                  <Users size={24} className="text-blue-600" />
+                  <div className="p-3 bg-blue-100 rounded-full text-blue-600 group-hover:bg-blue-200 transition-colors">
+                    <Users size={24} />
+                  </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Manage Members</h3>
-                    <p className="text-gray-600 text-sm mt-1">View and manage all members.</p>
+                    <h3 className="font-semibold text-lg text-gray-900">Manage Members</h3>
+                    <p className="text-gray-600 text-sm mt-1">View and manage all members</p>
                   </div>
                 </a>
       
                 <a
                   href="/trainers"
-                  className="bg-green-50 border border-green-200 p-5 rounded-lg shadow-sm hover:bg-green-100 transition flex items-center space-x-3"
+                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4"
                 >
-                  <Dumbbell size={24} className="text-green-600" />
+                  <div className="p-3 bg-green-100 rounded-full text-green-600 group-hover:bg-green-200 transition-colors">
+                    <Dumbbell size={24} />
+                  </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Manage Trainers</h3>
-                    <p className="text-gray-600 text-sm mt-1">View and manage all trainers.</p>
+                    <h3 className="font-semibold text-lg text-gray-900">Manage Trainers</h3>
+                    <p className="text-gray-600 text-sm mt-1">View and manage all trainers</p>
                   </div>
                 </a>
       
                 <a
                   href="/admins"
-                  className="bg-purple-50 border border-purple-200 p-5 rounded-lg shadow-sm hover:bg-purple-100 transition flex items-center space-x-3"
+                  className="group bg-purple-50 border border-purple-200 p-6 rounded-lg shadow-sm hover:bg-purple-100 hover:shadow-md transition-all flex items-center space-x-4"
                 >
-                  <UserCog size={24} className="text-purple-600" />
+                  <div className="p-3 bg-purple-100 rounded-full text-purple-600 group-hover:bg-purple-200 transition-colors">
+                    <UserCog size={24} />
+                  </div>
                   <div>
-                    <h3 className="font-semibold text-lg">Manage Admins</h3>
-                    <p className="text-gray-600 text-sm mt-1">Admin access controls.</p>
+                    <h3 className="font-semibold text-lg text-gray-900">Manage Admins</h3>
+                    <p className="text-gray-600 text-sm mt-1">Admin access controls</p>
                   </div>
                 </a>
               </div>
             </div>
       {/* Recent Members from available data */}
-      <div className="bg-white shadow-sm rounded-lg p-6 mb-8">
-        <h2 className="text-xl font-bold mb-4">Recent Members</h2>
+      <div className="bg-white shadow-sm rounded-lg p-8">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Recent Members</h2>
 
         {members.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">
-            No members found.
+          <div className="p-8 text-center">
+            <div className="text-gray-400 mb-3">
+              <Users size={48} className="mx-auto" />
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No members found</p>
+            <p className="text-gray-400 text-sm mt-1">Members will appear here once registered</p>
           </div>
         ) : (
           <Table
@@ -173,9 +198,9 @@ export default function AdminDashboard() {
             data={members.slice(0, 5)}
             columnClasses={['w-1/12 text-center', 'w-4/12 text-left', 'w-7/12 text-left']}
             renderCells={(m, index) => [
-              index + 1,
-              <span className="font-medium">{m.name}</span>,
-              m.email,
+              <span className="text-gray-500 font-medium">{index + 1}</span>,
+              <span className="font-semibold text-gray-900">{m.name}</span>,
+              <span className="text-gray-600">{m.email}</span>,
             ]}
             keyExtractor={(m) => m.id}
             currentPage={1} // Static for embedded table

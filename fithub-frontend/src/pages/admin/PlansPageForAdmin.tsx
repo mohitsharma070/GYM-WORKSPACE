@@ -121,11 +121,54 @@ export default function PlansPageForAdmin() {
   }
 
   // UI Rendering
-  if (loading) return <p className="text-gray-600 text-lg">Loading plans...</p>;
-  if (error) return <p className="text-red-600 text-lg">{error}</p>;
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          icon={ClipboardList}
+          title="Membership Plans"
+          subtitle="Manage your gym's membership plans."
+        />
+        
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="animate-pulse space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <PageHeader
+          icon={ClipboardList}
+          title="Membership Plans"
+          subtitle="Manage your gym's membership plans."
+        />
+        
+        <div className="bg-white rounded-lg p-8 shadow-sm text-center">
+          <div className="max-w-md mx-auto">
+            <p className="text-red-600 text-lg font-medium mb-4">{error}</p>
+            <button
+              onClick={loadPlans}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={ClipboardList}
         title="Membership Plans"
@@ -133,9 +176,7 @@ export default function PlansPageForAdmin() {
         actions={
           <button
             onClick={() => openModal()}
-            className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r 
-            from-[var(--color-primary)] to-[var(--color-accent)] 
-            text-white rounded-lg shadow-md hover:opacity-90"
+            className="px-6 py-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus size={20} /> Add Plan
           </button>
@@ -147,114 +188,128 @@ export default function PlansPageForAdmin() {
         {plans.map((p) => (
           <div
             key={p.id}
-            className="bg-white shadow rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-all relative"
+            className="bg-white shadow-sm rounded-lg p-6 border border-gray-200 hover:shadow-md transition-all group relative"
           >
-            <div className="absolute top-4 right-4 p-2 bg-blue-100 rounded-full text-blue-600">
+            <div className="absolute top-4 right-4 p-2 bg-blue-100 rounded-full text-blue-600 group-hover:bg-blue-200 transition-colors">
               <ClipboardList size={20} />
             </div>
             
-            <h3 className="text-xl font-bold mb-2 pr-10">{p.name}</h3> {/* Added pr-10 for icon space */}
+            <h3 className="text-xl font-semibold text-gray-900 mb-3 pr-12">{p.name}</h3>
 
-            <p className="text-gray-600 text-sm mb-4">{p.description}</p>
+            <p className="text-gray-600 text-sm mb-6 line-clamp-2">{p.description}</p>
 
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
-                <IndianRupee size={18} className="text-green-600" />
-                <span className="font-semibold text-lg">₹{p.price}</span>
+                <div className="p-1 bg-green-100 rounded-full">
+                  <IndianRupee size={16} className="text-green-600" />
+                </div>
+                <span className="font-semibold text-lg text-gray-900">₹{p.price}</span>
               </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <Clock size={18} />
-                <span>{p.durationDays} days</span>
+              <div className="flex items-center gap-2 text-gray-600">
+                <Clock size={16} />
+                <span className="text-sm">{p.durationDays} days</span>
               </div>
             </div>
 
             {/* ACTION BUTTONS */}
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3">
               <button
                 onClick={() => openModal(p)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 
-                  bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
               >
-                <Pencil size={18} /> Edit
+                <Pencil size={16} /> Edit
               </button>
 
               <button
                 onClick={() => deletePlan(p.id)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 
-                  bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium"
               >
-                <Trash2 size={18} /> Delete
+                <Trash2 size={16} /> Delete
               </button>
             </div>
           </div>
         ))}
 
         {plans.length === 0 && (
-          <p className="text-gray-600 text-center col-span-full">
-            No plans found.
-          </p>
+          <div className="col-span-full text-center py-12">
+            <div className="text-gray-400 mb-3">
+              <ClipboardList size={48} className="mx-auto" />
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No membership plans found</p>
+            <p className="text-gray-400 text-sm mt-1">Create your first plan to get started</p>
+          </div>
         )}
       </div>
 
       {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-          <div className="bg-white p-8 rounded-xl shadow-xl w-96">
-            <h2 className="text-xl font-bold mb-4">
-              {editPlan ? "Edit Plan" : "Add Plan"}
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+              {editPlan ? "Edit Plan" : "Add New Plan"}
             </h2>
 
-            <div className="space-y-3">
-              <input
-                name="name"
-                value={form.name}
-                onChange={updateForm}
-                placeholder="Plan Name"
-                className="w-full p-2 border rounded"
-              />
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Plan Name</label>
+                <input
+                  name="name"
+                  value={form.name}
+                  onChange={updateForm}
+                  placeholder="Enter plan name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-              <input
-                name="description"
-                value={form.description}
-                onChange={updateForm}
-                placeholder="Description"
-                className="w-full p-2 border rounded"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <input
+                  name="description"
+                  value={form.description}
+                  onChange={updateForm}
+                  placeholder="Enter description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-              <input
-                name="price"
-                value={form.price}
-                onChange={updateForm}
-                type="number"
-                placeholder="Price"
-                className="w-full p-2 border rounded"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹)</label>
+                <input
+                  name="price"
+                  value={form.price}
+                  onChange={updateForm}
+                  type="number"
+                  placeholder="Enter price"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
 
-              <input
-                name="durationDays"
-                value={form.durationDays}
-                onChange={updateForm}
-                type="number"
-                placeholder="Duration (Days)"
-                className="w-full p-2 border rounded"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (Days)</label>
+                <input
+                  name="durationDays"
+                  value={form.durationDays}
+                  onChange={updateForm}
+                  type="number"
+                  placeholder="Enter duration in days"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-3 mt-8">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 border rounded-lg"
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancel
               </button>
 
               <button
                 onClick={savePlan}
-                className="px-4 py-2 bg-gradient-to-r 
-                  from-[var(--color-primary)] to-[var(--color-accent)] 
-                  text-white rounded-lg shadow-md"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
               >
-                Save
+                {editPlan ? "Update Plan" : "Create Plan"}
               </button>
             </div>
           </div>

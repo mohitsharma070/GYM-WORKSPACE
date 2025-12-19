@@ -156,42 +156,29 @@ export default function WorkoutSchedulePage() {
 }
 
 /* ------------------ SEPARATE COMPONENTS ------------------ */
+import Table from "../../components/Table";
 
 function DayCard({ day }: any) {
+    const exerciseHeaders = ["Exercise", "Body Part", "Sets", "Reps", "Rest"];
     return (
         <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
             <h3 className="text-xl font-semibold mb-3">Day {day.dayNumber}</h3>
 
-            <table className="w-full text-left border-collapse">
-                <thead>
-                    <tr className="border-b">
-                        <th className="py-2">Exercise</th>
-                        <th className="py-2">Body Part</th>
-                        <th className="py-2 text-center">Sets</th>
-                        <th className="py-2 text-center">Reps</th>
-                        <th className="py-2 text-center">Rest</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {day.exercises.map((ex: WorkoutDayExerciseDTO) => (
-                                                <ExerciseRow
-                                                    key={ex.id}
-                                                    ex={ex}
-                                                />                    ))}
-                </tbody>
-            </table>
+            <Table
+                            headers={exerciseHeaders}
+                            columnClasses={['w-3/12', 'w-3/12', 'w-2/12 text-center', 'w-2/12 text-center', 'w-2/12 text-center']}
+                            data={day.exercises}
+                            renderCells={(ex: WorkoutDayExerciseDTO) => [
+                              <span className="font-medium">{ex.exerciseName}</span>,
+                              <span className="text-gray-600">{ex.bodyPart}</span>,
+                              ex.sets,
+                              ex.reps,
+                              `${ex.restTimeInSeconds}s`,
+                            ]}
+                            keyExtractor={(ex: WorkoutDayExerciseDTO) => ex.id}                currentPage={1} // Static for embedded table
+                totalPages={1} // Static for embedded table
+                onPageChange={() => {}} // No pagination needed
+            />
         </div>
-    );
-}
-
-function ExerciseRow({ ex }: any) {
-    return (
-        <tr className="border-b hover:bg-gray-50">
-            <td className="py-3 font-medium">{ex.exerciseName}</td>
-            <td className="py-3 text-gray-600">{ex.bodyPart}</td>
-            <td className="py-3 text-center">{ex.sets}</td>
-            <td className="py-3 text-center">{ex.reps}</td>
-            <td className="py-3 text-center">{ex.restTimeInSeconds}s</td>
-        </tr>
     );
 }

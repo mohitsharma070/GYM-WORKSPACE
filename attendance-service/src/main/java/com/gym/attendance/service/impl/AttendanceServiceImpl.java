@@ -3,10 +3,13 @@ package com.gym.attendance.service.impl;
 import com.gym.attendance.client.MembershipServiceFeignClient;
 import com.gym.attendance.client.UserServiceFeignClient;
 import com.gym.attendance.entity.Attendance;
+import com.gym.attendance.client.NotificationClient;
+import com.gym.attendance.dto.NotificationRequest;
+import com.gym.attendance.exception.ResourceNotFoundException;
 import com.gym.attendance.payload.response.MembershipResponse;
+import com.gym.attendance.payload.response.UserResponse;
 import com.gym.attendance.repository.AttendanceRepository;
 import com.gym.attendance.service.AttendanceService;
-import com.gym.attendance.service.FingerprintService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -20,16 +23,10 @@ public class AttendanceServiceImpl implements AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final UserServiceFeignClient userServiceFeignClient;
     private final MembershipServiceFeignClient membershipServiceFeignClient;
-    private final FingerprintService fingerprintService;
+    private final NotificationClient notificationClient;
 
     @Override
-    public Attendance checkInWithFingerprint(String fingerprintData) {
-        Optional<Long> userIdOptional = fingerprintService.verifyFingerprint(fingerprintData);
-        if (userIdOptional.isEmpty()) {
-            throw new IllegalArgumentException("Fingerprint not recognized.");
-        }
-        Long userId = userIdOptional.get();
-
+    public Attendance checkIn(Long userId) {
         Optional<MembershipResponse> membershipOptional = membershipServiceFeignClient.findActiveMembershipByUserId(userId);
         if (membershipOptional.isEmpty()) {
             throw new IllegalArgumentException("No active membership found for user with ID: " + userId);
@@ -37,8 +34,49 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         Attendance attendance = new Attendance();
         attendance.setUserId(userId);
-        attendance.setTimestamp(LocalDateTime.now());
-        return attendanceRepository.save(attendance);
+        attendance.setCheckInTime(LocalDateTime.now());
+        Attendance saved = attendanceRepository.save(attendance);
+
+        // Send WhatsApp notification for attendance check-in
+        try {
+            UserResponse user = userServiceFeignClient.getUserById(userId);
+            if (user != null && user.getPhone() != null && !user.getPhone().isBlank()) {
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(user.getPhone());
+                notification.setType("ATTENDANCE_CHECK_IN");
+                notification.setMessage("Hi " + user.getName() + ", your check-in has been recorded. Welcome!");
+                notificationClient.sendNotification(notification);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send attendance check-in notification: " + e.getMessage());
+        }
+
+        return saved;
+    }
+
+    @Override
+    public Attendance checkOut(Long id) {
+        Attendance attendance = attendanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found with id: " + id));
+
+        attendance.setCheckOutTime(LocalDateTime.now());
+        Attendance saved = attendanceRepository.save(attendance);
+
+        // Send WhatsApp notification for attendance check-out
+        try {
+            UserResponse user = userServiceFeignClient.getUserById(attendance.getUserId());
+            if (user != null && user.getPhone() != null && !user.getPhone().isBlank()) {
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(user.getPhone());
+                notification.setType("ATTENDANCE_CHECK_OUT");
+                notification.setMessage("Hi " + user.getName() + ", your check-out has been recorded. Have a great day!");
+                notificationClient.sendNotification(notification);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send attendance check-out notification: " + e.getMessage());
+        }
+
+        return saved;
     }
 
     @Override

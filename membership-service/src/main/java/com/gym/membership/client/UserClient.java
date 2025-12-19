@@ -58,6 +58,7 @@ public interface UserClient {
         public String name;
         public String email;
         public String role;
+        public String phone;
     }
 
     // Matches JSON returned from /auth/stats/members

@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import { LayoutDashboard, Users, Dumbbell, UserRound, UserCog } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import { StatCard } from '../../components/StatCard'; // Import StatCard
+import Table from '../../components/Table';
 
 interface User {
   id: number;
@@ -57,7 +61,11 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="mt-10">
-        <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+        <PageHeader
+          icon={LayoutDashboard}
+          title="Admin Dashboard"
+          subtitle="Overview of your gym's performance and user activities."
+        />
 
         <div className="animate-pulse grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
@@ -84,84 +92,97 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      <PageHeader
+        icon={LayoutDashboard}
+        title="Admin Dashboard"
+        subtitle="Overview of your gym's performance and user activities."
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white shadow rounded-lg p-6 border-l-4 border-blue-600">
-          <p className="text-gray-600">Total Members</p>
-          <p className="text-3xl font-bold mt-2">{members.length}</p>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-6 border-l-4 border-green-600">
-          <p className="text-gray-600">Total Trainers</p>
-          <p className="text-3xl font-bold mt-2">{trainers.length}</p>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-6 border-l-4 border-purple-600">
-          <p className="text-gray-600">Total Users</p>
-          <p className="text-3xl font-bold mt-2">{allUsers.length}</p>
+      <div className="bg-white shadow-sm rounded-lg p-6 mb-8">
+        <h2 className="text-xl font-bold mb-4">Dashboard Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard 
+            title="Total Members"
+            value={members.length}
+            icon={Users}
+            description="Registered gym members"
+          />
+          <StatCard
+            title="Total Trainers"
+            value={trainers.length}
+            icon={Dumbbell}
+            description="Certified gym trainers"
+          />
+          <StatCard
+            title="Total Users"
+            value={allUsers.length}
+            icon={UserRound}
+            description="All system users (members, trainers, admins)"
+          />
         </div>
       </div>
 
-      {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <a
-          href="/members"
-          className="bg-blue-50 border border-blue-200 p-5 rounded-lg hover:bg-blue-100 transition"
-        >
-          <h3 className="font-semibold text-lg">Manage Members</h3>
-          <p className="text-gray-600 text-sm mt-1">View and manage all members.</p>
-        </a>
-
-        <a
-          href="/trainers"
-          className="bg-green-50 border border-green-200 p-5 rounded-lg hover:bg-green-100 transition"
-        >
-          <h3 className="font-semibold text-lg">Manage Trainers</h3>
-          <p className="text-gray-600 text-sm mt-1">View and manage all trainers.</p>
-        </a>
-
-        <a
-          href="/admins"
-          className="bg-purple-50 border border-purple-200 p-5 rounded-lg hover:bg-purple-100 transition"
-        >
-          <h3 className="font-semibold text-lg">Manage Admins</h3>
-          <p className="text-gray-600 text-sm mt-1">Admin access controls.</p>
-        </a>
-      </div>
-
+            <div className="bg-white shadow-sm rounded-lg p-6 mb-8">
+              <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <a
+                  href="/members"
+                  className="bg-blue-50 border border-blue-200 p-5 rounded-lg shadow-sm hover:bg-blue-100 transition flex items-center space-x-3"
+                >
+                  <Users size={24} className="text-blue-600" />
+                  <div>
+                    <h3 className="font-semibold text-lg">Manage Members</h3>
+                    <p className="text-gray-600 text-sm mt-1">View and manage all members.</p>
+                  </div>
+                </a>
+      
+                <a
+                  href="/trainers"
+                  className="bg-green-50 border border-green-200 p-5 rounded-lg shadow-sm hover:bg-green-100 transition flex items-center space-x-3"
+                >
+                  <Dumbbell size={24} className="text-green-600" />
+                  <div>
+                    <h3 className="font-semibold text-lg">Manage Trainers</h3>
+                    <p className="text-gray-600 text-sm mt-1">View and manage all trainers.</p>
+                  </div>
+                </a>
+      
+                <a
+                  href="/admins"
+                  className="bg-purple-50 border border-purple-200 p-5 rounded-lg shadow-sm hover:bg-purple-100 transition flex items-center space-x-3"
+                >
+                  <UserCog size={24} className="text-purple-600" />
+                  <div>
+                    <h3 className="font-semibold text-lg">Manage Admins</h3>
+                    <p className="text-gray-600 text-sm mt-1">Admin access controls.</p>
+                  </div>
+                </a>
+              </div>
+            </div>
       {/* Recent Members from available data */}
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white shadow-sm rounded-lg p-6 mb-8">
         <h2 className="text-xl font-bold mb-4">Recent Members</h2>
 
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b bg-gray-100 text-left">
-              <th className="p-3">#</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Email</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {members.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="p-6 text-center text-gray-500">
-                  No members found.
-                </td>
-              </tr>
-            ) : (
-              members.slice(0, 5).map((m, index) => (
-                <tr key={m.id} className="border-b hover:bg-gray-100">
-                  <td className="p-3">{index + 1}</td>
-                  <td className="p-3 font-medium">{m.name}</td>
-                  <td className="p-3">{m.email}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+        {members.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">
+            No members found.
+          </div>
+        ) : (
+          <Table
+            headers={["#", "Name", "Email"]}
+            data={members.slice(0, 5)}
+            columnClasses={['w-1/12 text-center', 'w-4/12 text-left', 'w-7/12 text-left']}
+            renderCells={(m, index) => [
+              index + 1,
+              <span className="font-medium">{m.name}</span>,
+              m.email,
+            ]}
+            keyExtractor={(m) => m.id}
+            currentPage={1} // Static for embedded table
+            totalPages={1} // Static for embedded table
+            onPageChange={() => {}} // No pagination needed
+          />
+        )}
       </div>
     </div>
   );

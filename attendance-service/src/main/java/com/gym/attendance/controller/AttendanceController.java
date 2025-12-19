@@ -1,14 +1,12 @@
 package com.gym.attendance.controller;
 
+import com.gym.attendance.dto.CheckInRequest;
 import com.gym.attendance.entity.Attendance;
 import com.gym.attendance.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,6 +19,16 @@ public class AttendanceController {
     @Autowired
     public AttendanceController(AttendanceService attendanceService) {
         this.attendanceService = attendanceService;
+    }
+
+    @PostMapping("/check-in")
+    public ResponseEntity<Attendance> checkIn(@RequestBody CheckInRequest checkInRequest) {
+        return new ResponseEntity<>(attendanceService.checkIn(checkInRequest.getUserId()), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/check-out/{id}")
+    public ResponseEntity<Attendance> checkOut(@PathVariable Long id) {
+        return new ResponseEntity<>(attendanceService.checkOut(id), HttpStatus.OK);
     }
 
     @GetMapping

@@ -21,6 +21,10 @@ public class Subscription {
     private LocalDate startDate;
     private LocalDate endDate;
 
+    // Payment fields
+    private boolean paymentConfirmed = false;
+    private LocalDate paymentDate;
+
     @Enumerated(EnumType.STRING)
     private Status status;
 
@@ -44,4 +48,10 @@ public class Subscription {
 
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+
+    public boolean isPaymentConfirmed() { return paymentConfirmed; }
+    public void setPaymentConfirmed(boolean paymentConfirmed) { this.paymentConfirmed = paymentConfirmed; }
+
+    public LocalDate getPaymentDate() { return paymentDate; }
+    public void setPaymentDate(LocalDate paymentDate) { this.paymentDate = paymentDate; }
 }

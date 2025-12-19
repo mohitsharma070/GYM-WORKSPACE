@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface SubscriptionService {
     Subscription subscribe(SubscriptionRequest req);
+    Subscription renew(SubscriptionRequest req);
+    Subscription confirmPayment(Long subscriptionId);
     List<Subscription> getSubscriptionsByUser(Long userId);
     List<Subscription> getAllSubscriptions();
     void expireSubscriptions();

@@ -69,4 +69,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("month") int month,
             @Param("year") int year
     );
+
+    @Query(value = "SELECT * FROM users u WHERE EXTRACT(MONTH FROM u.date_of_birth) = :month AND EXTRACT(DAY FROM u.date_of_birth) = :day AND u.deleted = false", nativeQuery = true)
+    List<User> findByMonthAndDayOfBirth(@Param("month") int month, @Param("day") int day);
 }

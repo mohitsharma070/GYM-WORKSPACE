@@ -1,6 +1,8 @@
 package com.gym.workoutservice.service.impl;
 
 import com.gym.workoutservice.client.UserClient;
+import com.gym.workoutservice.client.NotificationClient;
+import com.gym.workoutservice.dto.NotificationRequest;
 import com.gym.workoutservice.client.UserClient.UserResponse;
 import com.gym.workoutservice.dto.WorkoutDayResponse;
 import com.gym.workoutservice.dto.WorkoutDayWithExercisesRequest;
@@ -40,6 +42,7 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseServiceImpl exerciseService; // For Exercise mapping
     private final UserClient userClient; // Inject UserClient
+    private final NotificationClient notificationClient;
 
     // --- Workout Plan CRUD ---
     @Override
@@ -91,6 +94,21 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
         workoutPlan.setIsActive(request.isActive() != null ? request.isActive() : workoutPlan.getIsActive());
 
         WorkoutPlan updatedPlan = workoutPlanRepository.save(workoutPlan);
+
+        // Send WhatsApp notification for workout plan updated
+        try {
+            if (updatedPlan.getCreatedByTrainerId() != null) {
+                UserResponse trainer = userClient.getUserById(updatedPlan.getCreatedByTrainerId());
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(trainer.email); // Replace with phone if available
+                notification.setType("WORKOUT_PLAN_UPDATED");
+                notification.setMessage("Hi " + trainer.name + ", the workout plan '" + updatedPlan.getName() + "' has been updated.");
+                notificationClient.sendNotification(notification);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send workout plan updated notification: " + e.getMessage());
+        }
+
         return mapToWorkoutPlanResponse(updatedPlan);
     }
 

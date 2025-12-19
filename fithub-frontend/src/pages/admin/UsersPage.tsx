@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Users, Plus, Edit, Trash, MinusCircle } from 'lucide-react'; // Import the icon
+import { Button } from '../../components/Button'; // Import Button component
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 import type { User } from "../../types/User";
 import type { Plan } from "../../types/Plan";
@@ -28,10 +31,22 @@ import EditPlanModal from "../../modals/EditPlanModal";
 import AssignProductModal from "../../modals/AssignProductModal";
 import EditUserModal from "../../modals/EditUserModal";
 
-import UserRow from "./UserRow";
+import Table from "../../components/Table";
+import Detail from "../../components/Detail";
+import Pulse from "../../components/Pulse";
+import { loadPlan } from "../../api/subscriptions";
+import { loadProducts } from "../../api/products";
+import type { ProductAssignment } from "../../types/Product";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function getDaysLeft(endDate?: string) {
+  if (!endDate) return "N/A";
+  const diff =
+    new Date(endDate).getTime() - new Date().getTime();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
 export default function UsersPage() {
@@ -74,11 +89,30 @@ export default function UsersPage() {
 
   const [newUser, setNewUser] = useState<any>(defaultUserObj);
 
+  /* SEARCH AND PAGINATION STATE */
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10; // You can adjust this number
+
   /* LOAD USERS */
   const usersQuery = useQuery<User[]>({
     queryKey: ["users"],
     queryFn: loadUsers,
   });
+
+  /* FILTER AND PAGINATE USERS */
+  const filteredUsers = usersQuery.data?.filter(user =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+
 
   /* LOAD PLANS */
   const plansQuery = useQuery<Plan[]>({
@@ -126,18 +160,40 @@ export default function UsersPage() {
       queryClient.setQueryData(["users"], (oldUsers: any) => {
         if (!oldUsers) return oldUsers;
 
-        return oldUsers.map((u: User) =>
-          u.id === vars.id
-            ? {
-                ...u,
-                ...vars.data,
-                memberDetails: {
-                  ...u.memberDetails,
-                  ...(vars.data.memberDetails || {}),
-                },
-              }
-            : u
-        );
+        return oldUsers.map((u: User) => {
+          if (u.id !== vars.id) return u;
+
+          // Separate top-level and nested properties from the form data
+          const {
+            age,
+            gender,
+            height,
+            weight,
+            goal,
+            membershipType,
+            phone,
+            ...topLevelProps
+          } = vars.data;
+
+          const memberDetailsUpdate = {
+            ...(age && { age }),
+            ...(gender && { gender }),
+            ...(height && { height }),
+            ...(weight && { weight }),
+            ...(goal && { goal }),
+            ...(membershipType && { membershipType }),
+            ...(phone && { phone }),
+          };
+
+          return {
+            ...u,
+            ...topLevelProps,
+            memberDetails: {
+              ...u.memberDetails,
+              ...memberDetailsUpdate,
+            },
+          };
+        });
       });
 
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -216,8 +272,8 @@ export default function UsersPage() {
     setOpenRowIndex((prev) => (prev === index ? null : index));
   }
 
-  /* CREATE USER */
-  async function handleCreateUser() {
+  /* ADD USER */
+  async function handleAddUser() {
     if (!newUser.name || !newUser.email || !newUser.password) {
       alert("Name, email, password required");
       return;
@@ -256,89 +312,238 @@ export default function UsersPage() {
     });
   }
 
+  /* EDIT USER */
+  async function handleEditUser(id: number, data: any) {
+    updateUserMutation.mutate({ id, data });
+  }
+
   /* UI */
+  const tableHeaders = ["#", "Name", "Email", "Phone", "Actions", "▾"];
+
+  const getUserCells = (user: User, index: number) => [
+    index + 1,
+    <span className="font-medium">{user.name}</span>,
+    user.email,
+    user.memberDetails?.phone,
+    <div className="flex gap-2 justify-center">
+      {/* EDIT USER BUTTON */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedUser(user);
+                      setShowEditUserModal(true);
+                    }}
+                  >
+                    <Edit size={16} /> Edit
+                  </Button>
+
+      {/* DELETE USER */}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm("Delete user?")) {
+                        deleteUserMutation.mutate(user.id);
+                      }
+                    }}
+                  >
+                    <Trash size={16} /> Delete
+                  </Button>
+    </div>,
+    <button className="hover:text-black">
+      {openRowIndex === index ? "▴" : "▾"}
+    </button>,
+  ];
+
+  const renderExpandedUserContent = (user: User, index: number) => {
+    const planQuery = useQuery({
+      queryKey: ["member-plan", user.id],
+      queryFn: () => loadPlan(user.id),
+      enabled: openRowIndex === index,
+    });
+
+    const productsQuery = useQuery({
+      queryKey: ["member-products", user.id],
+      queryFn: () => loadProducts(user.id),
+      enabled: openRowIndex === index,
+    });
+
+    return (
+      <>
+        {/* MEMBER DETAILS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Detail label="Age" value={user.memberDetails?.age} />
+          <Detail label="Gender" value={user.memberDetails?.gender} />
+          <Detail label="Phone" value={user.memberDetails?.phone} />
+          <Detail label="Height" value={user.memberDetails?.height} />
+          <Detail label="Weight" value={user.memberDetails?.weight} />
+          <Detail label="Goal" value={user.memberDetails?.goal} />
+        </div>
+
+        {/* PLAN SECTION */}
+        {planQuery.isLoading && <Pulse />}
+
+        {planQuery.data && (
+          <div className="mt-6 p-4 border rounded bg-white">
+            <h3 className="text-lg font-bold mb-2">Active Plan</h3>
+
+            <p><strong>Name:</strong> {planQuery.data.name}</p>
+            <p><strong>Price:</strong> ₹{planQuery.data.price}</p>
+            <p><strong>Duration:</strong> {planQuery.data.durationDays} days</p>
+            <p><strong>Description:</strong> {planQuery.data.description}</p>
+            <p><strong>Start:</strong> {planQuery.data.startDate}</p>
+            <p><strong>End:</strong> {planQuery.data.endDate}</p>
+            <p><strong>Days Left:</strong> {getDaysLeft(planQuery.data.endDate)}</p>
+
+            <div className="mt-3 flex gap-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditPlanMemberId(user.id);
+                              setShowEditPlanModal(true);
+                            }}
+                          >
+                            <Edit size={16} /> Edit Plan
+                          </Button>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm("Are you sure you want to remove this plan from the member?")) {
+                                deletePlanMutation.mutate(user.id);
+                              }
+                            }}
+                          >
+                            <MinusCircle size={16} /> Remove Plan
+                          </Button>
+            </div>
+          </div>
+        )}
+
+        {/* PRODUCT SECTION */}
+        {productsQuery.isLoading && <Pulse />}
+
+        {productsQuery.data && (
+          <div className="mt-6 p-4 border rounded bg-white">
+            <h3 className="text-lg font-bold mb-3">Assigned Products</h3>
+
+            <ul className="space-y-3">
+              {productsQuery.data.map((p: ProductAssignment) => (
+                <li
+                  key={p.id}
+                  className="p-3 border rounded bg-gray-50 flex justify-between"
+                >
+                  <div>
+                    <p><strong>Name:</strong> {p.product.name}</p>
+                    <p><strong>Category:</strong> {p.product.category}</p>
+                    <p><strong>Price:</strong> ₹{p.product.price}</p>
+                    <p><strong>Assigned:</strong> {p.assignedDate}</p>
+                  </div>
+
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm("Are you sure you want to delete this assigned product?")) {
+                                    deleteAssignedProductMutation.mutate(p.id);
+                                  }
+                                }}
+                              >
+                                <MinusCircle size={16} /> Delete Product
+                              </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* ASSIGN PLAN BUTTON */}
+        <button
+          onClick={() => {
+            setEditPlanMemberId(user.id);
+            setShowEditPlanModal(true);
+          }}
+          className="mt-5 px-4 py-2 bg-purple-600 text-white rounded mr-3"
+        >
+          + Assign Plan
+        </button>
+
+        {/* ASSIGN PRODUCT BUTTON */}
+        <button
+          onClick={() => {
+            setSelectedMemberId(user.id);
+            setShowProductModal(true);
+          }}
+          className="mt-5 px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          + Assign Product
+        </button>
+      </>
+    );
+  };
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Members</h1>
-
-        <button
-          onClick={() => setShowAddUserModal(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded"
-        >
-          + Add User
-        </button>
-      </div>
+      <PageHeader
+        icon={Users}
+        title="Members"
+        subtitle="Manage gym members and their details."
+        actions={
+          <button
+            onClick={() => setShowAddUserModal(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2"
+          >
+            <Plus size={18} /> Add User
+          </button>
+        }
+      />
 
       <div className="bg-white shadow rounded p-6 overflow-x-auto">
-        <table className="w-full table-fixed border-collapse">
-          <thead>
-            <tr className="text-left border-b bg-gray-100">
-              <th className="p-3 w-[5%]">#</th>
-              <th className="p-3 w-[30%]">Name</th>
-              <th className="p-3 w-[30%]">Email</th>
-              <th className="p-3 w-[25%]">Actions</th>
-              <th className="p-3 w-[5%] text-center">▾</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {usersQuery.isLoading && (
-              <tr>
-                <td colSpan={5} className="p-6 text-center">
-                  Loading users...
-                </td>
-              </tr>
-            )}
-
-            {usersQuery.data?.map((u, index) => (
-              <UserRow
-                key={u.id}
-                user={u}
-                index={index}
-                openRowIndex={openRowIndex}
-                toggleRow={toggleRow}
-                deleteUserMutation={deleteUserMutation}
-                deletePlanMutation={deletePlanMutation}
-                deleteAssignedProductMutation={deleteAssignedProductMutation}
-                setShowEditPlanModal={setShowEditPlanModal}
-                setEditPlanMemberId={setEditPlanMemberId}
-                setSelectedMemberId={setSelectedMemberId}
-                setShowProductModal={setShowProductModal}
-                setSelectedUser={setSelectedUser}
-                setShowEditUserModal={setShowEditUserModal}
-              />
-            ))}
-          </tbody>
-        </table>
+        {usersQuery.isLoading ? (
+          <div className="p-6 text-center">Loading users...</div>
+        ) : (
+          <Table
+            headers={tableHeaders}
+            columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-2/12', 'w-3/12 text-center', 'w-1/12 text-center']}
+            data={paginatedUsers}
+            renderCells={getUserCells}
+            renderExpandedContent={renderExpandedUserContent}
+            keyExtractor={(user) => user.id}
+            openRowIndex={openRowIndex}
+            toggleRow={toggleRow}
+            searchPlaceholder="Search users by name or email..."
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       {/* ADD USER */}
       {showAddUserModal && (
-        <AddUserModal
-          newUser={newUser}
-          setNewUser={setNewUser}
-          plans={plansQuery.data || []}
-          creating={createUserMutation.isPending}
-          onClose={() => setShowAddUserModal(false)}
-          onSave={handleCreateUser}
-        />
+            <AddUserModal
+              newUser={newUser}
+              setNewUser={setNewUser}
+              plans={plansQuery.data || []}
+              loading={createUserMutation.isPending}
+              onClose={() => setShowAddUserModal(false)}
+              handleSubmit={handleAddUser}
+            />
       )}
 
       {/* EDIT USER */}
       {showEditUserModal && selectedUser && (
-        <EditUserModal
-          user={selectedUser}
-          plans={plansQuery.data || []}
-          updating={updateUserMutation.isPending}
-          onClose={() => setShowEditUserModal(false)}
-          onSave={(data) =>
-            updateUserMutation.mutate({
-              id: selectedUser.id,
-              data,
-            })
-          }
-        />
+            <EditUserModal
+              user={selectedUser}
+              plans={plansQuery.data || []}
+              loading={updateUserMutation.isPending}
+              onClose={() => setShowEditUserModal(false)}
+              handleSubmit={(data: any) => handleEditUser(selectedUser.id, data)}
+            />
       )}
 
       {/* EDIT PLAN */}

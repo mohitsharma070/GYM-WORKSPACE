@@ -1,10 +1,6 @@
 package com.gym.userservice.controller;
 
-import com.gym.userservice.dto.AdminRegisterRequest;
-import com.gym.userservice.dto.MemberRegisterRequest;
-import com.gym.userservice.dto.MonthMemberStatsResponse;
-import com.gym.userservice.dto.TrainerRegisterRequest;
-import com.gym.userservice.dto.FingerprintVerifyRequest;
+import com.gym.userservice.dto.*;
 
 import com.gym.userservice.entity.User;
 import com.gym.userservice.service.IUserService;
@@ -14,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -59,9 +56,8 @@ public class UserController {
     public ResponseEntity<?> me(Authentication auth) {
         if (auth == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
 
-        User user = service.getByEmail(auth.getName());
-        user.setPassword(null);
-        return ResponseEntity.ok(user);
+        UserResponse userResponse = service.getByEmail(auth.getName());
+        return ResponseEntity.ok(userResponse);
     }
 
     // ==============================================
@@ -70,9 +66,8 @@ public class UserController {
 
     @GetMapping("/auth/user/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
-        User user = service.getById(id);
-        user.setPassword(null);
-        return ResponseEntity.ok(user);
+        UserResponse userResponse = service.getById(id);
+        return ResponseEntity.ok(userResponse);
     }
 
     @GetMapping("/auth/user/{id}/exists")
@@ -85,7 +80,7 @@ public class UserController {
     // ==============================================
 
     @GetMapping("/auth/admin/all")
-    public ResponseEntity<?> getAllUsersForAdmin() {
+    public ResponseEntity<List<UserResponse>> getAllUsersForAdmin() {
         return ResponseEntity.ok(service.getAllUsers());
     }
 
@@ -169,6 +164,15 @@ public class UserController {
     ) {
         long count = service.countMembersByMonthAndYear(month, year);
         return ResponseEntity.ok(new MonthMemberStatsResponse(count));
+    }
+
+    // ==============================================
+    // SEND PROMOTIONAL MESSAGE
+    // ==============================================
+    @PostMapping("/auth/admin/send-promotional-message")
+    public ResponseEntity<?> sendPromotionalMessage(@RequestBody com.gym.userservice.dto.PromotionalMessageRequest request) {
+        service.sendPromotionalMessage(request.getMessage());
+        return ResponseEntity.noContent().build();
     }
 
     // ==============================================

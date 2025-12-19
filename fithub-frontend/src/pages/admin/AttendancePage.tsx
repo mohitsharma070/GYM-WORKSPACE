@@ -3,7 +3,11 @@ import { useToast } from "../../components/ToastProvider";
 import type { Attendance } from "../../types/Attendance"; // Using type-only import
 import { useUsers } from "../../hooks/useUsers"; // Import useUsers
 import type { User } from "../../types/User"; // Import User type
-import { useState } from "react"; // Import useState
+import { useState, useMemo } from "react"; // Import useState and useMemo
+import { CalendarCheck, CalendarOff } from 'lucide-react'; // Import the icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
+import EmptyState from "../../components/EmptyState"; // Import EmptyState
+import Table from "../../components/Table";
 
 export default function AttendancePage() {
   const { showToast } = useToast();
@@ -14,6 +18,25 @@ export default function AttendancePage() {
 
   const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
   const [selectedMembershipId, setSelectedMembershipId] = useState<number | undefined>(undefined); // Assuming a user has a membership ID
+
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+
+  const filteredRecords = useMemo(() => {
+    return attendanceRecords.filter(record =>
+      record.userId.toString().includes(searchTerm.toLowerCase()) ||
+      new Date(record.checkInTime).toLocaleString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (record.checkOutTime && new Date(record.checkOutTime).toLocaleString().toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (record.checkOutTime ? 'completed' : 'active').includes(searchTerm.toLowerCase())
+    );
+  }, [attendanceRecords, searchTerm]);
+
+  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
+  const paginatedRecords = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredRecords.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredRecords, currentPage, itemsPerPage]);
 
   const handleManualCheckIn = async () => {
     if (selectedUserId === undefined || selectedMembershipId === undefined) {
@@ -41,11 +64,10 @@ export default function AttendancePage() {
     try {
       // This is a simplified approach. In a real app, you might fetch active attendance for the user first.
       // For now, we'll assume the checkOut mutation can handle finding the correct attendance.
-      // NOTE: The current checkOut mutation in useAttendance.ts takes an attendanceId.
+      // NOTE: The current checkOut signature in useAttendance.ts takes an attendanceId.
       // We need to modify useAttendance.ts or assume how to get this.
       // For demonstration, let's assume a dummy attendanceId or modify checkOut.
       // Given the current checkOut signature, a direct call here for a userId is not possible.
-      // This part needs adjustment or a more complex approach.
       showToast("Manual check-out not fully implemented due to API limitations.", "error");
       // await checkOut.mutateAsync(DUMMY_ATTENDANCE_ID_FOR_SELECTED_USER); // Placeholder
     } catch (err: any) {
@@ -55,8 +77,11 @@ export default function AttendancePage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Admin Attendance Management</h1>
-
+      <PageHeader
+        icon={CalendarCheck}
+        title="Attendance"
+        subtitle="Monitor and manage member attendance."
+      />
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <h2 className="text-2xl font-bold mb-4">All Attendance Records</h2>
         {isLoading ? (
@@ -64,48 +89,42 @@ export default function AttendancePage() {
         ) : isError ? (
           <div className="text-center text-red-500">Error: {error?.message || "Failed to fetch attendance records"}</div>
         ) : attendanceRecords.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User ID
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check-in Time
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check-out Time
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {attendanceRecords.map((record: Attendance) => (
-                  <tr key={record.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.userId}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(record.checkInTime).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {record.checkOutTime ? new Date(record.checkOutTime).toLocaleString() : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        record.checkOutTime ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {record.checkOutTime ? 'Completed' : 'Active'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <Table
+              headers={["User ID", "Check-in Time", "Check-out Time", "Status"]}
+                          columnClasses={['w-1/6', 'w-2/6', 'w-2/6', 'w-1/6 text-center']}
+                          data={paginatedRecords}
+                          renderCells={(record: Attendance) => [
+                            record.userId,
+                            new Date(record.checkInTime).toLocaleString(),
+                            record.checkOutTime ? new Date(record.checkOutTime).toLocaleString() : 'N/A',
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              record.checkOutTime ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {record.checkOutTime ? 'Completed' : 'Active'}
+                            </span>,
+                          ]}
+                          keyExtractor={(record: Attendance) => record.id}              searchPlaceholder="Search records..."
+              searchTerm={searchTerm}
+              onSearchChange={(value: string) => {
+                setSearchTerm(value);
+                setCurrentPage(1); // Reset to first page on search
+              }}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </>
         ) : (
-          <div className="text-center text-gray-500">No attendance records found.</div>
+          <div className="p-6">
+            <EmptyState
+              icon={CalendarOff}
+              title="No attendance records yet"
+              description="It looks like no members have checked in or out. Use the manual entry section below to get started."
+              buttonText="Scroll to Manual Entry"
+              onButtonClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+            />
+          </div>
         )}
       </div>
 

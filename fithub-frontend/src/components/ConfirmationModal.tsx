@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { Button } from './Button';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -33,20 +34,22 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <h2 className="text-2xl font-bold mb-4 text-gray-800">{title}</h2>
         <p className="text-gray-700 mb-6">{message}</p>
         <div className="flex justify-end space-x-4">
-          <button
+          <Button
+            type="button"
+            variant="secondary"
             onClick={onClose}
-            className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             disabled={isConfirming}
           >
             {cancelText}
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
             onClick={onConfirm}
-            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             disabled={isConfirming}
           >
             {isConfirming ? 'Deleting...' : confirmText}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Dumbbell } from 'lucide-react'; // Import the icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 import type { Trainer } from "../../types/Trainer";
 import {
@@ -12,15 +14,7 @@ import {
 import AddTrainerModal from "../../modals/AddTrainerModal";
 import EditTrainerModal from "../../modals/EditTrainerModal";
 
-/* Small reusable component for trainer detail fields */
-function Info({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="p-3 border rounded bg-white">
-      <p className="text-gray-600">{label}</p>
-      <p className="font-semibold">{value ?? "-"}</p>
-    </div>
-  );
-}
+import Table from "../../components/Table";
 
 export default function TrainersPage() {
   const queryClient = useQueryClient();
@@ -32,11 +26,29 @@ export default function TrainersPage() {
   const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
   const [showEditTrainerModal, setShowEditTrainerModal] = useState(false);
 
+  /* SEARCH AND PAGINATION STATE */
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10; // You can adjust this number
+
   /* ------------------ QUERY: LOAD TRAINERS ------------------ */
   const trainersQuery = useQuery<Trainer[]>({
     queryKey: ["trainers"],
     queryFn: fetchTrainers,
   });
+
+  /* FILTER AND PAGINATE TRAINERS */
+  const filteredTrainers = trainersQuery.data?.filter(trainer =>
+    trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trainer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trainer.trainerDetails?.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const totalPages = Math.ceil(filteredTrainers.length / itemsPerPage);
+  const paginatedTrainers = filteredTrainers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   /* ------------------ MUTATION: CREATE TRAINER ------------------ */
   const createTrainerMutation = useMutation({
@@ -86,136 +98,102 @@ export default function TrainersPage() {
 
   return (
     <div>
-      {/* HEADER + ADD TRAINER BUTTON */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Trainers</h1>
-
-        <button
-          onClick={() => setShowAddTrainerModal(true)}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          + Add Trainer
-        </button>
-      </div>
+      <PageHeader
+        icon={Dumbbell}
+        title="Trainers"
+        subtitle="Manage gym trainers and their specializations."
+        actions={
+          <button
+            onClick={() => setShowAddTrainerModal(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            + Add Trainer
+          </button>
+        }
+      />
 
       {/* TABLE */}
       <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-left border-b bg-gray-100">
-              <th className="p-3 w-[5%]">#</th>
-              <th className="p-3 w-[30%]">Name</th>
-              <th className="p-3 w-[35%]">Email</th>
-              <th className="p-3 w-[20%] text-right">Actions</th>
-              <th className="p-3 w-[5%] text-center">▾</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {/* LOADING */}
-            {trainersQuery.isLoading && (
-              <tr>
-                <td colSpan={5} className="p-6 text-center">
-                  Loading trainers...
-                </td>
-              </tr>
-            )}
-
-            {/* ERROR */}
-            {trainersQuery.error && (
-              <tr>
-                <td colSpan={5} className="p-6 text-center text-red-600">
-                  Failed to load trainers
-                </td>
-              </tr>
-            )}
-
-            {/* EMPTY */}
-            {trainersQuery.data?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center p-6 text-gray-600">
-                  No trainers found.
-                </td>
-              </tr>
-            )}
-
-            {/* LIST */}
-            {trainersQuery.data?.map((t, index) => (
-              <React.Fragment key={t.id}>
-                {/* MAIN ROW */}
-                <tr
-                  className="border-b hover:bg-gray-50 cursor-pointer"
-                  onClick={() =>
-                    setOpenRowIndex(openRowIndex === index ? null : index)
-                  }
+        {trainersQuery.isLoading ? (
+          <div className="p-6 text-center">Loading trainers...</div>
+        ) : trainersQuery.error ? (
+          <div className="p-6 text-center text-red-600">Failed to load trainers</div>
+        ) : paginatedTrainers.length === 0 ? (
+          <div className="text-center p-6 text-gray-600">No trainers found.</div>
+        ) : (
+          <Table
+            headers={["#", "Name", "Email", "Actions", "▾"]}
+            columnClasses={['w-1/12 text-center', 'w-3/12', 'w-3/12', 'w-3/12 text-center', 'w-1/12 text-center']}
+            data={paginatedTrainers}
+            renderCells={(trainer, index) => [
+              index + 1 + (currentPage - 1) * itemsPerPage,
+              <span className="font-medium">{trainer.name}</span>,
+              trainer.email,
+              <div className="flex gap-2 justify-center">
+                {/* EDIT BUTTON */}
+                <button
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedTrainer(trainer);
+                    setShowEditTrainerModal(true);
+                  }}
                 >
-                  <td className="p-3">{index + 1}</td>
-                  <td className="p-3 font-medium">{t.name}</td>
-                  <td className="p-3">{t.email}</td>
+                  Edit
+                </button>
 
-                  <td className="p-3 text-right flex gap-2 justify-end">
-
-                    {/* EDIT BUTTON */}
-                    <button
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTrainer(t);
-                        setShowEditTrainerModal(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-
-                    {/* DELETE BUTTON */}
-                    <button
-                      className="px-3 py-1 bg-red-600 text-white rounded text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(t.id);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-
-                  <td className="p-3 text-center">
-                    <span
-                      className={`inline-block transform transition-transform ${
-                        openRowIndex === index ? "rotate-180" : ""
-                      }`}
-                    >
-                      ▼
-                    </span>
-                  </td>
-                </tr>
-
-                {/* DROPDOWN DETAILS */}
-                {openRowIndex === index && (
-                  <tr className="bg-gray-50 border-b">
-                    <td colSpan={5} className="p-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Info
-                          label="Specialization"
-                          value={t.trainerDetails?.specialization}
-                        />
-                        <Info
-                          label="Experience (Years)"
-                          value={t.trainerDetails?.experienceYears}
-                        />
-                        <Info
-                          label="Certification"
-                          value={t.trainerDetails?.certification}
-                        />
-                        <Info label="Phone" value={t.trainerDetails?.phone} />
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                {/* DELETE BUTTON */}
+                <button
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(trainer.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>,
+              <span
+                className={`inline-block transform transition-transform ${
+                  openRowIndex === index ? "rotate-180" : ""
+                }`}
+              >
+                ▼
+              </span>,
+            ]}
+            renderExpandedContent={(trainer) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 border rounded bg-white">
+                  <p className="text-gray-600">Specialization</p>
+                  <p className="font-semibold">{trainer.trainerDetails?.specialization ?? "-"}</p>
+                </div>
+                <div className="p-3 border rounded bg-white">
+                  <p className="text-gray-600">Experience (Years)</p>
+                  <p className="font-semibold">{trainer.trainerDetails?.experienceYears ?? "-"}</p>
+                </div>
+                <div className="p-3 border rounded bg-white">
+                  <p className="text-gray-600">Certification</p>
+                  <p className="font-semibold">{trainer.trainerDetails?.certification ?? "-"}</p>
+                </div>
+                <div className="p-3 border rounded bg-white">
+                  <p className="text-gray-600">Phone</p>
+                  <p className="font-semibold">{trainer.trainerDetails?.phone ?? "-"}</p>
+                </div>
+              </div>
+            )}
+            keyExtractor={(trainer) => trainer.id}
+            openRowIndex={openRowIndex}
+            toggleRow={(index) =>
+              setOpenRowIndex(openRowIndex === index ? null : index)
+            }
+            searchPlaceholder="Search trainers by name, email, or specialization..."
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       {/* ADD TRAINER MODAL */}

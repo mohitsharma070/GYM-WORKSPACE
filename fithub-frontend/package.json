@@ -12,6 +12,8 @@
   "dependencies": {
     "@tanstack/react-query": "^5.90.11",
     "@types/react-toastify": "^4.0.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.555.0",
@@ -22,6 +24,7 @@
     "recharts": "^3.5.1",
     "sockjs-client": "^1.6.1",
     "stompjs": "^2.3.3",
+    "tailwind-merge": "^3.4.0",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

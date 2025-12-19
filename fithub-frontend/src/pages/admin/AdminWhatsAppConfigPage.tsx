@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useToast } from '../../components/ToastProvider';
+import { MessageSquareText } from 'lucide-react'; // Import the icon
+import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 // Placeholder API function to send credentials to the backend
 // In a real scenario, this would call a secure admin API endpoint
@@ -22,7 +24,7 @@ async function saveWhatsAppCredentials(
   });
 }
 
-const AdminWhatsAppConfigPage: React.FC = () => {
+export default function AdminWhatsAppConfigPage() {
   const [apiUrl, setApiUrl] = useState<string>('');
   const [accessToken, setAccessToken] = useState<string>('');
   const [phoneNumberId, setPhoneNumberId] = useState<string>('');
@@ -48,67 +50,71 @@ const AdminWhatsAppConfigPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Admin: WhatsApp API Configuration</h1>
-      <p className="mb-4 text-gray-700">
-        Securely configure the Meta WhatsApp Business API credentials. These credentials are sent to the
-        backend once for storage and are never displayed again.
-      </p>
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
-        <div className="mb-4">
-          <label htmlFor="apiUrl" className="block text-gray-700 text-sm font-bold mb-2">
-            WhatsApp API URL:
-          </label>
-          <input
-            type="text"
-            id="apiUrl"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={apiUrl}
-            onChange={(e) => setApiUrl(e.target.value)}
-            placeholder="e.g., https://graph.facebook.com/v19.0/"
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="accessToken" className="block text-gray-700 text-sm font-bold mb-2">
-            WhatsApp Access Token:
-          </label>
-          <input
-            type="password" // Use type="password" for security
-            id="accessToken"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            required
-          />
-        </div>
-        <div className="mb-4">
-          <label htmlFor="phoneNumberId" className="block text-gray-700 text-sm font-bold mb-2">
-            WhatsApp Phone Number ID:
-          </label>
-          <input
-            type="text"
-            id="phoneNumberId"
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            value={phoneNumberId}
-            onChange={(e) => setPhoneNumberId(e.target.value)}
-            placeholder="e.g., 10XXXXXXXXXXX"
-            required
-          />
-        </div>
+    <div className="p-6">
+      <PageHeader
+        icon={MessageSquareText}
+        title="WhatsApp Configuration"
+        subtitle="Configure Meta WhatsApp Business API credentials."
+      />
+      <div className="bg-white shadow-md rounded-lg p-6 max-w-md">
+        <p className="mb-4 text-sm text-gray-600">
+          Securely configure the Meta WhatsApp Business API credentials. These credentials are sent to the
+          backend once for storage and are never displayed again.
+        </p>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="apiUrl" className="block text-sm font-medium text-gray-700 mb-2">
+              WhatsApp API URL:
+            </label>
+            <input
+              type="text"
+              id="apiUrl"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              placeholder="e.g., https://graph.facebook.com/v19.0/"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="accessToken" className="block text-sm font-medium text-gray-700 mb-2">
+              WhatsApp Access Token:
+            </label>
+            <input
+              type="password" // Use type="password" for security
+              id="accessToken"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="phoneNumberId" className="block text-sm font-medium text-gray-700 mb-2">
+              WhatsApp Phone Number ID:
+            </label>
+            <input
+              type="text"
+              id="phoneNumberId"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
+              value={phoneNumberId}
+              onChange={(e) => setPhoneNumberId(e.target.value)}
+              placeholder="e.g., 10XXXXXXXXXXX"
+              required
+            />
+          </div>
 
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Saving...' : 'Save Credentials'}
-          </button>
-        </div>
-      </form>
+          <div className="flex items-center justify-between">
+            <button
+              type="submit"
+              className="w-full bg-[var(--color-primary)] text-white py-2 px-4 rounded-md hover:bg-[var(--color-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2 transition-colors flex items-center justify-center gap-2"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : 'Save Credentials'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
-};
-
-export default AdminWhatsAppConfigPage;
+}

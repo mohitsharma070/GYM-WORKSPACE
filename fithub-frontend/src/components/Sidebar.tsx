@@ -1,4 +1,4 @@
-import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3, Megaphone, type LucideProps } from 'lucide-react';
+import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3, Megaphone, ClipboardList, Package, ListChecks, Book, ClipboardCheck, type LucideProps } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import type { ForwardRefExoticComponent, RefAttributes, SVGProps } from 'react'; // Import necessary types with 'type' keyword
 
@@ -26,14 +26,14 @@ export function Sidebar({ userType }: SidebarProps) {
         { path: '/admin', label: 'Dashboard', icon: Home },
         { path: '/admin/users', label: 'Users', icon: Users },
         { path: '/admin/trainers', label: 'Trainers', icon: Dumbbell },
-        { path: '/admin/plans', label: 'Plans', icon: FileText },
-        { path: '/admin/products', label: 'Products', icon: FileText },
+        { path: '/admin/plans', label: 'Plans', icon: ClipboardList },
+        { path: '/admin/products', label: 'Products', icon: Package },
         { path: '/admin/workout-plans', label: 'Workout Plans', icon: Dumbbell },
         { path: '/admin/attendance', label: 'Attendance', icon: Calendar },
         { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-        { path: '/admin/notifications/send', label: 'Broadcast Notifications', icon: Megaphone },
-        { path: '/admin/notifications/logs', label: 'Notification Logs', icon: FileText },
-        { path: '/admin/whatsapp-config', label: 'WhatsApp API Config', icon: Settings }, // New link for WhatsApp config
+        { path: '/admin/notifications/send', label: 'Broadcast', icon: Megaphone },
+        { path: '/admin/notifications/logs', label: 'Notification Logs', icon: ListChecks },
+        { path: '/admin/whatsapp-config', label: 'WhatsApp Config', icon: Settings }, // New link for WhatsApp config
         { path: '/admin/profile', label: 'Profile', icon: Settings },
       ];
     } else if (userType === 'trainer') {
@@ -46,10 +46,10 @@ export function Sidebar({ userType }: SidebarProps) {
     } else if (userType === 'member') {
       return [
         { path: '/member', label: 'Dashboard', icon: Home },
-        { path: '/member/plans', label: 'Membership Plans', icon: FileText },
+        { path: '/member/plans', label: 'Membership Plans', icon: Book },
         { path: '/member/workout-plans', label: 'Workout Plans', icon: Dumbbell },
         { path: '/member/subscriptions', label: 'My Subscription', icon: CreditCard },
-        { path: '/member/mark-attendance', label: 'Mark Attendance', icon: Calendar },
+        { path: '/member/mark-attendance', label: 'Mark Attendance', icon: ClipboardCheck },
         { path: '/member/schedule', label: 'Schedule', icon: Calendar },
         { path: '/member/profile', label: 'Profile', icon: Settings },
       ];

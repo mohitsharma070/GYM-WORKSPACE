@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, IndianRupee, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, IndianRupee, Clock, ClipboardList } from "lucide-react";
+import PageHeader from '../../components/PageHeader';
 
 interface Plan {
   id: number;
@@ -125,38 +126,46 @@ export default function PlansPageForAdmin() {
 
   return (
     <div>
-      <div className="flex justify-between mb-6">
-        <h1 className="text-3xl font-bold">Plans</h1>
-
-        <button
-          onClick={() => openModal()}
-          className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r 
+      <PageHeader
+        icon={ClipboardList}
+        title="Membership Plans"
+        subtitle="Manage your gym's membership plans."
+        actions={
+          <button
+            onClick={() => openModal()}
+            className="px-4 py-2 flex items-center gap-2 bg-gradient-to-r 
             from-[var(--color-primary)] to-[var(--color-accent)] 
             text-white rounded-lg shadow-md hover:opacity-90"
-        >
-          <Plus size={20} /> Add Plan
-        </button>
-      </div>
+          >
+            <Plus size={20} /> Add Plan
+          </button>
+        }
+      />
 
       {/* PLANS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {plans.map((p) => (
           <div
             key={p.id}
-            className="bg-white shadow rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-all"
+            className="bg-white shadow rounded-xl p-6 border border-gray-100 hover:shadow-lg transition-all relative"
           >
-            <h3 className="text-xl font-bold mb-2">{p.name}</h3>
-
-            <p className="text-gray-600 mb-4">{p.description}</p>
-
-            <div className="flex items-center gap-2 mb-2">
-              <IndianRupee size={18} className="text-green-600" />
-              <span className="font-semibold text-lg">₹{p.price}</span>
+            <div className="absolute top-4 right-4 p-2 bg-blue-100 rounded-full text-blue-600">
+              <ClipboardList size={20} />
             </div>
+            
+            <h3 className="text-xl font-bold mb-2 pr-10">{p.name}</h3> {/* Added pr-10 for icon space */}
 
-            <div className="flex items-center gap-2 text-gray-700">
-              <Clock size={18} />
-              <span>{p.durationDays} days</span>
+            <p className="text-gray-600 text-sm mb-4">{p.description}</p>
+
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <IndianRupee size={18} className="text-green-600" />
+                <span className="font-semibold text-lg">₹{p.price}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <Clock size={18} />
+                <span>{p.durationDays} days</span>
+              </div>
             </div>
 
             {/* ACTION BUTTONS */}

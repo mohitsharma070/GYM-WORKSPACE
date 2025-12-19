@@ -1,21 +1,22 @@
 import type { Plan } from "../types/Plan";
+import { Button } from '../components/Button';
 
 interface AddUserModalProps {
   newUser: any;
   setNewUser: (val: any) => void;
   plans: Plan[];
-  creating: boolean;
+  loading: boolean;
   onClose: () => void;
-  onSave: () => void;
+  handleSubmit: () => void;
 }
 
 export default function AddUserModal({
   newUser,
   setNewUser,
   plans,
-  creating,
+  loading,
   onClose,
-  onSave,
+  handleSubmit,
 }: AddUserModalProps) {
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
@@ -159,17 +160,13 @@ export default function AddUserModal({
 
         {/* FOOTER BUTTONS */}
         <div className="flex justify-end gap-3 mt-4">
-          <button onClick={onClose} className="px-4 py-2 border rounded">
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
 
-          <button
-            onClick={onSave}
-            disabled={creating}
-            className="px-4 py-2 bg-blue-600 text-white rounded"
-          >
-            {creating ? "Creating..." : "Save"}
-          </button>
+          <Button type="submit" variant="default" onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Adding...' : 'Add Member'}
+          </Button>
         </div>
       </div>
     </div>

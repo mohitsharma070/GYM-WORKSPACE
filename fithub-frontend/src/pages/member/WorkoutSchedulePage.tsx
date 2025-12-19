@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fetchWorkoutPlanByDifficulty } from "../../api/workoutPlans";
+import { fetchAllWorkoutPlans } from "../../api/workoutPlans";
 import type { WorkoutDayExerciseDTO } from "../../types/WorkoutPlanDetails";
 import { Difficulty } from "../../types/Exercise";
 
@@ -26,48 +26,82 @@ export default function WorkoutSchedulePage() {
         setSelectedPlan(difficulty);
 
         try {
-            const data = await fetchWorkoutPlanByDifficulty(difficulty);
+            const fetchedPlans = await fetchAllWorkoutPlans(undefined, difficulty);
 
-            if (!data || data.length === 0) {
-                setError("No workout plan data found.");
+            if (!fetchedPlans || fetchedPlans.length === 0) {
+                setError("No workout plan data found for this difficulty.");
+                return;
+            }
+
+            // Flatten WorkoutPlan[] into an array of WorkoutDayExerciseDTO-like objects
+            // This is necessary because the grouping logic expects a flat list of exercises with plan/day info
+            const flattenedExercises: WorkoutDayExerciseDTO[] = [];
+            fetchedPlans.forEach(plan => {
+                plan.workoutDays.forEach(day => {
+                    day.workoutExercises.forEach(we => {
+                        flattenedExercises.push({
+                            id: we.id, // Assuming WorkoutExercise has an id
+                            planId: plan.id,
+                            planName: plan.name,
+                            dayId: day.id,
+                            dayNumber: day.dayNumber,
+                            exerciseId: we.exercise.id,
+                            orderInDay: we.orderInDay,
+                            exerciseName: we.exercise.name,
+                            sets: we.sets,
+                            reps: we.reps,
+                            restTimeInSeconds: we.restTimeInSeconds || 0, // Default to 0 if undefined
+                            bodyPart: we.exercise.bodyPart,
+                        });
+                    });
+                });
+            });
+
+            if (flattenedExercises.length === 0) {
+                setError("No exercises found in the workout plans for this difficulty.");
                 return;
             }
 
             // -------- GROUP BY PLAN → DAYS → EXERCISES ----------
             const groupBy = <T, K extends string | number>(
-                array: T[], 
+                array: T[],
                 keyGetter: (item: T) => K
             ) =>
                 array.reduce((acc, item) => {
                     const key = keyGetter(item);
                     if (!acc[key]) acc[key] = [];
-                    acc[key].push(item);
+                    (acc[key] as T[]).push(item); // Explicitly cast acc[key] to T[]
                     return acc;
                 }, {} as Record<K, T[]>);
 
-            const groupedByPlan = groupBy(data, (x) => x.planId);
+            const groupedByPlan = groupBy(flattenedExercises, (x) => x.planId);
 
-            const formattedPlans = Object.values(groupedByPlan).map((planExercises) => {
-                const groupedByDay = groupBy(planExercises, (x) => x.dayId);
+            const formattedPlans: GroupedPlan[] = Object.values(groupedByPlan).map((planExercises) => {
+                // Assert planExercises is an array of WorkoutDayExerciseDTO
+                const typedPlanExercises = planExercises as WorkoutDayExerciseDTO[];
+                const groupedByDay = groupBy(typedPlanExercises, (x) => x.dayId);
 
                 const days = Object.values(groupedByDay)
-                    .map((dayExercises) => ({
-                        dayId: dayExercises[0].dayId,
-                        dayNumber: dayExercises[0].dayNumber,
-                        exercises: dayExercises.sort((a, b) => a.orderInDay - b.orderInDay),
-                    }))
+                    .map((dayExercises) => {
+                        const typedDayExercises = dayExercises as WorkoutDayExerciseDTO[];
+                        return {
+                            dayId: typedDayExercises[0].dayId,
+                            dayNumber: typedDayExercises[0].dayNumber,
+                            exercises: typedDayExercises.sort((a, b) => a.orderInDay - b.orderInDay),
+                        };
+                    })
                     .sort((a, b) => a.dayNumber - b.dayNumber);
 
                 return {
-                    planId: planExercises[0].planId,
-                    planName: planExercises[0].planName,
+                    planId: typedPlanExercises[0].planId,
+                    planName: typedPlanExercises[0].planName,
                     days,
                 };
             });
 
             setPlans(formattedPlans);
-        } catch (err) {
-            setError("Failed to fetch workout plan. Please try again.");
+        } catch (err: any) { // Catch as any to handle potential error types
+            setError("Failed to fetch workout plan. Please try again. " + err.message);
         } finally {
             setLoading(false);
         }

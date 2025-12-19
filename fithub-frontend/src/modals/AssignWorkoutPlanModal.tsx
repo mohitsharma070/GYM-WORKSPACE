@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { type WorkoutPlan } from "../types/WorkoutPlan";
-import { useAssignWorkoutPlan } from "../hooks/useAssignedWorkoutPlans";
+import { useAssignWorkoutPlan } from "../hooks/useWorkoutPlans";
 
 interface AssignWorkoutPlanModalProps {
   isOpen: boolean;

@@ -1,5 +1,7 @@
 package com.gym.attendance.controller;
 
+
+import com.gym.attendance.client.UserServiceFeignClient;
 import com.gym.attendance.entity.*;
 import com.gym.attendance.service.*;
 import lombok.Data;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/fingerprints")
@@ -19,11 +22,13 @@ public class FingerprintController {
 
     private final FingerprintService fingerprintService;
     private final AttendanceService attendanceService;
+    private final UserServiceFeignClient userServiceFeignClient;
 
     @Autowired
-    public FingerprintController(FingerprintService fingerprintService, AttendanceService attendanceService) {
+    public FingerprintController(FingerprintService fingerprintService, AttendanceService attendanceService, UserServiceFeignClient userServiceFeignClient) {
         this.fingerprintService = fingerprintService;
         this.attendanceService = attendanceService;
+        this.userServiceFeignClient = userServiceFeignClient;
     }
 
     @PostMapping("/register")
@@ -39,9 +44,10 @@ public class FingerprintController {
     @PostMapping("/checkin")
     public ResponseEntity<Attendance> checkInWithFingerprint(@RequestBody CheckInWithFingerprintRequest request) {
         try {
-            Attendance attendance = attendanceService.checkInWithFingerprint(request.getFingerprintData());
+            var userResponse = userServiceFeignClient.verifyFingerprint(Map.of("fingerprint", request.getFingerprintData()));
+            Attendance attendance = attendanceService.checkIn(userResponse.getId());
             return new ResponseEntity<>(attendance, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }

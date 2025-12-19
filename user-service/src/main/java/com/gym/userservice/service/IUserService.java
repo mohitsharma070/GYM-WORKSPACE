@@ -3,6 +3,7 @@ package com.gym.userservice.service;
 import com.gym.userservice.dto.AdminRegisterRequest;
 import com.gym.userservice.dto.MemberRegisterRequest;
 import com.gym.userservice.dto.TrainerRegisterRequest;
+import com.gym.userservice.dto.UserResponse;
 import com.gym.userservice.entity.User;
 
 import java.util.List;
@@ -16,14 +17,14 @@ public interface IUserService {
     User registerMember(MemberRegisterRequest request);
 
     // ---------- Login ----------
-    User getByEmail(String email);
+    UserResponse getByEmail(String email);
 
     // ---------- Feign: get user by ID ----------
-    User getById(Long id);
+    UserResponse getById(Long id);
     boolean existsById(Long id);
 
     // ---------- Admin ----------
-    List<User> getAllUsers();
+    List<UserResponse> getAllUsers();
     List<User> getAllMembersForAdmin();
     List<User> getAllTrainers();
 
@@ -50,4 +51,6 @@ public interface IUserService {
     long countMembersByMonthAndYear(int month, int year);
 
     boolean verifyFingerprint(String email, String fingerprint);
+
+    void sendPromotionalMessage(String message);
 }

@@ -1,0 +1,6 @@
+export enum TargetType {
+    ALL_USERS = 'ALL_USERS',
+    ALL_MEMBERS = 'ALL_MEMBERS',
+    ALL_TRAINERS = 'ALL_TRAINERS',
+    SPECIFIC_PHONES = 'SPECIFIC_PHONES',
+}

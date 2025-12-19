@@ -32,6 +32,18 @@ public class SubscriptionController {
     }
 
     // -----------------------------------------
+    // RENEW SUBSCRIPTION
+    // -----------------------------------------
+    @PostMapping("/subscriptions/renew")
+    public ResponseEntity<Subscription> renew(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody SubscriptionRequest req
+    ) {
+        Subscription s = subscriptionService.renew(req);
+        return ResponseEntity.status(201).body(s);
+    }
+
+    // -----------------------------------------
     // GET SUBSCRIPTIONS BY USER
     // -----------------------------------------
     @GetMapping("/subscriptions/user/{userId}")

@@ -14,6 +14,8 @@ import com.gym.workoutservice.repository.AssignedWorkoutPlanRepository;
 import com.gym.workoutservice.repository.WorkoutPlanRepository;
 import com.gym.workoutservice.service.IAssignedWorkoutPlanService;
 import com.gym.workoutservice.service.IWorkoutPlanService; // Injecting interface
+import com.gym.workoutservice.client.NotificationClient;
+import com.gym.workoutservice.dto.NotificationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class AssignedWorkoutPlanServiceImpl implements IAssignedWorkoutPlanServi
     private final WorkoutPlanRepository workoutPlanRepository;
     private final IWorkoutPlanService workoutPlanService; // Inject interface for mapping
     private final UserClient userClient; // Inject UserClient
+    private final NotificationClient notificationClient;
 
     @Override
     @Transactional
@@ -47,8 +50,9 @@ public class AssignedWorkoutPlanServiceImpl implements IAssignedWorkoutPlanServi
             throw new ConflictException("Member with id " + request.memberId() + " already has an active workout plan. Please cancel the current plan before assigning a new one.");
         }
 
+        UserResponse trainer = null;
         if (request.assignedByTrainerId() != null) {
-            UserResponse trainer = userClient.getUserById(request.assignedByTrainerId());
+            trainer = userClient.getUserById(request.assignedByTrainerId());
             if (trainer == null || !"ROLE_TRAINER".equals(trainer.role)) {
                 throw new BadRequestException("Only users with ROLE_TRAINER can assign workout plans.");
             }
@@ -63,6 +67,20 @@ public class AssignedWorkoutPlanServiceImpl implements IAssignedWorkoutPlanServi
         assignedPlan.setStatus(request.status() != null ? request.status() : AssignedWorkoutPlan.AssignmentStatus.ACTIVE);
 
         AssignedWorkoutPlan saved = assignedWorkoutPlanRepository.save(assignedPlan);
+
+        // Send notification
+        try {
+            UserResponse member = userClient.getUserById(saved.getMemberId());
+            String trainerName = trainer != null ? trainer.name : "the gym";
+            NotificationRequest notification = new NotificationRequest();
+            notification.setPhoneNumber(member.phone); // Or member.phone if available
+            notification.setType("TRAINER_ASSIGNED_MEMBER");
+            notification.setMessage("Hi " + member.name + ", trainer " + trainerName + " has assigned you the workout plan: " + workoutPlan.getName() + ".");
+            notificationClient.sendNotification(notification);
+        } catch (Exception e) {
+            System.err.println("Failed to send trainer assignment notification: " + e.getMessage());
+        }
+
         return mapToResponse(saved);
     }
 

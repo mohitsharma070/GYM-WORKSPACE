@@ -1,5 +1,6 @@
 package com.gym.workoutservice.dto;
 
+import com.gym.workoutservice.entity.WorkoutLog;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -24,5 +25,9 @@ public record WorkoutLogRequest(
     @Size(max = 50, message = "Actual reps cannot exceed 50 characters")
     String actualReps,
 
-    String notes
+    String notes,
+
+    WorkoutLog.WorkoutStatus status,
+    
+    Long completedByTrainerId
 ) {}

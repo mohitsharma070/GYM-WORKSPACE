@@ -7,6 +7,9 @@ import { AnalyticsStatCards } from "../../components/AnalyticsStatCards";
 import { RevenueChart } from "../../components/RevenueChart";
 import { MemberChart } from "../../components/MemberChart";
 import { TrendChart } from "../../components/TrendChart";
+import { BarChart } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState'; // Import EmptyState
 
 // If Stats type exists in a types file, import it. Otherwise we rely on inference.
 
@@ -43,6 +46,41 @@ export default function AnalyticsPage() {
   const stats = analyticsQuery.data!;
   const trend = trendQuery.data!;
 
+  // Determine if there's genuinely no data for the selected period
+  const noData = stats.totalRevenue === 0 && stats.totalMembers === 0 && trend.length === 0;
+
+  if (noData) {
+    return (
+      <div>
+        <PageHeader
+          icon={BarChart}
+          title="Analytics"
+          subtitle="View your gym's performance and trends."
+        />
+        <FilterControls
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          onRefresh={() => {
+            analyticsQuery.refetch();
+            trendQuery.refetch();
+          }}
+        />
+        <EmptyState
+          icon={BarChart} // Using BarChart icon for consistency
+          title="No analytics data available"
+          description={`There's no data for ${selectedMonth}/${selectedYear}. Try selecting a different month or year.`}
+          buttonText="Reset to Current Month"
+          onButtonClick={() => {
+            setSelectedMonth(now.getMonth() + 1);
+            setSelectedYear(now.getFullYear());
+          }}
+        />
+      </div>
+    );
+  }
+
   const revenueChartData = [
     {
       name: "Revenue",
@@ -62,7 +100,11 @@ export default function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Analytics</h1>
+      <PageHeader
+        icon={BarChart}
+        title="Analytics"
+        subtitle="View your gym's performance and trends."
+      />
 
       {/* FILTERS */}
       <FilterControls

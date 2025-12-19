@@ -1,6 +1,8 @@
 // src/pages/admin/ProfilePage.tsx
 
 import { useProfile } from "../../hooks/useProfile";
+import { UserRound } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
 
 export default function ProfilePage() {
   const profileQuery = useProfile();
@@ -38,9 +40,31 @@ export default function ProfilePage() {
   // PROFILE UI
   return (
     <div className="max-w-2xl mx-auto mt-10 bg-white shadow-md rounded-xl p-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-        My Profile
-      </h1>
+      <PageHeader
+        icon={UserRound}
+        title="My Profile"
+        subtitle="View and manage your personal information."
+        actions={
+          <div className="flex gap-4">
+            <button
+              onClick={() => alert("Edit Profile Coming Soon")}
+              className="px-5 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+            >
+              Edit Profile
+            </button>
+
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="px-5 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
+            >
+              Logout
+            </button>
+          </div>
+        }
+      />
 
       {/* AVATAR */}
       <div className="flex justify-center mb-6">

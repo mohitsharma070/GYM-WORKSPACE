@@ -1,40 +1,60 @@
-import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3 } from 'lucide-react';
+import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3, Megaphone, type LucideProps } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import type { ForwardRefExoticComponent, RefAttributes, SVGProps } from 'react'; // Import necessary types with 'type' keyword
 
-interface SidebarProps {
-  activePage: string;
-  onPageChange: (page: string) => void;
-  userType: 'admin' | 'trainer' | 'member';
+// Define a type for the Lucide icon components
+type IconComponent = ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & RefAttributes<SVGSVGElement> & LucideProps>; // Add LucideProps
+
+// Define the MenuItem interface
+interface MenuItem {
+  path: string;
+  label: string;
+  icon: IconComponent; // Use the defined IconComponent type
+  badge?: string; // Make badge optional
 }
 
-export function Sidebar({ activePage, onPageChange, userType }: SidebarProps) {
-  const getMenuItems = () => {
+interface SidebarProps {
+  userType: 'admin' | 'trainer' | 'member' | null;
+}
+
+export function Sidebar({ userType }: SidebarProps) {
+  const location = useLocation();
+
+  const getMenuItems = (): MenuItem[] => { // Specify return type as MenuItem[]
     if (userType === 'admin') {
       return [
-        { id: 'admin-dashboard', label: 'Dashboard', icon: Home },
-        { id: 'users', label: 'Users', icon: Users },
-        { id: 'trainers', label: 'Trainers', icon: Dumbbell },
-        { id: 'plans', label: 'Plans', icon: FileText },
-        { id: 'products', label: 'Products', icon: FileText },
-        { id: 'attendance', label: 'Attendance', icon: Calendar },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'profile', label: 'Profile', icon: Settings },
+        { path: '/admin', label: 'Dashboard', icon: Home },
+        { path: '/admin/users', label: 'Users', icon: Users },
+        { path: '/admin/trainers', label: 'Trainers', icon: Dumbbell },
+        { path: '/admin/plans', label: 'Plans', icon: FileText },
+        { path: '/admin/products', label: 'Products', icon: FileText },
+        { path: '/admin/workout-plans', label: 'Workout Plans', icon: Dumbbell },
+        { path: '/admin/attendance', label: 'Attendance', icon: Calendar },
+        { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+        { path: '/admin/notifications/send', label: 'Broadcast Notifications', icon: Megaphone },
+        { path: '/admin/notifications/logs', label: 'Notification Logs', icon: FileText },
+        { path: '/admin/whatsapp-config', label: 'WhatsApp API Config', icon: Settings }, // New link for WhatsApp config
+        { path: '/admin/profile', label: 'Profile', icon: Settings },
       ];
     } else if (userType === 'trainer') {
       return [
-        { id: 'trainer-dashboard', label: 'Dashboard', icon: Home },
-        { id: 'clients', label: 'My Clients', icon: Users, badge: '24' },
-        { id: 'schedule', label: 'Schedule', icon: Calendar, badge: '8' },
-        { id: 'profile', label: 'Profile', icon: Settings },
+        { path: '/trainer', label: 'Dashboard', icon: Home },
+        { path: '/trainer/clients', label: 'My Clients', icon: Users, badge: '24' },
+        { path: '/trainer/schedule', label: 'Schedule', icon: Calendar, badge: '8' },
+        { path: '/trainer/profile', label: 'Profile', icon: Settings },
+      ];
+    } else if (userType === 'member') {
+      return [
+        { path: '/member', label: 'Dashboard', icon: Home },
+        { path: '/member/plans', label: 'Membership Plans', icon: FileText },
+        { path: '/member/workout-plans', label: 'Workout Plans', icon: Dumbbell },
+        { path: '/member/subscriptions', label: 'My Subscription', icon: CreditCard },
+        { path: '/member/mark-attendance', label: 'Mark Attendance', icon: Calendar },
+        { path: '/member/schedule', label: 'Schedule', icon: Calendar },
+        { path: '/member/profile', label: 'Profile', icon: Settings },
       ];
     } else {
-      return [
-        { id: 'member-dashboard', label: 'Dashboard', icon: Home },
-        { id: 'plans', label: 'Plans', icon: FileText },
-        { id: 'subscriptions', label: 'My Subscription', icon: CreditCard },
-        { id: 'mark-attendance', label: 'Mark Attendance', icon: Calendar },
-        { id: 'schedule', label: 'Schedule', icon: Calendar },
-        { id: 'profile', label: 'Profile', icon: Settings },
-      ];
+      return []; // Return an empty array if userType is null or unrecognized
     }
   };
 
@@ -54,12 +74,12 @@ export function Sidebar({ activePage, onPageChange, userType }: SidebarProps) {
       <nav className="flex-1 px-4 py-6 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activePage === item.id;
+          const isActive = location.pathname === item.path;
           
           return (
-            <button
-              key={item.id}
-              onClick={() => onPageChange(item.id)}
+            <Link
+              key={item.path}
+              to={item.path}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-lg mb-1 transition-all ${
                 isActive
                   ? 'bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-accent)] text-white shadow-md'
@@ -79,7 +99,7 @@ export function Sidebar({ activePage, onPageChange, userType }: SidebarProps) {
                   {item.badge}
                 </span>
               )}
-            </button>
+            </Link>
           );
         })}
       </nav>

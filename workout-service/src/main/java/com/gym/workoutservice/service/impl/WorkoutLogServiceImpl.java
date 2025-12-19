@@ -11,6 +11,8 @@ import com.gym.workoutservice.exception.ResourceNotFoundException;
 import com.gym.workoutservice.repository.ExerciseRepository;
 import com.gym.workoutservice.repository.WorkoutLogRepository;
 import com.gym.workoutservice.service.IWorkoutLogService;
+import com.gym.workoutservice.client.NotificationClient;
+import com.gym.workoutservice.dto.NotificationRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class WorkoutLogServiceImpl implements IWorkoutLogService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseServiceImpl exerciseService; // For Exercise mapping
     private final UserClient userClient; // Inject UserClient
+    private final NotificationClient notificationClient;
 
     @Override
     @Transactional
@@ -80,6 +83,23 @@ public class WorkoutLogServiceImpl implements IWorkoutLogService {
         workoutLog.setActualSets(request.actualSets());
         workoutLog.setActualReps(request.actualReps());
         workoutLog.setNotes(request.notes());
+
+        if (request.status() == WorkoutLog.WorkoutStatus.COMPLETED && request.completedByTrainerId() != null) {
+            workoutLog.setStatus(WorkoutLog.WorkoutStatus.COMPLETED);
+            workoutLog.setCompletedByTrainerId(request.completedByTrainerId());
+
+            try {
+                UserClient.UserResponse member = userClient.getUserById(workoutLog.getMemberId());
+                UserClient.UserResponse trainer = userClient.getUserById(request.completedByTrainerId());
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(member.email); // or member.phone
+                notification.setType("TRAINER_WORKOUT_COMPLETED");
+                notification.setMessage("Hi " + member.name + ", your workout '" + workoutLog.getExercise().getName() + "' has been marked as completed by trainer " + trainer.name + ".");
+                notificationClient.sendNotification(notification);
+            } catch (Exception e) {
+                System.err.println("Failed to send workout completion notification: " + e.getMessage());
+            }
+        }
 
         WorkoutLog updatedLog = workoutLogRepository.save(workoutLog);
         return mapToResponse(updatedLog);

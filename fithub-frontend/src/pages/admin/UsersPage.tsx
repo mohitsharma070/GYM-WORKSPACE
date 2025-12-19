@@ -126,18 +126,40 @@ export default function UsersPage() {
       queryClient.setQueryData(["users"], (oldUsers: any) => {
         if (!oldUsers) return oldUsers;
 
-        return oldUsers.map((u: User) =>
-          u.id === vars.id
-            ? {
-                ...u,
-                ...vars.data,
-                memberDetails: {
-                  ...u.memberDetails,
-                  ...(vars.data.memberDetails || {}),
-                },
-              }
-            : u
-        );
+        return oldUsers.map((u: User) => {
+          if (u.id !== vars.id) return u;
+
+          // Separate top-level and nested properties from the form data
+          const {
+            age,
+            gender,
+            height,
+            weight,
+            goal,
+            membershipType,
+            phone,
+            ...topLevelProps
+          } = vars.data;
+
+          const memberDetailsUpdate = {
+            ...(age && { age }),
+            ...(gender && { gender }),
+            ...(height && { height }),
+            ...(weight && { weight }),
+            ...(goal && { goal }),
+            ...(membershipType && { membershipType }),
+            ...(phone && { phone }),
+          };
+
+          return {
+            ...u,
+            ...topLevelProps,
+            memberDetails: {
+              ...u.memberDetails,
+              ...memberDetailsUpdate,
+            },
+          };
+        });
       });
 
       queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -275,9 +297,10 @@ export default function UsersPage() {
           <thead>
             <tr className="text-left border-b bg-gray-100">
               <th className="p-3 w-[5%]">#</th>
-              <th className="p-3 w-[30%]">Name</th>
-              <th className="p-3 w-[30%]">Email</th>
-              <th className="p-3 w-[25%]">Actions</th>
+              <th className="p-3 w-[25%]">Name</th>
+              <th className="p-3 w-[25%]">Email</th>
+              <th className="p-3 w-[15%]">Phone</th>
+              <th className="p-3 w-[20%]">Actions</th>
               <th className="p-3 w-[5%] text-center">▾</th>
             </tr>
           </thead>
@@ -285,7 +308,7 @@ export default function UsersPage() {
           <tbody>
             {usersQuery.isLoading && (
               <tr>
-                <td colSpan={5} className="p-6 text-center">
+                <td colSpan={6} className="p-6 text-center">
                   Loading users...
                 </td>
               </tr>

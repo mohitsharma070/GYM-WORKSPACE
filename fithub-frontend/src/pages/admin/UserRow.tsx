@@ -55,6 +55,7 @@ function UserRow({
         <td className="p-3">{index + 1}</td>
         <td className="p-3 font-medium">{user.name}</td>
         <td className="p-3">{user.email}</td>
+        <td className="p-3">{user.memberDetails?.phone}</td>
 
         <td className="p-3">
           <div className="flex gap-2">
@@ -104,7 +105,7 @@ function UserRow({
       {/* DETAILS EXPANDED ROW */}
       {openRowIndex === index && (
         <tr className="bg-gray-50 border-b">
-          <td colSpan={5} className="p-5">
+          <td colSpan={6} className="p-5">
             {/* MEMBER DETAILS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Detail label="Age" value={user.memberDetails?.age} />
@@ -142,7 +143,11 @@ function UserRow({
                   </button>
 
                   <button
-                    onClick={() => deletePlanMutation.mutate(user.id)}
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to remove this plan from the user?")) {
+                        deletePlanMutation.mutate(user.id);
+                      }
+                    }}
                     className="px-3 py-1 bg-red-600 text-white rounded"
                   >
                     Remove Plan
@@ -172,9 +177,11 @@ function UserRow({
                       </div>
 
                       <button
-                        onClick={() =>
-                          deleteAssignedProductMutation.mutate(p.id)
-                        }
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to remove this assigned product?")) {
+                            deleteAssignedProductMutation.mutate(p.id);
+                          }
+                        }}
                         className="px-3 py-1 bg-red-600 text-white rounded"
                       >
                         Remove

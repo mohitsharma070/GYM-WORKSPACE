@@ -37,17 +37,7 @@ import Pulse from "../../components/Pulse";
 import { loadPlan } from "../../api/subscriptions";
 import { loadProducts } from "../../api/products";
 import type { ProductAssignment } from "../../types/Product";
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getDaysLeft(endDate?: string) {
-  if (!endDate) return "N/A";
-  const diff =
-    new Date(endDate).getTime() - new Date().getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
+import { todayISO, getDaysLeft } from "../../utils/dateUtils";
 
 export default function UsersPage() {
   const queryClient = useQueryClient();

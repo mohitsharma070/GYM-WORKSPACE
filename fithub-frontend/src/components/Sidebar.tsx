@@ -31,9 +31,9 @@ export function Sidebar({ userType }: SidebarProps) {
         { path: '/admin/workout-plans', label: 'Workout Plans', icon: Dumbbell },
         { path: '/admin/attendance', label: 'Attendance', icon: Calendar },
         { path: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-        { path: '/admin/notifications/send', label: 'Broadcast Notifications', icon: Megaphone },
+        { path: '/admin/notifications/send', label: 'Broadcast', icon: Megaphone },
         { path: '/admin/notifications/logs', label: 'Notification Logs', icon: ListChecks },
-        { path: '/admin/whatsapp-config', label: 'WhatsApp API Config', icon: Settings }, // New link for WhatsApp config
+        { path: '/admin/whatsapp-config', label: 'WhatsApp Config', icon: Settings }, // New link for WhatsApp config
         { path: '/admin/profile', label: 'Profile', icon: Settings },
       ];
     } else if (userType === 'trainer') {

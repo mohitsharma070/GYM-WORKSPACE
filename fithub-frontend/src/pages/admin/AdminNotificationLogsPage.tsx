@@ -88,7 +88,7 @@ export default function AdminNotificationLogsPage() {
     <div className="p-6">
       <PageHeader
         icon={ScrollText}
-        title="Broadcast Notification Logs"
+        title="Broadcast Logs"
         subtitle="Review the history of all broadcast notifications sent."
       />
 
@@ -198,9 +198,9 @@ export default function AdminNotificationLogsPage() {
       ) : (
         <EmptyState
           icon={BellOff}
-          title="No broadcast logs yet"
-          description={searchTerm ? "No results found for your search criteria. Try a different search term." : "Once you send a broadcast notification, its details and status will appear here."}
-          buttonText={searchTerm ? "Clear Search" : "Send New Broadcast"}
+          title="No logs yet"
+          description={searchTerm ? "No results found for your search criteria. Try a different search term." : "Once you send a broadcast, its details and status will appear here."}
+          buttonText={searchTerm ? "Clear Search" : "Send New"}
           onButtonClick={searchTerm ? () => setSearchTerm('') : () => navigate('/admin/promotional-notifications')}
         />
       )}

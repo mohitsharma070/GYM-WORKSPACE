@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, Dumbbell, UserRound, UserCog } from 'lucide-react';
+import { LayoutDashboard, Users, Dumbbell, UserRound, UserCog, AlertTriangle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard'; // Import StatCard
 import Table from '../../components/Table';
+import { loadUsers } from '../../api/users';
+import { loadPlan } from '../../api/subscriptions';
+import { isExpired, getDaysLeft } from '../../utils/dateUtils';
+import type { Plan } from '../../types/Plan';
 
 interface User {
   id: number;
@@ -11,13 +16,23 @@ interface User {
   role: string;
 }
 
+interface MemberWithPlan {
+  id: number;
+  name: string;
+  email: string;
+  plan: Plan | null;
+  daysLeft: number | string;
+}
+
 export default function AdminDashboard() {
   const [members, setMembers] = useState<User[]>([]);
   const [trainers, setTrainers] = useState<User[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [expiredMembers, setExpiredMembers] = useState<MemberWithPlan[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadingExpired, setLoadingExpired] = useState(false);
 
   async function loadDashboard() {
     setLoading(true);
@@ -54,8 +69,36 @@ export default function AdminDashboard() {
     }
   }
 
+  async function loadExpiredMembers() {
+    setLoadingExpired(true);
+    try {
+      const allMembers = await loadUsers();
+      const membersWithPlans: MemberWithPlan[] = [];
+      
+      for (const member of allMembers) {
+        const plan = await loadPlan(member.id);
+        if (plan && plan.endDate && isExpired(plan.endDate)) {
+          membersWithPlans.push({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            plan,
+            daysLeft: getDaysLeft(plan.endDate)
+          });
+        }
+      }
+      
+      setExpiredMembers(membersWithPlans);
+    } catch (error) {
+      console.error('Failed to load expired members:', error);
+    } finally {
+      setLoadingExpired(false);
+    }
+  }
+
   useEffect(() => {
     loadDashboard();
+    loadExpiredMembers();
   }, []);
 
   if (loading) {
@@ -115,7 +158,7 @@ export default function AdminDashboard() {
 
       <div className="bg-white shadow-sm rounded-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <StatCard 
             title="Total Members"
             value={members.length}
@@ -133,6 +176,12 @@ export default function AdminDashboard() {
             value={allUsers.length}
             icon={UserRound}
             description="All system users (members, trainers, admins)"
+          />
+          <StatCard
+            title="Expired Plans"
+            value={expiredMembers.length}
+            icon={AlertTriangle}
+            description="Members with expired plans"
           />
         </div>
       </div>
@@ -180,6 +229,61 @@ export default function AdminDashboard() {
                 </a>
               </div>
             </div>
+      {/* Expired Plans Members */}
+      <div className="bg-white shadow-sm rounded-lg p-8">
+        <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
+          <AlertTriangle className="text-red-500" size={24} />
+          Members with Expired Plans
+        </h2>
+
+        {loadingExpired ? (
+          <div className="p-8 text-center">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+            </div>
+          </div>
+        ) : expiredMembers.length === 0 ? (
+          <div className="p-8 text-center">
+            <div className="text-green-400 mb-3">
+              <Users size={48} className="mx-auto" />
+            </div>
+            <p className="text-green-600 text-lg font-medium">Great! No expired plans</p>
+            <p className="text-gray-400 text-sm mt-1">All active members have valid plans</p>
+          </div>
+        ) : (
+          <Table
+            headers={["#", "Member Name", "Email", "Plan Name", "Expired Since"]}
+            data={expiredMembers.slice(0, 10)}
+            columnClasses={['w-1/12 text-center', 'w-3/12 text-left', 'w-4/12 text-left', 'w-2/12 text-left', 'w-2/12 text-center']}
+            renderCells={(m, index) => [
+              <span className="text-gray-500 font-medium">{index + 1}</span>,
+              <span className="font-semibold text-gray-900">{m.name}</span>,
+              <span className="text-gray-600">{m.email}</span>,
+              <span className="text-gray-800">{m.plan?.name || 'N/A'}</span>,
+              <span className="text-red-600 font-medium">
+                {m.plan?.endDate ? new Date(m.plan.endDate).toLocaleDateString() : 'N/A'}
+              </span>,
+            ]}
+            keyExtractor={(m) => m.id}
+            currentPage={1} // Static for embedded table
+            totalPages={1} // Static for embedded table
+            onPageChange={() => {}} // No pagination needed
+          />
+        )}
+        
+        {expiredMembers.length > 10 && (
+          <div className="mt-4 text-center">
+            <p className="text-gray-500 text-sm">
+              Showing 10 of {expiredMembers.length} expired plans.
+              <a href="/users" className="text-blue-600 hover:text-blue-800 ml-1">
+                View all in Members page
+              </a>
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Recent Members from available data */}
       <div className="bg-white shadow-sm rounded-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Recent Members</h2>

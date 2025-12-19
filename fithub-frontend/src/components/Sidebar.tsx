@@ -1,4 +1,4 @@
-import { Home, Users, Dumbbell, CreditCard, Calendar, FileText, Settings, LogOut, BarChart3, Megaphone, ClipboardList, Package, ListChecks, Book, ClipboardCheck, type LucideProps } from 'lucide-react';
+import { Home, Users, Dumbbell, CreditCard, Calendar, Settings, LogOut, BarChart3, Megaphone, ClipboardList, Package, ListChecks, Book, ClipboardCheck, type LucideProps } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import type { ForwardRefExoticComponent, RefAttributes, SVGProps } from 'react'; // Import necessary types with 'type' keyword
 

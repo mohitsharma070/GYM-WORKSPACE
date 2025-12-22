@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, Dumbbell, UserRound, UserCog, AlertTriangle } from 'lucide-react';
+import { useEffect, useState, useRef } from "react";
+import { LayoutDashboard, Users, Dumbbell, AlertTriangle, Plus, Megaphone } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard'; // Import StatCard
 import Table from '../../components/Table';
-import { loadUsers } from '../../api/users';
-import { loadPlan } from '../../api/subscriptions';
+import { loadUsers, createUser } from '../../api/users';
+import { loadPlan, assignPlanToMember } from '../../api/subscriptions';
+import { fetchAllPlans } from '../../api/plans';
 import { isExpired, getDaysLeft } from '../../utils/dateUtils';
 import type { Plan } from '../../types/Plan';
+import { useNavigate } from "react-router-dom";
+import RenewPlanModal from '../../modals/RenewPlanModal';
+import AddUserModal from '../../modals/AddUserModal';
 
 interface User {
   id: number;
@@ -26,12 +30,36 @@ interface MemberWithPlan {
 export default function AdminDashboard() {
   const [members, setMembers] = useState<User[]>([]);
   const [trainers, setTrainers] = useState<User[]>([]);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [expiredMembers, setExpiredMembers] = useState<MemberWithPlan[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [loadingExpired, setLoadingExpired] = useState(false);
+  const [renewModalOpen, setRenewModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<User | null>(null);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [allPlans, setAllPlans] = useState<Plan[]>([]);
+  const [renewLoading, setRenewLoading] = useState(false);
+  const [renewError, setRenewError] = useState<string | null>(null);
+  const defaultUserObj = {
+    name: "",
+    email: "",
+    password: "",
+    fingerprint: "",
+    memberDetails: {
+      age: "",
+      gender: "",
+      height: "",
+      weight: "",
+      goal: "",
+      membershipType: "",
+      phone: "",
+    },
+  };
+  const [newUser, setNewUser] = useState<any>(defaultUserObj);
+
+  const navigate = useNavigate();
+  const expiredSectionRef = useRef<HTMLDivElement>(null);
 
   async function loadDashboard() {
     setLoading(true);
@@ -46,20 +74,18 @@ export default function AdminDashboard() {
 
       const headers = { Authorization: `Basic ${token}` };
 
-      const [membersRes, trainersRes, allRes] = await Promise.all([
+      const [membersRes, trainersRes] = await Promise.all([
         fetch("http://localhost:8001/auth/admin/members", { headers }),
         fetch("http://localhost:8001/auth/admin/trainers", { headers }),
-        fetch("http://localhost:8001/auth/admin/all", { headers }),
       ]);
 
-      if (!membersRes.ok || !trainersRes.ok || !allRes.ok) {
+      if (!membersRes.ok || !trainersRes.ok) {
         setError("Failed to load dashboard data.");
         return;
       }
 
       setMembers(await membersRes.json());
       setTrainers(await trainersRes.json());
-      setAllUsers(await allRes.json());
 
     } catch {
       setError("Server unreachable.");
@@ -95,9 +121,65 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleRenewClick = (member: User) => {
+    setSelectedMember(member);
+    setRenewModalOpen(true);
+  };
+
+  const handleRenew = async (memberId: number, planId: number) => {
+    setRenewLoading(true);
+    setRenewError(null);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const ok = await assignPlanToMember(memberId, planId, today);
+      if (!ok) throw new Error('Failed to renew plan.');
+      setRenewModalOpen(false);
+      loadExpiredMembers(); // Refresh expired list
+    } catch (e: any) {
+      setRenewError(e.message || 'Failed to renew plan.');
+    } finally {
+      setRenewLoading(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      alert("Name, email, and password are required");
+      return;
+    }
+    try {
+      const payload = {
+        name: newUser.name,
+        email: newUser.email,
+        password: newUser.password,
+        fingerprint: newUser.fingerprint,
+        age: Number(newUser.memberDetails.age || 0),
+        gender: newUser.memberDetails.gender,
+        height: Number(newUser.memberDetails.height || 0),
+        weight: Number(newUser.memberDetails.weight || 0),
+        goal: newUser.memberDetails.goal,
+        membershipType: newUser.memberDetails.membershipType,
+        phone: newUser.memberDetails.phone,
+      };
+      const created = await createUser(payload);
+      // Optionally assign plan if membershipType is set
+      const planId = Number(newUser.memberDetails.membershipType);
+      if (planId) {
+        const today = new Date().toISOString().slice(0, 10);
+        await assignPlanToMember(created.id, planId, today);
+      }
+      setShowAddUserModal(false);
+      setNewUser(defaultUserObj);
+      loadDashboard(); // Refresh members list
+    } catch (e: any) {
+      alert(e.message || 'Failed to add user');
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
     loadExpiredMembers();
+    fetchAllPlans().then(setAllPlans);
   }, []);
 
   if (loading) {
@@ -157,13 +239,14 @@ export default function AdminDashboard() {
 
       <div className="bg-white shadow-sm rounded-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard 
             title="Total Members"
             value={members.length}
             icon={Users}
             description="Registered gym members"
             variant="success"
+            onClick={() => navigate('/admin/users')} // Updated route for members page
           />
           <StatCard
             title="Total Trainers"
@@ -171,13 +254,7 @@ export default function AdminDashboard() {
             icon={Dumbbell}
             description="Certified gym trainers"
             variant="info"
-          />
-          <StatCard
-            title="Total Users"
-            value={allUsers.length}
-            icon={UserRound}
-            description="All system users (members, trainers, admins)"
-            variant="warning"
+            onClick={() => navigate('/admin/trainers')} // Ensure navigation works
           />
           <StatCard
             title="Expired Plans"
@@ -185,6 +262,9 @@ export default function AdminDashboard() {
             icon={AlertTriangle}
             description="Members with expired plans"
             variant="error"
+            onClick={() => {
+              expiredSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }}
           />
         </div>
       </div>
@@ -192,48 +272,46 @@ export default function AdminDashboard() {
             <div className="bg-white shadow-sm rounded-lg p-8">
               <h2 className="text-2xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <a
-                  href="/members"
-                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4"
+                <button
+                  onClick={() => setShowAddUserModal(true)}
+                  className="group bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm hover:bg-blue-100 hover:shadow-md transition-all flex items-center space-x-4 w-full text-left"
+                >
+                  <div className="p-3 bg-blue-100 rounded-full text-blue-600 group-hover:bg-blue-200 transition-colors">
+                    <Plus size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-900">Add Member</h3>
+                    <p className="text-gray-600 text-sm mt-1">Register a new gym member</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => navigate('/admin/notifications/send')}
+                  className="group bg-yellow-50 border border-yellow-200 p-6 rounded-lg shadow-sm hover:bg-yellow-100 hover:shadow-md transition-all flex items-center space-x-4 w-full text-left"
+                >
+                  <div className="p-3 bg-yellow-100 rounded-full text-yellow-600 group-hover:bg-yellow-200 transition-colors">
+                    <Megaphone size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-900">Broadcast Notification</h3>
+                    <p className="text-gray-600 text-sm mt-1">Send a message to all users</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => navigate('/admin/profile')}
+                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4 w-full text-left"
                 >
                   <div className="p-3 bg-green-100 rounded-full text-green-600 group-hover:bg-green-200 transition-colors">
                     <Users size={24} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-gray-900">Manage Members</h3>
-                    <p className="text-gray-600 text-sm mt-1">View and manage all members</p>
+                    <h3 className="font-semibold text-lg text-gray-900">Profile</h3>
+                    <p className="text-gray-600 text-sm mt-1">View and edit your profile</p>
                   </div>
-                </a>
-      
-                <a
-                  href="/trainers"
-                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4"
-                >
-                  <div className="p-3 bg-green-100 rounded-full text-green-600 group-hover:bg-green-200 transition-colors">
-                    <Dumbbell size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-gray-900">Manage Trainers</h3>
-                    <p className="text-gray-600 text-sm mt-1">View and manage all trainers</p>
-                  </div>
-                </a>
-      
-                <a
-                  href="/admins"
-                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4"
-                >
-                  <div className="p-3 bg-green-100 rounded-full text-green-600 group-hover:bg-green-200 transition-colors">
-                    <UserCog size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-lg text-gray-900">Manage Admins</h3>
-                    <p className="text-gray-600 text-sm mt-1">Admin access controls</p>
-                  </div>
-                </a>
+                </button>
               </div>
             </div>
       {/* Expired Plans Members */}
-      <div className="bg-white shadow-sm rounded-lg p-8">
+      <div ref={expiredSectionRef} className="bg-white shadow-sm rounded-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
           <AlertTriangle className="text-red-500" size={24} />
           Members with Expired Plans
@@ -256,9 +334,9 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <Table
-            headers={["#", "Member Name", "Email", "Plan Name", "Expired Since"]}
+            headers={["#", "Member Name", "Email", "Plan Name", "Expired Since", "Actions"]}
             data={expiredMembers.slice(0, 10)}
-            columnClasses={['w-1/12 text-center', 'w-3/12 text-left', 'w-4/12 text-left', 'w-2/12 text-left', 'w-2/12 text-center']}
+            columnClasses={['w-1/12 text-center', 'w-3/12 text-left', 'w-4/12 text-left', 'w-2/12 text-left', 'w-2/12 text-center', 'w-2/12 text-center']}
             renderCells={(m, index) => [
               <span className="text-gray-500 font-medium">{index + 1}</span>,
               <span className="font-semibold text-gray-900">{m.name}</span>,
@@ -267,12 +345,40 @@ export default function AdminDashboard() {
               <span className="text-red-600 font-medium">
                 {m.plan?.endDate ? new Date(m.plan.endDate).toLocaleDateString() : 'N/A'}
               </span>,
+              <button
+                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
+                onClick={() => handleRenewClick({
+                  id: m.id,
+                  name: m.name,
+                  email: m.email,
+                  role: 'member', // or use actual role if available
+                })}
+              >
+                Renew
+              </button>
             ]}
             keyExtractor={(m) => m.id}
             currentPage={1} // Static for embedded table
             totalPages={1} // Static for embedded table
             onPageChange={() => {}} // No pagination needed
           />
+        )}
+        <RenewPlanModal
+          isOpen={renewModalOpen}
+          onClose={() => setRenewModalOpen(false)}
+          member={selectedMember}
+          plans={allPlans}
+          onRenew={handleRenew}
+        />
+        {renewLoading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-10">
+            <div className="bg-white p-6 rounded shadow text-center">Renewing plan...</div>
+          </div>
+        )}
+        {renewError && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-10">
+            <div className="bg-red-100 p-6 rounded shadow text-center text-red-700">{renewError}</div>
+          </div>
         )}
         
         {expiredMembers.length > 10 && (
@@ -316,6 +422,18 @@ export default function AdminDashboard() {
           />
         )}
       </div>
+
+      {/* ADD USER MODAL */}
+      {showAddUserModal && (
+        <AddUserModal
+          newUser={newUser}
+          setNewUser={setNewUser}
+          plans={allPlans}
+          loading={false}
+          onClose={() => setShowAddUserModal(false)}
+          handleSubmit={handleAddUser}
+        />
+      )}
     </div>
   );
 }

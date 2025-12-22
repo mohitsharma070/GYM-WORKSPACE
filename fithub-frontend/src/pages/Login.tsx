@@ -158,6 +158,15 @@ export default function Login({ onLogin }: LoginProps) {
           </form>
 
           <div className="mt-8 pt-6 border-t border-gray-200">
+            <p className="text-center text-gray-600 text-sm mb-2">
+              Don't have an account?{' '}
+              <a 
+                href="/signup" 
+                className="text-violet-600 hover:text-violet-700 font-semibold hover:underline"
+              >
+                Sign Up
+              </a>
+            </p>
             <p className="text-center text-gray-500 text-sm">
               © {new Date().getFullYear()} FitHub Fitness Platform
             </p>

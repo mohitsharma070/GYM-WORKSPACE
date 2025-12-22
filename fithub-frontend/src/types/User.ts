@@ -14,4 +14,5 @@ export interface User {
   email: string;
   role: string;
   memberDetails?: MemberDetails;
+  createdAt?: string; // ISO date string, for growth stats
 }

@@ -26,9 +26,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm relative">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+    <div className="fixed inset-0 flex justify-center items-center p-4 z-50">
+      <div className="bg-sky-100 p-6 rounded-xl shadow-2xl w-full max-w-sm relative border border-sky-200">
+        <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-2 shadow transition-colors duration-150 z-10" aria-label="Close">
           <X size={24} />
         </button>
         <h2 className="text-2xl font-bold mb-4 text-gray-800">{title}</h2>

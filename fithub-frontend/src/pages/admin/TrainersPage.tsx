@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dumbbell, Plus, Edit, Trash, Users, Award, TrendingUp, Star } from 'lucide-react'; // Import the icons
+import { Dumbbell, Plus, Edit, Trash, Award, TrendingUp, Star } from 'lucide-react'; // Import the icons
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
 import { Button } from '../../components/Button';
-import { StatCard } from '../../components/StatCard';
 
 import type { Trainer } from "../../types/Trainer";
 import {
@@ -114,40 +113,7 @@ export default function TrainersPage() {
         }
       />
 
-      {/* STATS DASHBOARD */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Trainers"
-          value={trainersQuery.data?.length || 0}
-          icon={Dumbbell}
-          description="Certified gym trainers"
-          variant="success"
-        />
-        <StatCard
-          title="Active Trainers"
-          value={filteredTrainers.filter(t => t.trainerDetails?.certification).length}
-          icon={Users}
-          description="Currently active trainers"
-          variant="info"
-        />
-        <StatCard
-          title="Avg Experience"
-          value={`${Math.round(
-            (trainersQuery.data?.reduce((acc, t) => acc + (t.trainerDetails?.experienceYears || 0), 0) || 0) / 
-            (trainersQuery.data?.length || 1)
-          )} years`}
-          icon={Award}
-          description="Average years of experience"
-          variant="warning"
-        />
-        <StatCard
-          title="Growth"
-          value="+8%"
-          icon={TrendingUp}
-          description="New trainers this month"
-          variant="success"
-        />
-      </div>
+      {/* STATS DASHBOARD REMOVED as per admin request */}
 
       {/* TABLE */}
       <div className="bg-yellow-100 shadow-sm rounded-lg p-6 border border-gray-100">

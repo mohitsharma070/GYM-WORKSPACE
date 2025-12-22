@@ -38,7 +38,7 @@ import Pulse from "../../components/Pulse";
 import { loadPlan } from "../../api/subscriptions";
 import { loadProducts } from "../../api/products";
 import type { ProductAssignment } from "../../types/Product";
-import { todayISO, getDaysLeft } from "../../utils/dateUtils";
+import { todayISO, getDaysLeft, isExpired } from "../../utils/dateUtils";
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
@@ -257,6 +257,26 @@ export default function UsersPage() {
         .finally(() => setProductsLoading(false));
     }
   }, [showProductModal]);
+
+  /* LOAD PLANS FOR ALL USERS */
+  const [userPlans, setUserPlans] = useState<Record<number, Plan | null>>({});
+  useEffect(() => {
+    async function fetchPlans() {
+      if (!usersQuery.data) return;
+      const plans: Record<number, Plan | null> = {};
+      await Promise.all(
+        usersQuery.data.map(async (user) => {
+          try {
+            plans[user.id] = await loadPlan(user.id);
+          } catch {
+            plans[user.id] = null;
+          }
+        })
+      );
+      setUserPlans(plans);
+    }
+    fetchPlans();
+  }, [usersQuery.data]);
 
   /* Helper */
   function toggleRow(index: number) {
@@ -509,23 +529,65 @@ export default function UsersPage() {
         />
         <StatCard
           title="Active Plans"
-          value={filteredUsers.filter(u => u.memberDetails?.membershipType).length}
+          value={filteredUsers.filter(u => {
+            const plan = userPlans[u.id];
+            return plan && plan.endDate && !isExpired(plan.endDate);
+          }).length}
           icon={UserCheck}
           description="Members with active plans"
           variant="info"
         />
         <StatCard
-          title="No Plans"
-          value={filteredUsers.filter(u => !u.memberDetails?.membershipType).length}
+          title="Expired Plans"
+          value={filteredUsers.filter(u => {
+            const plan = userPlans[u.id];
+            return plan && plan.endDate && isExpired(plan.endDate);
+          }).length}
           icon={UserX}
-          description="Members without plans"
-          variant="warning"
+          description="Members with expired plans"
+          variant="destructive"
         />
+        {/* Dynamic Growth Card */}
         <StatCard
           title="Growth"
-          value="+12%"
+          value={(() => {
+            // Calculate new members this month and growth percent
+            function getMonthYear(date: Date) {
+              return `${date.getFullYear()}-${date.getMonth() + 1}`;
+            }
+            const now = new Date();
+            const thisMonth = getMonthYear(now);
+            const lastMonth = getMonthYear(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+            const usersWithDate = usersQuery.data || [];
+            const newMembersThisMonth = usersWithDate.filter(u => {
+              if (!u.createdAt) return false;
+              return getMonthYear(new Date(u.createdAt)) === thisMonth;
+            });
+            const newMembersLastMonth = usersWithDate.filter(u => {
+              if (!u.createdAt) return false;
+              return getMonthYear(new Date(u.createdAt)) === lastMonth;
+            });
+            const growthPercent = newMembersLastMonth.length === 0
+              ? (newMembersThisMonth.length > 0 ? 100 : 0)
+              : Math.round(((newMembersThisMonth.length - newMembersLastMonth.length) / newMembersLastMonth.length) * 100);
+            // Return only the percentage for the main value
+            return `${growthPercent > 0 ? '+' : ''}${growthPercent}%`;
+          })()}
           icon={TrendingUp}
-          description="New members this month"
+          description={(() => {
+            // Show new members count as sub-label
+            function getMonthYear(date: Date) {
+              return `${date.getFullYear()}-${date.getMonth() + 1}`;
+            }
+            const now = new Date();
+            const thisMonth = getMonthYear(now);
+            const usersWithDate = usersQuery.data || [];
+            const newMembersThisMonth = usersWithDate.filter(u => {
+              if (!u.createdAt) return false;
+              return getMonthYear(new Date(u.createdAt)) === thisMonth;
+            });
+            return `${newMembersThisMonth.length} new member${newMembersThisMonth.length === 1 ? '' : 's'} this month`;
+          })()}
           variant="success"
         />
       </div>

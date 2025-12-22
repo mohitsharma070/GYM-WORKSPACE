@@ -161,32 +161,28 @@ export default function WorkoutPlansPage({ userRole }: WorkoutPlansPageProps) {
             value={workoutPlans?.length || 0}
             icon={Activity}
             description="Available workout plans"
-            variant="success"
+            variant="themedblue"
           />
           <StatCard
             title="Beginner Plans"
             value={workoutPlans?.filter(p => p.difficulty === Difficulty.BEGINNER).length || 0}
             icon={Target}
             description="Easy difficulty plans"
-            variant="info"
+            variant="success"
+          />
+          <StatCard
+            title="Intermediate Plans"
+            value={workoutPlans?.filter(p => p.difficulty === Difficulty.INTERMEDIATE).length || 0}
+            icon={Users}
+            description="Medium difficulty plans"
+            variant="warning"
           />
           <StatCard
             title="Advanced Plans"
             value={workoutPlans?.filter(p => p.difficulty === Difficulty.ADVANCED).length || 0}
             icon={TrendingUp}
             description="High intensity plans"
-            variant="warning"
-          />
-          <StatCard
-            title="Total Exercises"
-            value={workoutPlans?.reduce((acc, plan) => 
-              acc + plan.workoutDays.reduce((dayAcc, day) => 
-                dayAcc + day.workoutExercises.length, 0
-              ), 0
-            ) || 0}
-            icon={Users}
-            description="Exercises across all plans"
-            variant="success"
+            variant="destructive"
           />
         </div>
 
@@ -337,14 +333,16 @@ export default function WorkoutPlansPage({ userRole }: WorkoutPlansPageProps) {
 
       {/* Modal for Workout Plan Details */}
       {selectedPlanId !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
-                                    <button
-                                      onClick={handleCloseModal}
-                                      className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
-                                    >
-                                      <X size={24} />
-                                    </button>            {detailedWorkoutPlan ? (
+        <div className="fixed inset-0 flex justify-center items-center p-4 z-50 pointer-events-none">
+          <div className="bg-blue-50 p-6 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative pointer-events-auto border border-blue-200">
+              <button
+                onClick={handleCloseModal}
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-2 shadow transition-colors duration-150 z-10"
+                aria-label="Close"
+              >
+                <X size={22} />
+              </button>
+              {detailedWorkoutPlan ? (
               <div>
                 <h2 className="text-2xl font-bold mb-4">{detailedWorkoutPlan.name}</h2>
                 <p className="text-gray-700 mb-4">{detailedWorkoutPlan.description}</p>
@@ -410,7 +408,6 @@ export default function WorkoutPlansPage({ userRole }: WorkoutPlansPageProps) {
           isOpen={showAssignModal}
           onClose={handleCloseAssignModal}
           workoutPlan={planToAssign}
-          currentTrainerId={userProfile.id} // Pass the authenticated user's ID as the trainer ID
         />
       )}
       {showAssignModal && isLoadingProfile && (

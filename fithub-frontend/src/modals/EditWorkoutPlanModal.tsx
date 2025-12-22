@@ -211,12 +211,15 @@ export default function EditWorkoutPlanModal({ isOpen, onClose, workoutPlan }: E
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
-          <X size={24} />
+    <div className="fixed inset-0 flex justify-center items-center p-4 z-50">
+      <div className="bg-sky-100 p-8 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative border border-sky-200">
+        <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-2 shadow transition-colors duration-150 z-10" aria-label="Close">
+          <X size={28} />
         </button>
-        <h2 className="text-2xl font-bold mb-4">Edit Workout Plan: {workoutPlan.name}</h2>
+        <h2 className="text-3xl font-extrabold mb-6 text-gray-900 flex items-center gap-2">
+          <span>Edit Workout Plan:</span>
+          <span className="truncate text-blue-700 max-w-xs" title={workoutPlan.name}>{workoutPlan.name}</span>
+        </h2>
 
         {/* Basic Plan Details */}
         <div className="mb-6 p-4 border rounded-lg bg-gray-50">

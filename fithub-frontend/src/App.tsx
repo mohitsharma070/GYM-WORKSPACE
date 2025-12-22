@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardRoutes from "./components/DashboardRoutes"; // New component
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import { ToastProvider } from "./components/ToastProvider";
 
 export default function App() {
@@ -41,6 +42,16 @@ export default function App() {
                 <Navigate to="/" replace />
               ) : (
                 <Login onLogin={handleLogin} />
+              )
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              isAuthenticated ? (
+                <Navigate to="/" replace />
+              ) : (
+                <SignUp />
               )
             }
           />

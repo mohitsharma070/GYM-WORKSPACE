@@ -14,16 +14,24 @@ import com.gym.userservice.feign.NotificationServiceClient;
 import com.gym.userservice.repository.UserRepository;
 import com.gym.userservice.service.IUserService;
 
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -33,6 +41,8 @@ public class UserServiceImpl implements IUserService {
     private final MemberDetailsRepository memberRepo;
     private final PasswordEncoder encoder;
     private final NotificationServiceClient notificationClient;
+
+    private static final Set<String> ALLOWED_SORT_COLUMNS = Set.of("id", "name", "email", "role", "createdAt");
 
     public UserServiceImpl(UserRepository repo,
                            TrainerDetailsRepository trainerRepo,
@@ -187,45 +197,31 @@ public class UserServiceImpl implements IUserService {
     // LISTS (FILTER OUT DELETED)
     // ============================================================
     @Override
-    public List<UserResponse> getAllUsers() {
-        return repo.findAll()
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .map(this::toUserResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getAllUsers(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification(null, search), pageable)
+                .map(this::toUserResponse);
     }
 
     @Override
-    public List<User> getAllMembers() {
-        List<User> list = repo.findByRole("ROLE_MEMBER")
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+    public Page<User> getAllMembers(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification("ROLE_MEMBER", search), pageable)
+                .map(this::clearPassword);
     }
 
     @Override
-    public List<User> getAllTrainers() {
-        List<User> list = repo.findByRole("ROLE_TRAINER")
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+    public Page<User> getAllTrainers(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification("ROLE_TRAINER", search), pageable)
+                .map(this::clearPassword);
     }
 
     @Override
-    public List<User> getAllMembersForAdmin() {
-        List<User> list = repo.findByRole("ROLE_MEMBER")
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+    public Page<User> getAllMembersForAdmin(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification("ROLE_MEMBER", search), pageable)
+                .map(this::clearPassword);
     }
 
     // ============================================================
@@ -423,6 +419,43 @@ public class UserServiceImpl implements IUserService {
         } catch (Exception e) {
             System.err.println("Failed to send promotional message to all users: " + e.getMessage());
         }
+    }
+
+    private Pageable buildPageable(int page, int size, String sortBy, String sortDir) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+        String property = ALLOWED_SORT_COLUMNS.contains(sortBy) ? sortBy : "createdAt";
+        Sort sort = Sort.by(property);
+        sort = "desc".equalsIgnoreCase(sortDir) ? sort.descending() : sort.ascending();
+        return PageRequest.of(safePage, safeSize, sort);
+    }
+
+    private Specification<User> buildUserSpecification(String role, String search) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isFalse(root.get("deleted")));
+
+            if (StringUtils.hasText(role)) {
+                predicates.add(cb.equal(root.get("role"), role));
+            }
+
+            if (StringUtils.hasText(search)) {
+                String like = "%" + search.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(root.get("email")), like),
+                        cb.like(cb.lower(root.get("phoneNumber")), like)
+                ));
+            }
+
+            query.distinct(true);
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private User clearPassword(User user) {
+        user.setPassword(null);
+        return user;
     }
 
     private UserResponse toUserResponse(User user) {

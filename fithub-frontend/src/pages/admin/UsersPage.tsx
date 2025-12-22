@@ -8,14 +8,15 @@ import PageHeader from '../../components/PageHeader'; // Import PageHeader
 import type { User } from "../../types/User";
 import type { Plan } from "../../types/Plan";
 import type { Product } from "../../types/Product";
+import type { SortDirection, UserSortBy } from "../../types/Page";
 
 import {
-  loadUsers,
   deleteUser as apiDeleteUser,
   createUser as apiCreateUser,
   updateUser as apiUpdateUser,
   reactivateUser,
 } from "../../api/users";
+import { useUsers } from "../../hooks/useUsers";
 
 import { fetchAllPlans } from "../../api/plans";
 import {
@@ -83,25 +84,23 @@ export default function UsersPage() {
   /* SEARCH AND PAGINATION STATE */
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10; // You can adjust this number
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<UserSortBy>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
   /* LOAD USERS */
-  const usersQuery = useQuery<User[]>({
-    queryKey: ["users"],
-    queryFn: loadUsers,
+  const usersQuery = useUsers({
+    page: currentPage - 1,
+    size: pageSize,
+    sortBy,
+    sortDir,
+    search: searchTerm || undefined,
   });
 
-  /* FILTER AND PAGINATE USERS */
-  const filteredUsers = usersQuery.data?.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedUsers = usersQuery.data?.content || [];
+  const totalPages = usersQuery.data?.totalPages || 0;
+  const totalItems = usersQuery.data?.totalElements || 0;
+  const usersForStats = paginatedUsers;
 
 
 
@@ -262,10 +261,14 @@ export default function UsersPage() {
   const [userPlans, setUserPlans] = useState<Record<number, Plan | null>>({});
   useEffect(() => {
     async function fetchPlans() {
-      if (!usersQuery.data) return;
+      if (!paginatedUsers.length) return;
+
+      const missingUsers = paginatedUsers.filter((user) => userPlans[user.id] === undefined);
+      if (!missingUsers.length) return;
+
       const plans: Record<number, Plan | null> = {};
       await Promise.all(
-        usersQuery.data.map(async (user) => {
+        missingUsers.map(async (user) => {
           try {
             plans[user.id] = await loadPlan(user.id);
           } catch {
@@ -273,10 +276,13 @@ export default function UsersPage() {
           }
         })
       );
-      setUserPlans(plans);
+
+      if (Object.keys(plans).length) {
+        setUserPlans((prev) => ({ ...prev, ...plans }));
+      }
     }
     fetchPlans();
-  }, [usersQuery.data]);
+  }, [paginatedUsers, userPlans]);
 
   /* Helper */
   function toggleRow(index: number) {
@@ -332,7 +338,7 @@ export default function UsersPage() {
   const tableHeaders = ["#", "Member Name", "Email Address", "Phone Number", "Actions", "Details"];
 
   const getUserCells = (user: User, index: number) => [
-    <span className="text-gray-600 font-medium">{index + 1}</span>,
+    <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
     <div className="flex items-center space-x-3">
       <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
         <Users size={16} className="text-green-600" />
@@ -522,14 +528,14 @@ export default function UsersPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
           title="Total Members"
-          value={usersQuery.data?.length || 0}
+          value={totalItems}
           icon={Users}
           description="All registered members"
           variant="success"
         />
         <StatCard
           title="Active Plans"
-          value={filteredUsers.filter(u => {
+          value={usersForStats.filter(u => {
             const plan = userPlans[u.id];
             return plan && plan.endDate && !isExpired(plan.endDate);
           }).length}
@@ -539,7 +545,7 @@ export default function UsersPage() {
         />
         <StatCard
           title="Expired Plans"
-          value={filteredUsers.filter(u => {
+          value={usersForStats.filter(u => {
             const plan = userPlans[u.id];
             return plan && plan.endDate && isExpired(plan.endDate);
           }).length}
@@ -558,7 +564,7 @@ export default function UsersPage() {
             const now = new Date();
             const thisMonth = getMonthYear(now);
             const lastMonth = getMonthYear(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-            const usersWithDate = usersQuery.data || [];
+            const usersWithDate = usersForStats || [];
             const newMembersThisMonth = usersWithDate.filter(u => {
               if (!u.createdAt) return false;
               return getMonthYear(new Date(u.createdAt)) === thisMonth;
@@ -581,7 +587,7 @@ export default function UsersPage() {
             }
             const now = new Date();
             const thisMonth = getMonthYear(now);
-            const usersWithDate = usersQuery.data || [];
+            const usersWithDate = usersForStats || [];
             const newMembersThisMonth = usersWithDate.filter(u => {
               if (!u.createdAt) return false;
               return getMonthYear(new Date(u.createdAt)) === thisMonth;
@@ -612,10 +618,27 @@ export default function UsersPage() {
             toggleRow={toggleRow}
             searchPlaceholder="Search members by name or email..."
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setCurrentPage(1);
+            }}
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+            totalItems={totalItems}
+            sortableColumns={{ 0: "id", 1: "name", 2: "email" }}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={(column, direction) => {
+              setSortBy(column as UserSortBy);
+              setSortDir(direction);
+              setCurrentPage(1);
+            }}
           />
         )}
       </div>

@@ -4,6 +4,8 @@ import { Button } from '../../components/Button';
 import { useAllWorkoutPlans } from "../../hooks/useWorkoutPlans";
 import { type UserProfile } from "../../api/profile";
 import { fetchProfile } from "../../api/profile";
+import { fetchTrainerMembersPage } from "../../api/users";
+import type { SortDirection, UserSortBy } from "../../types/Page";
 
 interface Member {
   id: number;
@@ -43,31 +45,27 @@ export default function TrainerDashboard() {
   } = useAllWorkoutPlans(trainerId || 0);
 
   const [members, setMembers] = useState<Member[]>([]);
+  const [totalMembers, setTotalMembers] = useState(0);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [errorMembers, setErrorMembers] = useState("");
+  const sortBy: UserSortBy = "name";
+  const sortDir: SortDirection = "asc";
 
   async function loadClientsData() {
     setLoadingMembers(true);
     setErrorMembers("");
 
     try {
-      const token = localStorage.getItem("authToken");
-
-      const res = await fetch("http://localhost:8001/auth/trainer/members", {
-        headers: {
-          Authorization: `Basic ${token}`,
-        },
+      const data = await fetchTrainerMembersPage({
+        page: 0,
+        size: 10,
+        sortBy,
+        sortDir,
       });
-
-      if (!res.ok) {
-        setErrorMembers("Failed to load trainer data.");
-        return;
-      }
-
-      const data = await res.json();
-      setMembers(data);
-    } catch {
-      setErrorMembers("Server unreachable.");
+      setMembers(data.content);
+      setTotalMembers(data.totalElements);
+    } catch (err: any) {
+      setErrorMembers(err?.message || "Server unreachable.");
     } finally {
       setLoadingMembers(false);
     }
@@ -108,7 +106,7 @@ export default function TrainerDashboard() {
         {/* Total Clients */}
         <div className="bg-white shadow rounded-lg p-6 border-l-4 border-blue-600">
           <p className="text-gray-500">Total Clients</p>
-          <p className="text-3xl font-bold mt-2">{members.length}</p>
+          <p className="text-3xl font-bold mt-2">{totalMembers}</p>
         </div>
 
         {/* Created Workout Plans */}

@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'; // Import PageHeader
 import { Button } from '../../components/Button';
 
 import type { Trainer } from "../../types/Trainer";
+import type { PageResponse, SortDirection, UserSortBy } from "../../types/Page";
 import {
   fetchTrainers,
   deleteTrainer,
@@ -30,26 +31,29 @@ export default function TrainersPage() {
   /* SEARCH AND PAGINATION STATE */
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10; // You can adjust this number
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<UserSortBy>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
   /* ------------------ QUERY: LOAD TRAINERS ------------------ */
-  const trainersQuery = useQuery<Trainer[]>({
-    queryKey: ["trainers"],
-    queryFn: fetchTrainers,
+  const trainersQuery = useQuery<PageResponse<Trainer>, Error>({
+    queryKey: [
+      "trainers",
+      { page: currentPage, pageSize, sortBy, sortDir, searchTerm },
+    ],
+    queryFn: () =>
+      fetchTrainers({
+        page: currentPage - 1,
+        size: pageSize,
+        sortBy,
+        sortDir,
+        search: searchTerm || undefined,
+      }),
   });
 
-  /* FILTER AND PAGINATE TRAINERS */
-  const filteredTrainers = trainersQuery.data?.filter(trainer =>
-    trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainer.trainerDetails?.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const totalPages = Math.ceil(filteredTrainers.length / itemsPerPage);
-  const paginatedTrainers = filteredTrainers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedTrainers = trainersQuery.data?.content || [];
+  const totalPages = trainersQuery.data?.totalPages || 0;
+  const totalItems = trainersQuery.data?.totalElements || 0;
 
   /* ------------------ MUTATION: CREATE TRAINER ------------------ */
   const createTrainerMutation = useMutation({
@@ -150,7 +154,7 @@ export default function TrainersPage() {
             columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-2/12', 'w-3/12 text-center', 'w-1/12 text-center']}
             data={paginatedTrainers}
             renderCells={(trainer, index) => [
-              <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * itemsPerPage}</span>,
+              <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                   <Dumbbell size={16} className="text-blue-600" />
@@ -240,10 +244,27 @@ export default function TrainersPage() {
             }
             searchPlaceholder="Search trainers by name, email, or specialization..."
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setCurrentPage(1);
+            }}
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+            totalItems={totalItems}
+            sortableColumns={{ 0: "id", 1: "name", 2: "email" }}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={(column, direction) => {
+              setSortBy(column as UserSortBy);
+              setSortDir(direction);
+              setCurrentPage(1);
+            }}
           />
         )}
       </div>

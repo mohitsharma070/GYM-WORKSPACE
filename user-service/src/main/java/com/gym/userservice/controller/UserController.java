@@ -5,12 +5,12 @@ import com.gym.userservice.dto.*;
 import com.gym.userservice.entity.User;
 import com.gym.userservice.service.IUserService;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -80,18 +80,36 @@ public class UserController {
     // ==============================================
 
     @GetMapping("/auth/admin/all")
-    public ResponseEntity<List<UserResponse>> getAllUsersForAdmin() {
-        return ResponseEntity.ok(service.getAllUsers());
+    public ResponseEntity<Page<UserResponse>> getAllUsersForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(service.getAllUsers(page, size, sortBy, sortDir, search));
     }
 
     @GetMapping("/auth/admin/members")
-    public ResponseEntity<?> getAllMembersForAdmin() {
-        return ResponseEntity.ok(service.getAllMembersForAdmin());
+    public ResponseEntity<Page<User>> getAllMembersForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(service.getAllMembersForAdmin(page, size, sortBy, sortDir, search));
     }
 
     @GetMapping("/auth/admin/trainers")
-    public ResponseEntity<?> getAllTrainersForAdmin() {
-        return ResponseEntity.ok(service.getAllTrainers());
+    public ResponseEntity<Page<User>> getAllTrainersForAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(service.getAllTrainers(page, size, sortBy, sortDir, search));
     }
 
     // ==============================================
@@ -134,8 +152,14 @@ public class UserController {
     // ==============================================
 
     @GetMapping("/auth/trainer/members")
-    public ResponseEntity<?> getAllMembersForTrainer() {
-        return ResponseEntity.ok(service.getAllMembers());
+    public ResponseEntity<Page<User>> getAllMembersForTrainer(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search
+    ) {
+        return ResponseEntity.ok(service.getAllMembers(page, size, sortBy, sortDir, search));
     }
 
     // ==============================================

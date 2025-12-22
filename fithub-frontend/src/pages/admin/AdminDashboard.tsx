@@ -3,7 +3,7 @@ import { LayoutDashboard, Users, Dumbbell, AlertTriangle, Plus, Megaphone } from
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard'; // Import StatCard
 import Table from '../../components/Table';
-import { loadUsers, createUser } from '../../api/users';
+import { fetchMembersPage, createUser } from '../../api/users';
 import { loadPlan, assignPlanToMember } from '../../api/subscriptions';
 import { fetchAllPlans } from '../../api/plans';
 import { isExpired, getDaysLeft } from '../../utils/dateUtils';
@@ -11,6 +11,7 @@ import type { Plan } from '../../types/Plan';
 import { useNavigate } from "react-router-dom";
 import RenewPlanModal from '../../modals/RenewPlanModal';
 import AddUserModal from '../../modals/AddUserModal';
+import { fetchTrainers } from "../../api/trainers";
 
 interface User {
   id: number;
@@ -29,7 +30,8 @@ interface MemberWithPlan {
 
 export default function AdminDashboard() {
   const [members, setMembers] = useState<User[]>([]);
-  const [trainers, setTrainers] = useState<User[]>([]);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [totalTrainers, setTotalTrainers] = useState(0);
   const [expiredMembers, setExpiredMembers] = useState<MemberWithPlan[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -66,29 +68,18 @@ export default function AdminDashboard() {
     setError("");
 
     try {
-      const token = localStorage.getItem("authToken");
-      if (!token) {
-        setError("Authentication token missing. Please login again.");
-        return;
-      }
-
-      const headers = { Authorization: `Basic ${token}` };
-
-      const [membersRes, trainersRes] = await Promise.all([
-        fetch("http://localhost:8001/auth/admin/members", { headers }),
-        fetch("http://localhost:8001/auth/admin/trainers", { headers }),
+      const [membersPage, trainersPage] = await Promise.all([
+        fetchMembersPage({ page: 0, size: 5, sortBy: "createdAt", sortDir: "desc" }),
+        fetchTrainers({ page: 0, size: 5, sortBy: "createdAt", sortDir: "desc" }),
       ]);
 
-      if (!membersRes.ok || !trainersRes.ok) {
-        setError("Failed to load dashboard data.");
-        return;
-      }
+      setMembers(membersPage.content);
+      setTotalMembers(membersPage.totalElements);
+      setTotalTrainers(trainersPage.totalElements);
 
-      setMembers(await membersRes.json());
-      setTrainers(await trainersRes.json());
-
-    } catch {
-      setError("Server unreachable.");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load dashboard data.");
     } finally {
       setLoading(false);
     }
@@ -97,7 +88,26 @@ export default function AdminDashboard() {
   async function loadExpiredMembers() {
     setLoadingExpired(true);
     try {
-      const allMembers = await loadUsers();
+      const pageSize = 50;
+      const firstPage = await fetchMembersPage({ page: 0, size: pageSize, sortBy: "id", sortDir: "asc" });
+      const allMembers = [...firstPage.content];
+
+      if (firstPage.totalPages > 1) {
+        const remainingPages = await Promise.all(
+          Array.from({ length: firstPage.totalPages - 1 }, (_, idx) =>
+            fetchMembersPage({
+              page: idx + 1,
+              size: pageSize,
+              sortBy: "id",
+              sortDir: "asc",
+            })
+          )
+        );
+
+        remainingPages.forEach((page) => {
+          allMembers.push(...page.content);
+        });
+      }
       const membersWithPlans: MemberWithPlan[] = [];
       
       for (const member of allMembers) {
@@ -242,7 +252,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard 
             title="Total Members"
-            value={members.length}
+            value={totalMembers}
             icon={Users}
             description="Registered gym members"
             variant="success"
@@ -250,7 +260,7 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Total Trainers"
-            value={trainers.length}
+            value={totalTrainers}
             icon={Dumbbell}
             description="Certified gym trainers"
             variant="info"

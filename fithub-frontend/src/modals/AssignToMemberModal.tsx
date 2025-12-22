@@ -14,7 +14,12 @@ interface AssignToMemberModalProps {
 
 
 export default function AssignToMemberModal({ isOpen, onClose, workoutPlan }: AssignToMemberModalProps) {
-  const { data: users, isLoading: isLoadingUsers, error: usersError } = useUsers();
+  const {
+    data: usersPage,
+    isLoading: isLoadingUsers,
+    error: usersError,
+  } = useUsers({ page: 0, size: 500, sortBy: "name", sortDir: "asc" });
+  const users = usersPage?.content || [];
   // const { data: plans, isLoading: isLoadingPlans } = usePlans();
 
 

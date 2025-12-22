@@ -16,7 +16,12 @@ export default function AttendancePage() {
   const { allAttendancesQuery, checkIn, checkOut } = useAttendances(); // Get checkIn and checkOut mutations
   const { data: attendanceRecords = [], isLoading, isError, error } = allAttendancesQuery;
 
-  const { data: users, isLoading: usersLoading, isError: usersError } = useUsers(); // Fetch users
+  const {
+    data: usersPage,
+    isLoading: usersLoading,
+    isError: usersError,
+  } = useUsers({ page: 0, size: 500, sortBy: "name", sortDir: "asc" });
+  const users = usersPage?.content ?? [];
 
   const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
   const [selectedMembershipId, setSelectedMembershipId] = useState<number | undefined>(undefined); // Assuming a user has a membership ID

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Plus } from 'lucide-react';
+import { Button } from '../../components/Button';
 import { useQuery } from "@tanstack/react-query";
 
 import { type UserProfile, fetchProfile } from "../../api/profile";
@@ -89,12 +91,11 @@ export default function ClientsPage() {
     return (
       <div className="mt-10 text-center">
         <p className="text-red-600">{errorUser || clientsError?.message}</p>
-        <button
+        <Button
           onClick={() => { refetchClients(); }}
-          className="px-5 py-2 bg-blue-600 text-white rounded"
         >
-          Retry
-        </button>
+          <Plus size={18} className="mr-2" /> Retry
+        </Button>
       </div>
     );
   }
@@ -152,24 +153,25 @@ export default function ClientsPage() {
                   "No Active Plan"
                 ),
                 <div className="flex gap-2 justify-center">
-                  <button
+                  <Button
+                    size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedClientForPlan(client.id);
                       setShowAssignPlanModal(true);
                     }}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
-                    Assign Plan
-                  </button>
+                    <Plus size={14} className="mr-1" /> Assign Plan
+                  </Button>
                   {currentAssignedPlan && (
-                    <button
+                    <Button
+                      size="sm"
+                      variant="destructive"
                       onClick={handleCancelPlan}
                       disabled={cancelPlanMutation.isPending}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                     >
                       Cancel Plan
-                    </button>
+                    </Button>
                   )}
                 </div>,
               ];

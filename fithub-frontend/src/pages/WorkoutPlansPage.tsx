@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { useAllWorkoutPlans, useWorkoutPlan, useDeleteWorkoutPlan } from "../hooks/useWorkoutPlans"; // useAssignWorkoutPlan will be called inside modal
+import { useAllWorkoutPlans, useWorkoutPlan, useDeleteWorkoutPlan } from "../hooks/useWorkoutPlans";
 import { Difficulty } from "../types/Exercise";
-import Card from "../components/Card";
-import { type WorkoutPlan } from "../types/WorkoutPlan"; // Import WorkoutPlan type
-import { X, Edit, Trash2, UserPlus } from "lucide-react"; // For close button icon and new buttons
+import { type WorkoutPlan } from "../types/WorkoutPlan";
+import { X, Edit, Trash2, UserPlus, Plus, Filter, Search, Activity, Users, Target, TrendingUp } from "lucide-react";
+import { Button } from "../components/Button";
+import { StatCard } from "../components/StatCard";
+import PageHeader from "../components/PageHeader";
 import EditWorkoutPlanModal from "../modals/EditWorkoutPlanModal";
-import AssignToMemberModal from "../modals/AssignToMemberModal"; // Import the new assign modal
-import AddWorkoutPlanModal from "../modals/AddWorkoutPlanModal"; // Import the AddWorkoutPlanModal
-import ConfirmationModal from "../components/ConfirmationModal"; // Import the ConfirmationModal
-import { useProfile } from "../hooks/useProfile"; // Import hook to get current user profile
+import AssignToMemberModal from "../modals/AssignToMemberModal";
+import AddWorkoutPlanModal from "../modals/AddWorkoutPlanModal";
+import ConfirmationModal from "../components/ConfirmationModal";
+import { useProfile } from "../hooks/useProfile";
 
 interface WorkoutPlansPageProps {
   userRole: "admin" | "trainer" | "member";
@@ -16,20 +18,53 @@ interface WorkoutPlansPageProps {
 
 export default function WorkoutPlansPage({ userRole }: WorkoutPlansPageProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | undefined>(undefined);
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null); // State for selected plan ID
-  const [showEditModal, setShowEditModal] = useState(false); // State to control edit modal visibility
-  const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null); // State to hold the plan being edited
-  const [showAssignModal, setShowAssignModal] = useState(false); // State to control assign modal visibility
-  const [planToAssign, setPlanToAssign] = useState<WorkoutPlan | null>(null); // State to hold the plan being assigned
-  const [showAddPlanModal, setShowAddPlanModal] = useState(false); // State to control add plan modal visibility
-  const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null); // State to hold the ID of the plan to be deleted
-  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false); // State to control delete confirmation modal visibility
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [planToEdit, setPlanToEdit] = useState<WorkoutPlan | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [planToAssign, setPlanToAssign] = useState<WorkoutPlan | null>(null);
+  const [showAddPlanModal, setShowAddPlanModal] = useState(false);
+  const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
 
-  const { data: workoutPlans, isLoading, error, refetch } = useAllWorkoutPlans(undefined, selectedDifficulty); // Add refetch
-  const { data: detailedWorkoutPlan }: { data?: WorkoutPlan } = useWorkoutPlan(selectedPlanId as number); // Fetch detailed plan when selectedPlanId is set
-  const { data: userProfile, isLoading: isLoadingProfile } = useProfile(); // Get current user's profile
+  const { data: workoutPlans, isLoading, error, refetch } = useAllWorkoutPlans(undefined, selectedDifficulty);
+  const { data: detailedWorkoutPlan }: { data?: WorkoutPlan } = useWorkoutPlan(selectedPlanId as number);
+  const { data: userProfile, isLoading: isLoadingProfile } = useProfile();
 
   const deleteWorkoutPlanMutation = useDeleteWorkoutPlan();
+
+  // Filter plans by search term
+  const filteredPlans = workoutPlans?.filter(plan => 
+    plan.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (plan.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+  ) || [];
+
+  const getDifficultyColor = (difficulty: Difficulty) => {
+    switch (difficulty) {
+      case Difficulty.BEGINNER:
+        return 'bg-green-50 border-green-200 text-green-800';
+      case Difficulty.INTERMEDIATE:
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+      case Difficulty.ADVANCED:
+        return 'bg-red-50 border-red-200 text-red-800';
+      default:
+        return 'bg-gray-50 border-gray-200 text-gray-800';
+    }
+  };
+
+  const getDifficultyBadgeColor = (difficulty: Difficulty) => {
+    switch (difficulty) {
+      case Difficulty.BEGINNER:
+        return 'bg-green-500';
+      case Difficulty.INTERMEDIATE:
+        return 'bg-yellow-500';
+      case Difficulty.ADVANCED:
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
 
   const handleDifficultyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value as Difficulty | "ALL";
@@ -105,92 +140,198 @@ export default function WorkoutPlansPage({ userRole }: WorkoutPlansPageProps) {
 
   return (
     <>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Workout Plans</h1>
-        {canManagePlans && (
-          <button
-            onClick={() => setShowAddPlanModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            + Add Workout Plan
-          </button>
+      <div className="space-y-8">
+        <PageHeader
+          icon={Activity}
+          title="Workout Plans"
+          subtitle="Manage and assign workout plans for your gym members."
+          actions={
+            canManagePlans && (
+              <Button onClick={() => setShowAddPlanModal(true)}>
+                <Plus size={18} className="mr-2" /> Add Workout Plan
+              </Button>
+            )
+          }
+        />
+
+        {/* STATS DASHBOARD */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <StatCard
+            title="Total Plans"
+            value={workoutPlans?.length || 0}
+            icon={Activity}
+            description="Available workout plans"
+            variant="success"
+          />
+          <StatCard
+            title="Beginner Plans"
+            value={workoutPlans?.filter(p => p.difficulty === Difficulty.BEGINNER).length || 0}
+            icon={Target}
+            description="Easy difficulty plans"
+            variant="info"
+          />
+          <StatCard
+            title="Advanced Plans"
+            value={workoutPlans?.filter(p => p.difficulty === Difficulty.ADVANCED).length || 0}
+            icon={TrendingUp}
+            description="High intensity plans"
+            variant="warning"
+          />
+          <StatCard
+            title="Total Exercises"
+            value={workoutPlans?.reduce((acc, plan) => 
+              acc + plan.workoutDays.reduce((dayAcc, day) => 
+                dayAcc + day.workoutExercises.length, 0
+              ), 0
+            ) || 0}
+            icon={Users}
+            description="Exercises across all plans"
+            variant="success"
+          />
+        </div>
+
+        {/* FILTERS AND SEARCH */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search workout plans..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            <div className="relative">
+              <Filter size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <select
+                value={selectedDifficulty || "ALL"}
+                onChange={handleDifficultyChange}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent appearance-none bg-white"
+              >
+                <option value="ALL">All Difficulties</option>
+                {Object.values(Difficulty).map((diff) => (
+                  <option key={diff} value={diff}>
+                    {diff.charAt(0).toUpperCase() + diff.slice(1).toLowerCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* LOADING AND ERROR STATES */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading workout plans...</p>
+            </div>
+          </div>
         )}
-      </div>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 text-lg font-medium mb-4">Error loading workout plans: {error.message}</p>
+            <Button onClick={() => refetch()} variant="outline">
+              Try Again
+            </Button>
+          </div>
+        )}
 
-      <div className="mb-6">
-        <label htmlFor="difficulty-select" className="block text-gray-700 text-sm font-bold mb-2">
-          Filter by Difficulty:
-        </label>
-        <select
-          id="difficulty-select"
-          className="shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          value={selectedDifficulty || "ALL"}
-          onChange={handleDifficultyChange}
-        >
-          <option value="ALL">All Difficulties</option>
-          {Object.values(Difficulty).map((diff) => (
-            <option key={diff} value={diff}>
-              {diff.charAt(0).toUpperCase() + diff.slice(1).toLowerCase()}
-            </option>
-          ))}
-        </select>
-      </div>
+        {/* WORKOUT PLANS GRID */}
+        {!isLoading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className={`relative rounded-lg shadow-sm border hover:shadow-lg transition-all duration-300 p-6 cursor-pointer ${getDifficultyColor(plan.difficulty)}`}
+                onClick={() => handleCardClick(plan.id)}
+              >
+                {/* Difficulty Badge */}
+                <div className="absolute top-3 right-3">
+                  <span className={`px-3 py-1 rounded-full text-white text-xs font-bold ${getDifficultyBadgeColor(plan.difficulty)}`}>
+                    {plan.difficulty.charAt(0).toUpperCase() + plan.difficulty.slice(1).toLowerCase()}
+                  </span>
+                </div>
 
-      {isLoading && <p>Loading workout plans...</p>}
-      {error && <p className="text-red-500">Error loading workout plans: {error.message}</p>}
+                {/* Plan Icon */}
+                <div className="flex items-center mb-4">
+                  <div className="p-2 bg-green-100 rounded-full mr-3">
+                    <Activity size={20} className="text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 pr-20">{plan.name}</h3>
+                </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {workoutPlans?.map((plan) => (
-          <Card 
-            key={plan.id} 
-            className="shadow-lg hover:shadow-xl transition-shadow duration-300"
-          >
-            <div onClick={() => handleCardClick(plan.id)} className="cursor-pointer">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
-              <p className="text-gray-600 mb-4">{plan.description}</p>
-              <div className="flex justify-between items-center text-sm mb-2">
-                <span className={`px-3 py-1 rounded-full text-white ${
-                    plan.difficulty === Difficulty.BEGINNER ? "bg-green-500" :
-                    plan.difficulty === Difficulty.INTERMEDIATE ? "bg-yellow-500" :
-                    "bg-red-500"
-                }`}>
-                  {plan.difficulty.charAt(0).toUpperCase() + plan.difficulty.slice(1).toLowerCase()}
-                </span>
-                {plan.createdByTrainerId && (
-                  <span className="text-gray-500">Trainer ID: {plan.createdByTrainerId}</span>
+                {/* Plan Details */}
+                <div className="space-y-3 mb-6">
+                  <p className="text-gray-700 text-sm line-clamp-2">{plan.description}</p>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Users size={16} className="text-gray-500" />
+                      <span className="text-gray-600">{plan.workoutDays.length} days</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Target size={16} className="text-gray-500" />
+                      <span className="text-gray-600">
+                        {plan.workoutDays.reduce((acc, day) => acc + day.workoutExercises.length, 0)} exercises
+                      </span>
+                    </div>
+                  </div>
+
+                  {plan.createdByTrainerId && (
+                    <div className="flex items-center space-x-2 text-sm">
+                      <Users size={16} className="text-gray-500" />
+                      <span className="text-gray-500">Trainer ID: {plan.createdByTrainerId}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                {canManagePlans && (
+                  <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleEditPlan(plan); }}
+                      className="p-2 rounded-full hover:bg-blue-100 text-blue-600 transition-colors"
+                      title="Edit Plan"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeletePlan(plan.id); }}
+                      className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+                      title="Delete Plan"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleAssignPlan(plan); }}
+                      className="p-2 rounded-full hover:bg-green-100 text-green-600 transition-colors"
+                      title="Assign Plan"
+                    >
+                      <UserPlus size={16} />
+                    </button>
+                  </div>
                 )}
               </div>
-            </div>
-
-            {canManagePlans && (
-              <div className="flex justify-end space-x-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleEditPlan(plan); }} // Pass the full plan object
-                  className="p-2 rounded-full hover:bg-blue-100 text-blue-600 transition-colors"
-                  title="Edit Plan"
-                >
-                  <Edit size={18} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDeletePlan(plan.id); }}
-                  className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
-                  title="Delete Plan"
-                >
-                  <Trash2 size={18} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleAssignPlan(plan); }} // Pass full plan object
-                  className="p-2 rounded-full hover:bg-green-100 text-green-600 transition-colors"
-                  title="Assign Plan"
-                >
-                  <UserPlus size={18} />
-                </button>
+            ))}
+            
+            {filteredPlans.length === 0 && !isLoading && !error && (
+              <div className="col-span-full text-center py-12">
+                <div className="text-gray-400 mb-3">
+                  <Activity size={48} className="mx-auto" />
+                </div>
+                <p className="text-gray-500 text-lg font-medium">
+                  {searchTerm || selectedDifficulty ? 'No workout plans match your filters' : 'No workout plans found'}
+                </p>
+                <p className="text-gray-400 text-sm mt-1">
+                  {searchTerm || selectedDifficulty ? 'Try adjusting your search or filter' : 'Create your first workout plan to get started'}
+                </p>
               </div>
             )}
-          </Card>
-        ))}
-        {workoutPlans?.length === 0 && !isLoading && !error && (
-            <p className="text-gray-700">No workout plans found for the selected difficulty.</p>
+          </div>
         )}
       </div>
 

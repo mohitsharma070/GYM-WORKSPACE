@@ -1,14 +1,15 @@
 import React, { useState } from "react";
-import { sendPromotionalNotification } from "../../api/notifications"; // Updated import
-import { uploadImage } from "../../api/images"; // Import uploadImage
+import { sendPromotionalNotification } from "../../api/notifications";
+import { uploadImage } from "../../api/images";
 import { Link } from "react-router-dom";
-import ConfirmationModal from "../../components/ConfirmationModal"; // Import ConfirmationModal
-import { useMutation, useQueryClient } from "@tanstack/react-query"; // Ensure useMutation is imported for image upload
-import { useToast } from "../../components/ToastProvider"; // Import useToast
-import { TargetType } from "../../types/TargetType"; // Import TargetType enum
-import type { PromotionalNotificationRequest } from "../../types/Notification"; // Import PromotionalNotificationRequest type
-import { Megaphone, Send, Eye, Users, MessageSquare, Image, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import ConfirmationModal from "../../components/ConfirmationModal";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "../../components/ToastProvider";
+import { TargetType } from "../../types/TargetType";
+import type { PromotionalNotificationRequest } from "../../types/Notification";
+import { Megaphone, Send, Eye, Users, MessageSquare, Image, Info, CheckCircle, AlertCircle, Activity, Target, Globe } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
+import { StatCard } from '../../components/StatCard';
 
 export default function BroadcastPage() {
   const queryClient = useQueryClient();
@@ -116,6 +117,41 @@ export default function BroadcastPage() {
         subtitle="Send promotional messages and announcements to members and trainers."
       />
 
+      {/* STATS DASHBOARD */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Message Length"
+          value={messageCharCount}
+          icon={MessageSquare}
+          description={`${MAX_MESSAGE_LENGTH - messageCharCount} chars remaining`}
+          variant={messageCharCount > 250 ? 'warning' : 'info'}
+        />
+        <StatCard
+          title="Target Audience"
+          value={
+            selectedTargetType === TargetType.ALL_USERS ? 'All Users' :
+            selectedTargetType === TargetType.ALL_MEMBERS ? 'All Members' :
+            selectedTargetType === TargetType.ALL_TRAINERS ? 'All Trainers' :
+            'Specific Users'
+          }
+          icon={
+            selectedTargetType === TargetType.ALL_USERS ? Globe :
+            selectedTargetType === TargetType.ALL_MEMBERS ? Users :
+            selectedTargetType === TargetType.ALL_TRAINERS ? Activity :
+            Target
+          }
+          description="Selected broadcast target"
+          variant="success"
+        />
+        <StatCard
+          title="Media Attachment"
+          value={uploadedImageUrl ? 'Image Ready' : 'No Media'}
+          icon={Image}
+          description={uploadedImageUrl ? 'Image uploaded successfully' : 'Optional image attachment'}
+          variant={uploadedImageUrl ? 'success' : 'default'}
+        />
+      </div>
+
       {/* Information Banner */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
@@ -140,11 +176,13 @@ export default function BroadcastPage() {
         </div>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg border">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg rounded-xl border border-blue-200">
         <div className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <MessageSquare className="text-gray-600" size={20} />
-            <h2 className="text-lg font-semibold text-gray-900">Compose Message</h2>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <MessageSquare className="text-blue-600" size={24} />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">Compose Message</h2>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -154,7 +192,7 @@ export default function BroadcastPage() {
               </label>
               <textarea
                 id="messageContent"
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full border-2 border-gray-200 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition-all duration-200 resize-none shadow-sm"
                 rows={6}
                 value={messageContent}
                 onChange={(e) => {
@@ -162,27 +200,43 @@ export default function BroadcastPage() {
                   setMessageContent(text);
                   setMessageCharCount(text.length);
                 }}
-                placeholder="Type your message here..."
+                placeholder="Type your message here... ✨"
                 maxLength={MAX_MESSAGE_LENGTH}
               />
-              <div className="flex justify-between mt-2 text-sm">
-                <span className="text-gray-500">
-                  {messageCharCount}/{MAX_MESSAGE_LENGTH} characters
-                </span>
+              <div className="flex justify-between mt-3 text-sm">
+                <div className="flex items-center space-x-4">
+                  <span className={`font-medium ${
+                    messageCharCount > 250 ? 'text-orange-600' : 
+                    messageCharCount > 200 ? 'text-yellow-600' : 'text-green-600'
+                  }`}>
+                    {messageCharCount}/{MAX_MESSAGE_LENGTH} characters
+                  </span>
+                  <div className="w-32 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        messageCharCount > 250 ? 'bg-orange-500' :
+                        messageCharCount > 200 ? 'bg-yellow-500' : 'bg-green-500'
+                      }`}
+                      style={{ width: `${(messageCharCount / MAX_MESSAGE_LENGTH) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
                 {messageCharCount > 250 && (
                   <div className="flex items-center gap-1 text-orange-600">
                     <AlertCircle size={14} />
-                    <span>Message may be truncated on some devices</span>
+                    <span className="font-medium">May be truncated</span>
                   </div>
                 )}
               </div>
             </div>
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="text-gray-600" size={18} />
-                <label className="text-sm font-medium text-gray-700">Target Audience</label>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="text-green-600" size={20} />
+                </div>
+                <label className="text-sm font-semibold text-gray-700">Target Audience</label>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-white rounded-md border hover:bg-gray-50 transition-colors">
                     <div className="flex items-center">
@@ -326,18 +380,18 @@ export default function BroadcastPage() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-3 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               disabled={sendNotificationMutation.isPending || imageUploadMutation.isPending || !messageContent.trim() || (selectedTargetType === TargetType.SPECIFIC_PHONES && !specificTargetInput.trim())}
             >
               {sendNotificationMutation.isPending ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  Sending...
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  Sending Broadcast...
                 </>
               ) : (
                 <>
-                  <Send size={20} />
-                  Send Broadcast
+                  <Send size={22} />
+                  Send Broadcast Message
                 </>
               )}
             </button>

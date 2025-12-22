@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Edit, Trash, MinusCircle } from 'lucide-react'; // Import the icon
+import { Users, Plus, Edit, Trash, MinusCircle, UserCheck, UserX, TrendingUp } from 'lucide-react'; // Import the icon
 import { Button } from '../../components/Button'; // Import Button component
+import { StatCard } from '../../components/StatCard';
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 import type { User } from "../../types/User";
@@ -308,46 +309,50 @@ export default function UsersPage() {
   }
 
   /* UI */
-  const tableHeaders = ["#", "Name", "Email", "Phone", "Actions", "▾"];
+  const tableHeaders = ["#", "Member Name", "Email Address", "Phone Number", "Actions", "Details"];
 
   const getUserCells = (user: User, index: number) => [
-    index + 1,
-    <span className="font-medium">{user.name}</span>,
-    user.email,
-    user.memberDetails?.phone,
-    <div className="flex gap-2 justify-center">
-      {/* EDIT USER BUTTON */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setShowEditUserModal(true);
-                    }}
-                  >
-                    <Edit size={16} /> Edit
-                  </Button>
-
-      {/* DELETE USER */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm("Delete user?")) {
-                        deleteUserMutation.mutate(user.id);
-                      }
-                    }}
-                  >
-                    <Trash size={16} /> Delete
-                  </Button>
+    <span className="text-gray-600 font-medium">{index + 1}</span>,
+    <div className="flex items-center space-x-3">
+      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+        <Users size={16} className="text-green-600" />
+      </div>
+      <span className="font-semibold text-gray-900">{user.name}</span>
     </div>,
-    <span
-      className={`inline-block transform transition-transform ${
-        openRowIndex === index ? "rotate-180" : ""
-      }`}
-    >
-      ▼
-    </span>,
+    <span className="text-gray-700">{user.email}</span>,
+    <span className="text-gray-600">{user.memberDetails?.phone || 'Not provided'}</span>,
+    <div className="flex gap-2 justify-center">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setSelectedUser(user);
+          setShowEditUserModal(true);
+        }}
+      >
+        <Edit size={16} className="mr-1" /> Edit
+      </Button>
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => {
+          if (confirm("Are you sure you want to delete this member?")) {
+            deleteUserMutation.mutate(user.id);
+          }
+        }}
+      >
+        <Trash size={16} className="mr-1" /> Delete
+      </Button>
+    </div>,
+    <div className="text-center">
+      <button className="text-green-600 hover:text-green-800 transition-colors">
+        <span className={`inline-block transform transition-transform duration-200 ${
+          openRowIndex === index ? "rotate-180" : ""
+        }`}>
+          ▼
+        </span>
+      </button>
+    </div>,
   ];
 
   const renderExpandedUserContent = (user: User, index: number) => {
@@ -454,27 +459,26 @@ export default function UsersPage() {
           </div>
         )}
 
-        {/* ASSIGN PLAN BUTTON */}
-        <button
-          onClick={() => {
-            setEditPlanMemberId(user.id);
-            setShowEditPlanModal(true);
-          }}
-          className="mt-5 px-4 py-2 bg-purple-600 text-white rounded mr-3"
-        >
-          + Assign Plan
-        </button>
-
-        {/* ASSIGN PRODUCT BUTTON */}
-        <button
-          onClick={() => {
-            setSelectedMemberId(user.id);
-            setShowProductModal(true);
-          }}
-          className="mt-5 px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          + Assign Product
-        </button>
+        {/* ASSIGN BUTTONS */}
+        <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+          <Button
+            onClick={() => {
+              setEditPlanMemberId(user.id);
+              setShowEditPlanModal(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" /> Assign Plan
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedMemberId(user.id);
+              setShowProductModal(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" /> Assign Product
+          </Button>
+        </div>
       </>
     );
   };
@@ -487,7 +491,6 @@ export default function UsersPage() {
         actions={
           <Button
             onClick={() => setShowAddUserModal(true)}
-            className="bg-green-600 hover:bg-green-700"
             size="default"
           >
             <Plus size={18} className="mr-2" /> Add Member
@@ -495,7 +498,39 @@ export default function UsersPage() {
         }
       />
 
-      <div className="bg-white shadow-sm rounded-lg p-6">
+      {/* STATS DASHBOARD */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Members"
+          value={usersQuery.data?.length || 0}
+          icon={Users}
+          description="All registered members"
+          variant="success"
+        />
+        <StatCard
+          title="Active Plans"
+          value={filteredUsers.filter(u => u.memberDetails?.membershipType).length}
+          icon={UserCheck}
+          description="Members with active plans"
+          variant="info"
+        />
+        <StatCard
+          title="No Plans"
+          value={filteredUsers.filter(u => !u.memberDetails?.membershipType).length}
+          icon={UserX}
+          description="Members without plans"
+          variant="warning"
+        />
+        <StatCard
+          title="Growth"
+          value="+12%"
+          icon={TrendingUp}
+          description="New members this month"
+          variant="success"
+        />
+      </div>
+
+      <div className="bg-yellow-100 shadow-sm rounded-lg p-6 border border-gray-100">
         {usersQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">

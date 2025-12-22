@@ -10,6 +10,7 @@ import {
 import { TargetType } from "../../types/TargetType"; // Import TargetType
 import { ScrollText, BellOff, Filter, Search, BarChart3, Send, CheckCircle, XCircle, Clock, AlertTriangle, Image } from 'lucide-react'; // Import the icon and BellOff
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
+import { StatCard } from '../../components/StatCard'; // Import StatCard
 import EmptyState from "../../components/EmptyState"; // Import EmptyState
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import Table from "../../components/Table";
@@ -130,6 +131,20 @@ export default function AdminNotificationLogsPage() {
     return history.filter(item => item.status === status).length;
   };
 
+  // Enhanced statistics calculation
+  const sentCount = getStatusCount('SENT');
+  const failedCount = getStatusCount('FAILED');
+  const totalMessages = history.length;
+  const successRate = totalMessages > 0 ? ((sentCount / totalMessages) * 100).toFixed(1) : '0';
+  
+  // Calculate recent activity (messages from last 24 hours)
+  const recentActivity = history.filter(log => {
+    const logTime = new Date(log.timestamp);
+    const now = new Date();
+    const diffHours = (now.getTime() - logTime.getTime()) / (1000 * 60 * 60);
+    return diffHours <= 24;
+  }).length;
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -138,58 +153,58 @@ export default function AdminNotificationLogsPage() {
         subtitle="Track delivery status and history of all broadcast notifications."
       />
 
-      {/* Stats Overview */}
-      {history.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Sent</p>
-                <p className="text-2xl font-bold text-green-600">{getStatusCount('SENT')}</p>
-              </div>
-              <div className="p-2 bg-green-100 rounded-full">
-                <CheckCircle className="text-green-600" size={20} />
-              </div>
+      {/* Enhanced Statistics Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Messages"
+          value={totalMessages.toString()}
+          icon={Send}
+          variant="info"
+        />
+        <StatCard
+          title="Successfully Sent"
+          value={sentCount.toString()}
+          icon={CheckCircle}
+          variant="success"
+          description="Delivered messages"
+        />
+        <StatCard
+          title="Success Rate"
+          value={`${successRate}%`}
+          icon={BarChart3}
+          variant="default"
+          description="Delivery success"
+        />
+        <StatCard
+          title="Recent Activity"
+          value={recentActivity.toString()}
+          icon={Clock}
+          variant="warning"
+          description="Last 24 hours"
+        />
+      </div>
+
+      {failedCount > 0 && (
+        <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Failed</p>
-                <p className="text-2xl font-bold text-red-600">{getStatusCount('FAILED')}</p>
-              </div>
-              <div className="p-2 bg-red-100 rounded-full">
-                <XCircle className="text-red-600" size={20} />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{getStatusCount('PENDING')}</p>
-              </div>
-              <div className="p-2 bg-yellow-100 rounded-full">
-                <Clock className="text-yellow-600" size={20} />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total</p>
-                <p className="text-2xl font-bold text-gray-900">{history.length}</p>
-              </div>
-              <div className="p-2 bg-gray-100 rounded-full">
-                <BarChart3 className="text-gray-600" size={20} />
-              </div>
+            <div>
+              <h4 className="text-sm font-semibold text-red-900">
+                {failedCount} failed message{failedCount > 1 ? 's' : ''} detected
+              </h4>
+              <p className="text-sm text-red-700 mt-1">
+                Some messages could not be delivered. Check the logs below for details.
+              </p>
             </div>
           </div>
         </div>
       )}
 
+
       {/* Filters Section */}
-      <div className="bg-white rounded-lg border mb-6">
+      <div className="bg-gradient-to-r from-white to-gray-50 rounded-lg border mb-6">
         <div className="p-4 border-b">
           <div className="flex items-center gap-2">
             <Filter size={18} className="text-gray-600" />
@@ -260,7 +275,7 @@ export default function AdminNotificationLogsPage() {
       </div>
 
       {history.length > 0 ? (
-        <div className="bg-white shadow-sm rounded-lg border overflow-hidden">
+        <div className="bg-gradient-to-br from-white to-gray-50 shadow-sm rounded-lg border overflow-hidden">
           <Table
             headers={[
               "Sent At",
@@ -344,7 +359,7 @@ export default function AdminNotificationLogsPage() {
           />
         </div>
       ) : (
-        <div className="bg-white rounded-lg border">
+        <div className="bg-gradient-to-br from-white via-gray-50 to-blue-50 rounded-lg border shadow-sm">
           <EmptyState
             icon={searchTerm ? Search : Send}
             title={searchTerm ? "No matching logs found" : "No broadcast logs yet"}
@@ -366,7 +381,7 @@ export default function AdminNotificationLogsPage() {
           
           {!searchTerm && (
             <div className="px-6 pb-6">
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-blue-900 mb-2">💡 Get Started</h4>
                 <p className="text-sm text-blue-700 mb-3">
                   Broadcast notifications are a powerful way to keep your community informed about:

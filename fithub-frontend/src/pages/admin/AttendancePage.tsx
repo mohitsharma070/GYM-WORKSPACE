@@ -1,12 +1,13 @@
 import { useAttendances } from "../../hooks/useAttendance";
 import { useToast } from "../../components/ToastProvider";
-import type { Attendance } from "../../types/Attendance"; // Using type-only import
-import { useUsers } from "../../hooks/useUsers"; // Import useUsers
-import type { User } from "../../types/User"; // Import User type
-import { useState, useMemo } from "react"; // Import useState and useMemo
-import { CalendarCheck, CalendarOff } from 'lucide-react'; // Import the icon
-import PageHeader from '../../components/PageHeader'; // Import PageHeader
-import EmptyState from "../../components/EmptyState"; // Import EmptyState
+import type { Attendance } from "../../types/Attendance";
+import { useUsers } from "../../hooks/useUsers";
+import type { User } from "../../types/User";
+import { useState, useMemo } from "react";
+import { CalendarCheck, CalendarOff, Users, Clock, UserCheck } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import { StatCard } from '../../components/StatCard';
+import EmptyState from "../../components/EmptyState";
 import Table from "../../components/Table";
 import { Button } from "../../components/Button";
 
@@ -83,6 +84,39 @@ export default function AttendancePage() {
         title="Attendance"
         subtitle="Monitor and manage member attendance."
       />
+      {/* STATS DASHBOARD */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Records"
+          value={attendanceRecords.length}
+          icon={CalendarCheck}
+          description="All attendance entries"
+          variant="success"
+        />
+        <StatCard
+          title="Active Sessions"
+          value={attendanceRecords.filter(r => !r.checkOutTime).length}
+          icon={UserCheck}
+          description="Currently checked in"
+          variant="warning"
+        />
+        <StatCard
+          title="Today's Visits"
+          value={attendanceRecords.filter(r => 
+            new Date(r.checkInTime).toDateString() === new Date().toDateString()
+          ).length}
+          icon={Clock}
+          description="Check-ins today"
+          variant="info"
+        />
+        <StatCard
+          title="Completed Sessions"
+          value={attendanceRecords.filter(r => r.checkOutTime).length}
+          icon={Users}
+          description="Finished workouts"
+          variant="success"
+        />
+      </div>
       <div className="bg-white shadow-sm rounded-lg p-8">
         <h2 className="text-2xl font-semibold text-gray-900 mb-6">Attendance Records</h2>
         {isLoading ? (
@@ -110,7 +144,12 @@ export default function AttendancePage() {
               columnClasses={['w-1/6 text-center', 'w-2/6', 'w-2/6', 'w-1/6 text-center']}
               data={paginatedRecords}
               renderCells={(record: Attendance) => [
-                <span className="font-semibold text-gray-900">{record.userId}</span>,
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users size={16} className="text-blue-600" />
+                  </div>
+                  <span className="font-semibold text-gray-900">{record.userId}</span>
+                </div>,
                 <span className="text-gray-600">{new Date(record.checkInTime).toLocaleString()}</span>,
                 <span className="text-gray-600">{record.checkOutTime ? new Date(record.checkOutTime).toLocaleString() : 'N/A'}</span>,
                 <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -142,8 +181,13 @@ export default function AttendancePage() {
         )}
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg p-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-6">Manual Attendance Entry</h2>
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 shadow-sm rounded-lg p-8 border border-green-200">
+        <div className="flex items-center mb-6">
+          <div className="p-2 bg-green-100 rounded-full mr-3">
+            <UserCheck size={24} className="text-green-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900">Manual Attendance Entry</h2>
+        </div>
         {usersLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="text-center">

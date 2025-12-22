@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Plus } from 'lucide-react';
+import { Button } from '../../components/Button';
 import { useAllWorkoutPlans } from "../../hooks/useWorkoutPlans";
 import { type UserProfile } from "../../api/profile";
 import { fetchProfile } from "../../api/profile";
@@ -85,12 +87,11 @@ export default function TrainerDashboard() {
         <p className="text-red-600">
           {errorUser || errorMembers || plansError?.message}
         </p>
-        <button
+        <Button
           onClick={() => { loadProfile(); loadClientsData(); }}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
         >
-          Retry
-        </button>
+          <Plus size={18} className="mr-2" /> Retry
+        </Button>
       </div>
     );
   }

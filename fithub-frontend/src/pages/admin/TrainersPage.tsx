@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dumbbell, Plus, Edit, Trash } from 'lucide-react'; // Import the icons
+import { Dumbbell, Plus, Edit, Trash, Users, Award, TrendingUp, Star } from 'lucide-react'; // Import the icons
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
 import { Button } from '../../components/Button';
+import { StatCard } from '../../components/StatCard';
 
 import type { Trainer } from "../../types/Trainer";
 import {
@@ -106,7 +107,6 @@ export default function TrainersPage() {
         actions={
           <Button
             onClick={() => setShowAddTrainerModal(true)}
-            className="bg-green-600 hover:bg-green-700"
             size="default"
           >
             <Plus size={18} className="mr-2" /> Add Trainer
@@ -114,8 +114,43 @@ export default function TrainersPage() {
         }
       />
 
+      {/* STATS DASHBOARD */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Trainers"
+          value={trainersQuery.data?.length || 0}
+          icon={Dumbbell}
+          description="Certified gym trainers"
+          variant="success"
+        />
+        <StatCard
+          title="Active Trainers"
+          value={filteredTrainers.filter(t => t.trainerDetails?.certification).length}
+          icon={Users}
+          description="Currently active trainers"
+          variant="info"
+        />
+        <StatCard
+          title="Avg Experience"
+          value={`${Math.round(
+            (trainersQuery.data?.reduce((acc, t) => acc + (t.trainerDetails?.experienceYears || 0), 0) || 0) / 
+            (trainersQuery.data?.length || 1)
+          )} years`}
+          icon={Award}
+          description="Average years of experience"
+          variant="warning"
+        />
+        <StatCard
+          title="Growth"
+          value="+8%"
+          icon={TrendingUp}
+          description="New trainers this month"
+          variant="success"
+        />
+      </div>
+
       {/* TABLE */}
-      <div className="bg-white shadow-sm rounded-lg p-6">
+      <div className="bg-yellow-100 shadow-sm rounded-lg p-6 border border-gray-100">
         {trainersQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -145,13 +180,24 @@ export default function TrainersPage() {
           </div>
         ) : (
           <Table
-            headers={["#", "Name", "Email", "Actions", "▾"]}
-            columnClasses={['w-1/12 text-center', 'w-3/12', 'w-3/12', 'w-3/12 text-center', 'w-1/12 text-center']}
+            headers={["#", "Trainer Name", "Email Address", "Specialization", "Actions", "Details"]}
+            columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-2/12', 'w-3/12 text-center', 'w-1/12 text-center']}
             data={paginatedTrainers}
             renderCells={(trainer, index) => [
-              <span className="text-gray-500 font-medium">{index + 1 + (currentPage - 1) * itemsPerPage}</span>,
-              <span className="font-semibold text-gray-900">{trainer.name}</span>,
-              <span className="text-gray-600">{trainer.email}</span>,
+              <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * itemsPerPage}</span>,
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Dumbbell size={16} className="text-blue-600" />
+                </div>
+                <span className="font-semibold text-gray-900">{trainer.name}</span>
+              </div>,
+              <span className="text-gray-700">{trainer.email}</span>,
+              <div className="text-sm">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <Star size={12} className="mr-1" />
+                  {trainer.trainerDetails?.specialization || 'General'}
+                </span>
+              </div>,
               <div className="flex gap-2 justify-center">
                 {/* EDIT BUTTON */}
                 <Button
@@ -178,31 +224,46 @@ export default function TrainersPage() {
                   <Trash size={14} className="mr-1" /> Delete
                 </Button>
               </div>,
-              <span
-                className={`inline-block transform transition-transform ${
-                  openRowIndex === index ? "rotate-180" : ""
-                }`}
-              >
-                ▼
-              </span>,
+              <div className="text-center">
+                <button className="text-green-600 hover:text-green-800 transition-colors">
+                  <span className={`inline-block transform transition-transform duration-200 ${
+                    openRowIndex === index ? "rotate-180" : ""
+                  }`}>
+                    ▼
+                  </span>
+                </button>
+              </div>,
             ]}
             renderExpandedContent={(trainer) => (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Specialization</p>
-                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.specialization ?? "-"}</p>
-                </div>
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Experience (Years)</p>
-                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.experienceYears ?? "-"}</p>
-                </div>
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Certification</p>
-                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.certification ?? "-"}</p>
-                </div>
-                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Phone</p>
-                  <p className="font-semibold text-gray-900">{trainer.trainerDetails?.phone ?? "-"}</p>
+              <div className="p-6 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Award size={20} className="mr-2 text-blue-600" />
+                  Trainer Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Star size={16} className="text-yellow-500" />
+                      <p className="text-sm font-medium text-gray-500">Specialization</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">{trainer.trainerDetails?.specialization || 'General Training'}</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <TrendingUp size={16} className="text-green-500" />
+                      <p className="text-sm font-medium text-gray-500">Experience</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">
+                      {trainer.trainerDetails?.experienceYears ? `${trainer.trainerDetails.experienceYears} years` : 'Not specified'}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Award size={16} className="text-blue-500" />
+                      <p className="text-sm font-medium text-gray-500">Certification</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">{trainer.trainerDetails?.certification || 'None specified'}</p>
+                  </div>
                 </div>
               </div>
             )}

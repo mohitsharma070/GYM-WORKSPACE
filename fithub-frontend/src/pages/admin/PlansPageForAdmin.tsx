@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, IndianRupee, Clock, ClipboardList } from "lucide-react";
 import PageHeader from '../../components/PageHeader';
+import { Button } from '../../components/Button';
 
 interface Plan {
   id: number;
@@ -24,6 +25,16 @@ export default function PlansPageForAdmin() {
     price: "",
     durationDays: "",
   });
+
+  // Alternate color themes for plan cards
+  const colorThemes = [
+    { bg: 'bg-gradient-to-br from-blue-50 to-blue-100', border: 'border-blue-200', icon: 'bg-blue-100 text-blue-600' },
+    { bg: 'bg-gradient-to-br from-purple-50 to-purple-100', border: 'border-purple-200', icon: 'bg-purple-100 text-purple-600' },
+    { bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100', border: 'border-emerald-200', icon: 'bg-emerald-100 text-emerald-600' },
+    { bg: 'bg-gradient-to-br from-amber-50 to-amber-100', border: 'border-amber-200', icon: 'bg-amber-100 text-amber-600' },
+    { bg: 'bg-gradient-to-br from-rose-50 to-rose-100', border: 'border-rose-200', icon: 'bg-rose-100 text-rose-600' },
+    { bg: 'bg-gradient-to-br from-cyan-50 to-cyan-100', border: 'border-cyan-200', icon: 'bg-cyan-100 text-cyan-600' },
+  ];
 
   // Load Plans
   async function loadPlans() {
@@ -174,23 +185,22 @@ export default function PlansPageForAdmin() {
         title="Membership Plans"
         subtitle="Manage your gym's membership plans."
         actions={
-          <button
-            onClick={() => openModal()}
-            className="px-6 py-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
-          >
+          <Button onClick={() => openModal()}>
             <Plus size={20} /> Add Plan
-          </button>
+          </Button>
         }
       />
 
       {/* PLANS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {plans.map((p) => (
+        {plans.map((p, index) => {
+          const theme = colorThemes[index % colorThemes.length];
+          return (
           <div
             key={p.id}
-            className="bg-white shadow-sm rounded-lg p-6 border border-gray-200 hover:shadow-md transition-all group relative"
+            className={`${theme.bg} shadow-sm rounded-lg p-6 border ${theme.border} hover:shadow-lg transition-all group relative`}
           >
-            <div className="absolute top-4 right-4 p-2 bg-blue-100 rounded-full text-blue-600 group-hover:bg-blue-200 transition-colors">
+            <div className={`absolute top-4 right-4 p-2 ${theme.icon} rounded-full group-hover:shadow-md transition-all`}>
               <ClipboardList size={20} />
             </div>
             
@@ -213,22 +223,27 @@ export default function PlansPageForAdmin() {
 
             {/* ACTION BUTTONS */}
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => openModal(p)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+                className="flex-1"
               >
-                <Pencil size={16} /> Edit
-              </button>
+                <Pencil size={16} className="mr-1" /> Edit
+              </Button>
 
-              <button
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => deletePlan(p.id)}
-                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors text-sm font-medium"
+                className="flex-1"
               >
-                <Trash2 size={16} /> Delete
-              </button>
+                <Trash2 size={16} className="mr-1" /> Delete
+              </Button>
             </div>
           </div>
-        ))}
+        );
+        })}
 
         {plans.length === 0 && (
           <div className="col-span-full text-center py-12">
@@ -298,19 +313,18 @@ export default function PlansPageForAdmin() {
             </div>
 
             <div className="flex justify-end gap-3 mt-8">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowModal(false)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
                 Cancel
-              </button>
+              </Button>
 
-              <button
+              <Button
                 onClick={savePlan}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
               >
                 {editPlan ? "Update Plan" : "Create Plan"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

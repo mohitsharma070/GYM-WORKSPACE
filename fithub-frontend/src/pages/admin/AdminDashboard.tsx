@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { LayoutDashboard, Users, Dumbbell, UserRound, UserCog, AlertTriangle } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard'; // Import StatCard
 import Table from '../../components/Table';
@@ -164,24 +163,28 @@ export default function AdminDashboard() {
             value={members.length}
             icon={Users}
             description="Registered gym members"
+            variant="success"
           />
           <StatCard
             title="Total Trainers"
             value={trainers.length}
             icon={Dumbbell}
             description="Certified gym trainers"
+            variant="info"
           />
           <StatCard
             title="Total Users"
             value={allUsers.length}
             icon={UserRound}
             description="All system users (members, trainers, admins)"
+            variant="warning"
           />
           <StatCard
             title="Expired Plans"
             value={expiredMembers.length}
             icon={AlertTriangle}
             description="Members with expired plans"
+            variant="error"
           />
         </div>
       </div>
@@ -191,9 +194,9 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <a
                   href="/members"
-                  className="group bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-sm hover:bg-blue-100 hover:shadow-md transition-all flex items-center space-x-4"
+                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4"
                 >
-                  <div className="p-3 bg-blue-100 rounded-full text-blue-600 group-hover:bg-blue-200 transition-colors">
+                  <div className="p-3 bg-green-100 rounded-full text-green-600 group-hover:bg-green-200 transition-colors">
                     <Users size={24} />
                   </div>
                   <div>
@@ -217,9 +220,9 @@ export default function AdminDashboard() {
       
                 <a
                   href="/admins"
-                  className="group bg-purple-50 border border-purple-200 p-6 rounded-lg shadow-sm hover:bg-purple-100 hover:shadow-md transition-all flex items-center space-x-4"
+                  className="group bg-green-50 border border-green-200 p-6 rounded-lg shadow-sm hover:bg-green-100 hover:shadow-md transition-all flex items-center space-x-4"
                 >
-                  <div className="p-3 bg-purple-100 rounded-full text-purple-600 group-hover:bg-purple-200 transition-colors">
+                  <div className="p-3 bg-green-100 rounded-full text-green-600 group-hover:bg-green-200 transition-colors">
                     <UserCog size={24} />
                   </div>
                   <div>

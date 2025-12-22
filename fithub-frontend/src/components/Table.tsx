@@ -51,13 +51,13 @@ const Table = <T extends object>({
             placeholder={searchPlaceholder || "Search..."}
             value={searchTerm || ""}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-800 placeholder-gray-600"
           />
         </div>
       )}
 
-      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400 table-fixed">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+      <table className="w-full text-sm text-left text-gray-700 table-fixed bg-yellow-100 shadow-sm rounded-lg overflow-hidden">
+        <thead className="text-sm text-gray-800 uppercase bg-gray-100 font-medium border-b-2 border-green-500">
           <tr>
             {headers.map((header, index) => (
               <th key={index} scope="col" className={`p-4 align-middle ${columnClasses?.[index] || 'text-left'}`}>
@@ -68,8 +68,8 @@ const Table = <T extends object>({
         </thead>
         <tbody>
           {data.length === 0 ? (
-            <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-              <td colSpan={headers.length} className="p-4 text-center align-middle">
+            <tr className="bg-white border-b border-gray-200">
+              <td colSpan={headers.length} className="p-4 text-center align-middle text-gray-600">
                 No data available.
               </td>
             </tr>
@@ -77,7 +77,7 @@ const Table = <T extends object>({
             data.map((item, index) => (
               <React.Fragment key={keyExtractor(item)}>
                 <tr
-                  className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600`}
+                  className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200 hover:bg-green-50 transition-colors duration-200 cursor-pointer`}
                   onClick={() => toggleRow && toggleRow(index)}
                 >
                   {renderCells(item, index).map((cellContent, cellIndex) => (
@@ -87,7 +87,7 @@ const Table = <T extends object>({
                   ))}
                 </tr>
                 {openRowIndex === index && renderExpandedContent && (
-                  <tr className="bg-gray-100 dark:bg-gray-700">
+                  <tr className="bg-gray-50 border-b border-gray-200">
                     <td colSpan={headers.length} className="p-4 align-middle">
                       {renderExpandedContent(item, index)}
                     </td>

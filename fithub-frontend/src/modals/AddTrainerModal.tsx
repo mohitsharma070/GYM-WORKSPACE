@@ -42,7 +42,7 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
+      <div className="bg-white p-6 rounded-lg w-96 shadow-lg max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Add Trainer</h2>
 
         <div className="space-y-3">

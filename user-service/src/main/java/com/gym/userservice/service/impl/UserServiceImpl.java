@@ -114,6 +114,10 @@ public class UserServiceImpl implements IUserService {
         details.setCertification(request.getCertification());
         details.setPhone(request.getPhone());
         details.setUser(savedUser);
+        // Set dateOfBirth in TrainerDetails if provided
+        if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
+            details.setDateOfBirth(request.getDateOfBirth());
+        }
 
         trainerRepo.save(details);
 
@@ -176,6 +180,8 @@ public class UserServiceImpl implements IUserService {
         details.setPhone(request.getPhone());
         details.setFingerprint(request.getFingerprint()); // Set fingerprint here
         details.setUser(savedUser);
+        // Set dateOfBirth in MemberDetails as well
+        details.setDateOfBirth(request.getDateOfBirth());
 
         savedUser.setMemberDetails(details);
 
@@ -359,6 +365,23 @@ public class UserServiceImpl implements IUserService {
                 user.setEmail(newEmail);
             }
         }
+        // Handle dateOfBirth (update both User and MemberDetails)
+        if (updates.containsKey("dateOfBirth")) {
+            Object dobObj = updates.get("dateOfBirth");
+            String dobStr = dobObj != null ? dobObj.toString() : null;
+            if (dobStr != null && !dobStr.isBlank()) {
+                try {
+                    user.setDateOfBirth(java.time.LocalDate.parse(dobStr));
+                } catch (Exception e) {
+                    throw new BadRequestException("Invalid dateOfBirth format. Use yyyy-MM-dd.");
+                }
+            } else {
+                user.setDateOfBirth(null);
+            }
+            if (user.getMemberDetails() != null) {
+                user.getMemberDetails().setDateOfBirth(dobStr);
+            }
+        }
 
         // MEMBER
         if (user.getMemberDetails() != null) {
@@ -383,6 +406,12 @@ public class UserServiceImpl implements IUserService {
             if (updates.containsKey("experienceYears"))
                 t.setExperienceYears(Integer.valueOf(updates.get("experienceYears").toString()));
             if (updates.containsKey("phone")) t.setPhone((String) updates.get("phone"));
+            // Update dateOfBirth in TrainerDetails if present
+            if (updates.containsKey("dateOfBirth")) {
+                Object dobObj = updates.get("dateOfBirth");
+                String dobStr = dobObj != null ? dobObj.toString() : null;
+                t.setDateOfBirth(dobStr);
+            }
         }
 
         User updated = repo.save(user);
@@ -499,17 +528,59 @@ public class UserServiceImpl implements IUserService {
         return user;
     }
 
-    private UserResponse toUserResponse(User user) {
+    public UserResponse toUserResponse(User user) {
         UserResponse res = new UserResponse();
         res.setId(user.getId());
         res.setName(user.getName());
         res.setEmail(user.getEmail());
         res.setRole(user.getRole());
 
-        if (user.getMemberDetails() != null && user.getMemberDetails().getPhone() != null) {
-            res.setPhone(user.getMemberDetails().getPhone());
-        } else if (user.getTrainerDetails() != null && user.getTrainerDetails().getPhone() != null) {
-            res.setPhone(user.getTrainerDetails().getPhone());
+
+        if (user.getMemberDetails() != null) {
+            var m = user.getMemberDetails();
+            res.setPhone(m.getPhone());
+            MemberDetailsResponse mdr = new MemberDetailsResponse();
+            mdr.setId(m.getId());
+            mdr.setAge(m.getAge());
+            mdr.setGender(m.getGender());
+            mdr.setHeight(m.getHeight());
+            mdr.setWeight(m.getWeight());
+            mdr.setGoal(m.getGoal());
+            mdr.setMembershipType(m.getMembershipType());
+            mdr.setPhone(m.getPhone());
+            mdr.setFingerprint(m.getFingerprint());
+            // Set DOB from MemberDetails if present, else from User
+            if (m.getDateOfBirth() != null) {
+                mdr.setDateOfBirth(m.getDateOfBirth());
+            } else if (user.getDateOfBirth() != null) {
+                mdr.setDateOfBirth(user.getDateOfBirth().toString());
+            }
+            res.setMemberDetails(mdr);
+        }
+
+        if (user.getTrainerDetails() != null) {
+            var t = user.getTrainerDetails();
+            res.setPhone(t.getPhone());
+            TrainerDetailsResponse tdr = new TrainerDetailsResponse();
+            tdr.setId(t.getId());
+            tdr.setSpecialization(t.getSpecialization());
+            tdr.setExperienceYears(t.getExperienceYears());
+            tdr.setCertification(t.getCertification());
+            tdr.setPhone(t.getPhone());
+            tdr.setDeleted(t.isDeleted());
+            tdr.setDeletedAt(t.getDeletedAt() != null ? t.getDeletedAt().toString() : null);
+            // Set DOB from TrainerDetails if present, else from User entity
+            if (t.getDateOfBirth() != null && !t.getDateOfBirth().isBlank()) {
+                tdr.setDateOfBirth(t.getDateOfBirth());
+            } else if (user.getDateOfBirth() != null) {
+                tdr.setDateOfBirth(user.getDateOfBirth().toString());
+            }
+            res.setTrainerDetails(tdr);
+        }
+
+        // Set dateOfBirth as ISO string if present (top-level)
+        if (user.getDateOfBirth() != null) {
+            res.setDateOfBirth(user.getDateOfBirth().toString());
         }
 
         return res;

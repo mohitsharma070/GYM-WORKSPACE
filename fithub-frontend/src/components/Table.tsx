@@ -134,27 +134,53 @@ const Table = <T extends object>({
               </td>
             </tr>
           ) : (
-            data.map((item, index) => (
-              <React.Fragment key={keyExtractor(item)}>
+            data.flatMap((item, index) => {
+              const key = keyExtractor(item);
+              if (key === undefined || key === null) {
+                // eslint-disable-next-line no-console
+                console.error('Table: keyExtractor returned invalid key', { item, index });
+              }
+              let cells: React.ReactNode[] = [];
+              try {
+                cells = renderCells(item, index);
+              } catch (e) {
+                // eslint-disable-next-line no-console
+                console.error('Table: renderCells threw error', { item, index, error: e });
+                cells = Array(headers.length).fill(<span className="text-red-500">Error rendering row</span>);
+              }
+              if (!Array.isArray(cells) || cells.length !== headers.length) {
+                // eslint-disable-next-line no-console
+                console.error('Table: renderCells returned wrong number of cells', { item, index, cells, expected: headers.length });
+                cells = Array(headers.length).fill(<span className="text-red-500">Cell count mismatch</span>);
+              }
+              if (cells.some(cell => cell === undefined || cell === null)) {
+                // eslint-disable-next-line no-console
+                console.error('Table: renderCells returned undefined/null cell', { item, index, cells });
+              }
+              const rows = [
                 <tr
+                  key={key}
                   className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} border-b border-gray-200 hover:bg-green-50 transition-colors duration-200 cursor-pointer`}
                   onClick={() => toggleRow && toggleRow(index)}
                 >
-                  {renderCells(item, index).map((cellContent, cellIndex) => (
+                  {cells.map((cellContent, cellIndex) => (
                     <td key={cellIndex} className={`p-4 align-middle ${columnClasses?.[cellIndex] || 'text-left'}`}>
                       {cellContent}
                     </td>
                   ))}
                 </tr>
-                {openRowIndex === index && renderExpandedContent && (
-                  <tr className="bg-gray-50 border-b border-gray-200">
+              ];
+              if (openRowIndex === index && renderExpandedContent) {
+                rows.push(
+                  <tr key={key + '-expanded'} className="bg-gray-50 border-b border-gray-200">
                     <td colSpan={headers.length} className="p-4 align-middle">
                       {renderExpandedContent(item, index)}
                     </td>
                   </tr>
-                )}
-              </React.Fragment>
-            ))
+                );
+              }
+              return rows;
+            })
           )}
         </tbody>
       </table>

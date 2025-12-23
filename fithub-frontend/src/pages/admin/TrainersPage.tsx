@@ -239,7 +239,7 @@ export default function TrainersPage() {
                     <div className="flex items-center space-x-2 mb-2">
                       <p className="text-sm font-medium text-gray-500">Date of Birth</p>
                     </div>
-                    <p className="font-semibold text-gray-900 text-lg">{trainer.dateOfBirth || '—'}</p>
+                    <p className="font-semibold text-gray-900 text-lg">{trainer.trainerDetails?.dateOfBirth || trainer.dateOfBirth || '—'}</p>
                   </div>
                 </div>
               </div>

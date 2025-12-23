@@ -67,6 +67,7 @@ export default function UsersPage() {
     name: "",
     email: "",
     password: "",
+    dateOfBirth: "", // Added to match AddUserModal usage
     fingerprint: "", // New fingerprint field
     memberDetails: {
       age: "",
@@ -173,6 +174,7 @@ export default function UsersPage() {
             ...(goal && { goal }),
             ...(membershipType && { membershipType }),
             ...(phone && { phone }),
+            ...(vars.data.dateOfBirth && { dateOfBirth: vars.data.dateOfBirth }),
           };
 
           return {
@@ -302,6 +304,7 @@ export default function UsersPage() {
       name: newUser.name,
       email: newUser.email,
       password: newUser.password,
+      dateOfBirth: newUser.dateOfBirth, // Pass dateOfBirth to backend
       fingerprint: newUser.fingerprint, // Include fingerprint in the payload
       age: Number(newUser.memberDetails.age || 0),
       gender: newUser.memberDetails.gender,
@@ -337,49 +340,70 @@ export default function UsersPage() {
   /* UI */
   const tableHeaders = ["#", "Member Name", "Email Address", "Phone Number", "Actions", "Details"];
 
-  const getUserCells = (user: User, index: number) => [
-    <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
-    <div className="flex items-center space-x-3">
-      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-        <Users size={16} className="text-green-600" />
-      </div>
-      <span className="font-semibold text-gray-900">{user.name}</span>
-    </div>,
-    <span className="text-gray-700">{user.email}</span>,
-    <span className="text-gray-600">{user.memberDetails?.phone || 'Not provided'}</span>,
-    <div className="flex gap-2 justify-center">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          setSelectedUser(user);
-          setShowEditUserModal(true);
-        }}
-      >
-        <Edit size={16} className="mr-1" /> Edit
-      </Button>
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => {
-          if (confirm("Are you sure you want to delete this member?")) {
-            deleteUserMutation.mutate(user.id);
-          }
-        }}
-      >
-        <Trash size={16} className="mr-1" /> Delete
-      </Button>
-    </div>,
-    <div className="text-center">
-      <button className="text-green-600 hover:text-green-800 transition-colors">
-        <span className={`inline-block transform transition-transform duration-200 ${
-          openRowIndex === index ? "rotate-180" : ""
-        }`}>
-          ▼
-        </span>
-      </button>
-    </div>,
-  ];
+  const getUserCells = (user: User, index: number) => {
+    // Runtime checks for debugging
+    if (!user || typeof user !== 'object') {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: user is invalid', user, index);
+      return Array(tableHeaders.length).fill(<span className="text-red-500">Error: Invalid user</span>);
+    }
+    if (user.id === undefined || user.id === null) {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: user.id is missing', user, index);
+    }
+    const cells = [
+      <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
+      <div className="flex items-center space-x-3">
+        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+          <Users size={16} className="text-green-600" />
+        </div>
+        <span className="font-semibold text-gray-900">{user.name}</span>
+      </div>,
+      <span className="text-gray-700">{user.email}</span>,
+      <span className="text-gray-600">{user.memberDetails?.phone || 'Not provided'}</span>,
+      <div className="flex gap-2 justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setSelectedUser(user);
+            setShowEditUserModal(true);
+          }}
+        >
+          <Edit size={16} className="mr-1" /> Edit
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            if (confirm("Are you sure you want to delete this member?")) {
+              deleteUserMutation.mutate(user.id);
+            }
+          }}
+        >
+          <Trash size={16} className="mr-1" /> Delete
+        </Button>
+      </div>,
+      <div className="text-center">
+        <button className="text-green-600 hover:text-green-800 transition-colors">
+          <span className={`inline-block transform transition-transform duration-200 ${
+            openRowIndex === index ? "rotate-180" : ""
+          }`}>
+            ▼
+          </span>
+        </button>
+      </div>,
+    ];
+    if (cells.length !== tableHeaders.length) {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: cell count mismatch', { user, index, cells, expected: tableHeaders.length });
+    }
+    if (cells.some(cell => cell === undefined || cell === null)) {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: cell is undefined/null', { user, index, cells });
+    }
+    return cells;
+  };
 
   const renderExpandedUserContent = (user: User, index: number) => {
     const planQuery = useQuery({
@@ -656,15 +680,14 @@ export default function UsersPage() {
       )}
 
       {/* EDIT USER */}
-      {showEditUserModal && selectedUser && (
-            <EditUserModal
-              user={selectedUser}
-              plans={plansQuery.data || []}
-              loading={updateUserMutation.isPending}
-              onClose={() => setShowEditUserModal(false)}
-              handleSubmit={(data: any) => handleEditUser(selectedUser.id, data)}
-            />
-      )}
+      <EditUserModal
+        user={selectedUser}
+        plans={plansQuery.data || []}
+        loading={updateUserMutation.isPending}
+        onClose={() => setShowEditUserModal(false)}
+        handleSubmit={selectedUser ? (data: any) => handleEditUser(selectedUser.id, data) : () => {}}
+        visible={showEditUserModal && !!selectedUser}
+      />
 
       {/* EDIT PLAN */}
       {showEditPlanModal && editPlanMemberId && (

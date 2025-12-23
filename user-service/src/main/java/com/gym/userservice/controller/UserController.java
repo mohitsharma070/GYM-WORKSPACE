@@ -102,14 +102,16 @@ public class UserController {
     }
 
     @GetMapping("/auth/admin/trainers")
-    public ResponseEntity<Page<User>> getAllTrainersForAdmin(
+    public ResponseEntity<Page<UserResponse>> getAllTrainersForAdmin(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search
     ) {
-        return ResponseEntity.ok(service.getAllTrainers(page, size, sortBy, sortDir, search));
+        Page<User> trainers = service.getAllTrainers(page, size, sortBy, sortDir, search);
+        Page<UserResponse> trainerResponses = trainers.map(user -> ((com.gym.userservice.service.impl.UserServiceImpl)service).toUserResponse(user));
+        return ResponseEntity.ok(trainerResponses);
     }
 
     // ==============================================

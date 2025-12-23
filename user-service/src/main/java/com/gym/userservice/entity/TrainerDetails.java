@@ -18,6 +18,8 @@ public class TrainerDetails {
     private String certification;
     private String phone;
 
+    private String dateOfBirth; // Added for DOB in trainer details
+
     @Column(nullable = false)
     private boolean deleted = false;
 
@@ -44,6 +46,9 @@ public class TrainerDetails {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

@@ -26,7 +26,6 @@ import org.springframework.util.StringUtils;
 import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +84,6 @@ public class UserServiceImpl implements IUserService {
     public User registerTrainer(TrainerRegisterRequest request) {
 
         Optional<User> existingUser = repo.findByEmailIncludeDeleted(request.getEmail());
-
         if (existingUser.isPresent()) {
             if (existingUser.get().isDeleted()) {
                 throw new AccountDeactivatedException("Account is deactivated. Please reactivate it.");
@@ -99,6 +97,14 @@ public class UserServiceImpl implements IUserService {
         user.setEmail(request.getEmail());
         user.setPassword(encoder.encode(request.getPassword()));
         user.setRole("ROLE_TRAINER");
+        // Set dateOfBirth if provided
+        if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
+            try {
+                user.setDateOfBirth(LocalDate.parse(request.getDateOfBirth()));
+            } catch (Exception e) {
+                throw new BadRequestException("Invalid dateOfBirth format. Use yyyy-MM-dd.");
+            }
+        }
 
         User savedUser = repo.save(user);
 
@@ -111,6 +117,20 @@ public class UserServiceImpl implements IUserService {
 
         trainerRepo.save(details);
 
+        // Automated notification for new trainer registration
+        String phone = details.getPhone();
+        if (phone != null && !phone.isBlank()) {
+            try {
+                PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
+                notification.setTargetType(TargetType.SPECIFIC_PHONES);
+                notification.setTargetIdentifiers(List.of(phone));
+                notification.setMessageContent("Welcome, " + user.getName() + "! You have been registered as a trainer. Let's inspire our members together!");
+                notificationClient.sendNotification(notification);
+            } catch (Exception e) {
+                System.err.println("Failed to send registration notification to trainer: " + e.getMessage());
+            }
+        }
+
         savedUser.setPassword(null);
         return savedUser;
     }
@@ -122,7 +142,6 @@ public class UserServiceImpl implements IUserService {
     public User registerMember(MemberRegisterRequest request) {
 
         Optional<User> existingUser = repo.findByEmailIncludeDeleted(request.getEmail());
-
         if (existingUser.isPresent()) {
             if (existingUser.get().isDeleted()) {
                 throw new AccountDeactivatedException("Account is deactivated. Please reactivate it.");
@@ -136,6 +155,14 @@ public class UserServiceImpl implements IUserService {
         user.setEmail(request.getEmail());
         user.setPassword(encoder.encode(request.getPassword()));
         user.setRole("ROLE_MEMBER");
+        // Set dateOfBirth if provided
+        if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
+            try {
+                user.setDateOfBirth(LocalDate.parse(request.getDateOfBirth()));
+            } catch (Exception e) {
+                throw new BadRequestException("Invalid dateOfBirth format. Use yyyy-MM-dd.");
+            }
+        }
 
         User savedUser = repo.save(user);
 
@@ -153,8 +180,22 @@ public class UserServiceImpl implements IUserService {
         savedUser.setMemberDetails(details);
 
         memberRepo.save(details);
-        savedUser.setPassword(null);
 
+        // Automated notification for new member registration
+        String phone = details.getPhone();
+        if (phone != null && !phone.isBlank()) {
+            try {
+                PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
+                notification.setTargetType(TargetType.SPECIFIC_PHONES);
+                notification.setTargetIdentifiers(List.of(phone));
+                notification.setMessageContent("Welcome, " + user.getName() + "! You have been registered as a member. Let's achieve your fitness goals together!");
+                notificationClient.sendNotification(notification);
+            } catch (Exception e) {
+                System.err.println("Failed to send registration notification to member: " + e.getMessage());
+            }
+        }
+
+        savedUser.setPassword(null);
         return savedUser;
     }
 

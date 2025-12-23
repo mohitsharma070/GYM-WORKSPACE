@@ -1,12 +1,39 @@
 import type { Product, ProductAssignment } from "../types/Product";
 
 /**
- * Fetch all available products
+ * Fetch all available products with pagination, sorting, and filtering
  */
-export async function fetchAllProducts(): Promise<Product[]> {
-  const res = await fetch("http://localhost:8002/products");
-  if (!res.ok) return [];
-  return (await res.json()) as Product[];
+export interface ProductPage {
+  content: Product[];
+  totalPages: number;
+  totalElements: number;
+  number: number; // current page (0-based)
+  size: number;
+}
+
+export async function fetchAllProducts({
+  page = 0,
+  size = 10,
+  sortBy = 'id',
+  sortDir = 'asc',
+  search = ''
+}: {
+  page?: number;
+  size?: number;
+  sortBy?: string;
+  sortDir?: string;
+  search?: string;
+} = {}): Promise<ProductPage | null> {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+    sortBy,
+    sortDir,
+  });
+  if (search) params.append('search', search);
+  const res = await fetch(`http://localhost:8002/products?${params.toString()}`);
+  if (!res.ok) return null;
+  return (await res.json()) as ProductPage;
 }
 
 /**

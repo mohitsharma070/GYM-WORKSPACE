@@ -1,24 +1,42 @@
+
 package com.gym.attendance.service.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
 import com.gym.attendance.client.MembershipServiceFeignClient;
-import com.gym.attendance.client.UserServiceFeignClient;
-import com.gym.attendance.entity.Attendance;
 import com.gym.attendance.client.NotificationClient;
+import com.gym.attendance.client.UserServiceFeignClient;
 import com.gym.attendance.dto.NotificationRequest;
+import com.gym.attendance.entity.Attendance;
 import com.gym.attendance.exception.ResourceNotFoundException;
 import com.gym.attendance.payload.response.MembershipResponse;
 import com.gym.attendance.payload.response.UserResponse;
 import com.gym.attendance.repository.AttendanceRepository;
 import com.gym.attendance.service.AttendanceService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
+
+    @Override
+    public Page<Attendance> getAllAttendances(Specification<Attendance> spec, Pageable pageable) {
+        return attendanceRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public Page<Attendance> getAttendancesByUserId(Long userId, Pageable pageable) {
+        Specification<Attendance> spec = (root, query, cb) -> cb.equal(root.get("userId"), userId);
+        return attendanceRepository.findAll(spec, pageable);
+    }
 
     private final AttendanceRepository attendanceRepository;
     private final UserServiceFeignClient userServiceFeignClient;

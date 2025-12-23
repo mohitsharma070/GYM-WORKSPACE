@@ -9,6 +9,7 @@ interface Props {
 export default function AddTrainerModal({ onClose, onSave, creating = false }: Props) {
   const [form, setForm] = useState({
     name: "",
+    dateOfBirth: "",
     email: "",
     password: "",
     specialization: "",
@@ -29,6 +30,7 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
 
     onSave({
       name: form.name,
+      dateOfBirth: form.dateOfBirth,
       email: form.email,
       password: form.password,
       specialization: form.specialization,
@@ -45,12 +47,21 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
 
         <div className="space-y-3">
 
+
           <input
             type="text"
             placeholder="Full Name"
             className="w-full border p-2 rounded"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
+          />
+
+          <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={form.dateOfBirth}
+            onChange={(e) => updateField("dateOfBirth", e.target.value)}
           />
 
           <input

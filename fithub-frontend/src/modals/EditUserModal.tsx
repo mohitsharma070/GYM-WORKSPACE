@@ -20,6 +20,7 @@ export default function EditUserModal({
 }: Props) {
   const [form, setForm] = useState<any>({
     name: user.name,
+    dateOfBirth: user.dateOfBirth || "",
     email: user.email,
     age: user.memberDetails?.age || "",
     gender: user.memberDetails?.gender || "",
@@ -38,8 +39,8 @@ export default function EditUserModal({
     // 🔥 Backend expects FLAT fields, NOT memberDetails object
     const payload = {
       name: form.name,
+      dateOfBirth: form.dateOfBirth,
       email: form.email,
-
       age: Number(form.age),
       gender: form.gender,
       height: Number(form.height),
@@ -58,6 +59,7 @@ export default function EditUserModal({
 
         <h2 className="text-xl font-bold mb-4">Edit Member</h2>
 
+
         <div className="space-y-3">
           {/* Name */}
           <input
@@ -65,6 +67,15 @@ export default function EditUserModal({
             placeholder="Full Name"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
+          />
+
+          {/* Date of Birth */}
+          <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={form.dateOfBirth}
+            onChange={(e) => updateField("dateOfBirth", e.target.value)}
           />
 
           {/* Email (read only) */}

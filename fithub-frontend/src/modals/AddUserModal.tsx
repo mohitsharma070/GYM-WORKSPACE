@@ -1,6 +1,8 @@
 import type { Plan } from "../types/Plan";
 import { Button } from '../components/Button';
 
+import { initiateFingerprintScan } from '../utils/fingerprintScanner';
+
 interface AddUserModalProps {
   newUser: any;
   setNewUser: (val: any) => void;
@@ -26,12 +28,55 @@ export default function AddUserModal({
 
         <div className="space-y-3">
 
+
+          {/* FINGERPRINT SCAN */}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Fingerprint</label>
+            <div className="flex gap-2 items-center">
+              <input
+                className="w-full border p-2 rounded bg-gray-100"
+                placeholder="Scan fingerprint..."
+                value={newUser.memberDetails?.fingerprint || ''}
+                readOnly
+              />
+              <Button
+                type="button"
+                variant="default"
+                onClick={async () => {
+                  try {
+                    const fp = await initiateFingerprintScan();
+                    setNewUser({
+                      ...newUser,
+                      memberDetails: {
+                        ...newUser.memberDetails,
+                        fingerprint: fp,
+                      },
+                    });
+                  } catch (e: any) {
+                    alert(e.message || 'Fingerprint scan failed');
+                  }
+                }}
+              >
+                Scan
+              </Button>
+            </div>
+          </div>
+
           {/* NAME */}
           <input
             className="w-full border p-2 rounded"
             placeholder="Full Name"
             value={newUser.name}
             onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+          />
+
+          {/* DATE OF BIRTH */}
+          <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={newUser.dateOfBirth || ''}
+            onChange={(e) => setNewUser({ ...newUser, dateOfBirth: e.target.value })}
           />
 
           {/* EMAIL */}

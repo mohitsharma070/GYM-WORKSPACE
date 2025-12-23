@@ -252,7 +252,7 @@ export default function UsersPage() {
     if (showProductModal) {
       setProductsLoading(true);
       fetchAllProducts()
-        .then(setAllProducts)
+        .then((page) => setAllProducts(page?.content || []))
         .finally(() => setProductsLoading(false));
     }
   }, [showProductModal]);
@@ -398,9 +398,9 @@ export default function UsersPage() {
       <>
         {/* MEMBER DETAILS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Detail label="Date of Birth" value={user.dateOfBirth || '—'} />
           <Detail label="Age" value={user.memberDetails?.age} />
           <Detail label="Gender" value={user.memberDetails?.gender} />
-          <Detail label="Phone" value={user.memberDetails?.phone} />
           <Detail label="Height" value={user.memberDetails?.height} />
           <Detail label="Weight" value={user.memberDetails?.weight} />
           <Detail label="Goal" value={user.memberDetails?.goal} />

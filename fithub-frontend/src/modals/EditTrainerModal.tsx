@@ -16,6 +16,7 @@ export default function EditTrainerModal({
 }: EditTrainerModalProps) {
   const [form, setForm] = useState({
     name: "",
+    dateOfBirth: "",
     email: "",
     specialization: "",
     experienceYears: "",
@@ -28,6 +29,7 @@ export default function EditTrainerModal({
     if (trainer) {
       setForm({
         name: trainer.name ?? "",
+        dateOfBirth: trainer.dateOfBirth ?? "",
         email: trainer.email ?? "",
         specialization: trainer.trainerDetails?.specialization ?? "",
         experienceYears: trainer.trainerDetails?.experienceYears ?? "",
@@ -55,11 +57,23 @@ export default function EditTrainerModal({
         <h2 className="text-2xl font-bold mb-4">Edit Trainer</h2>
 
         <div className="space-y-4">
+
           <div>
             <label className="block">Name</label>
             <input
               name="name"
               value={form.name}
+              onChange={handleChange}
+              className="input w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+            <input
+              type="date"
+              name="dateOfBirth"
+              value={form.dateOfBirth}
               onChange={handleChange}
               className="input w-full border p-2 rounded"
             />

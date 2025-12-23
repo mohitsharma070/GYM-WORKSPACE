@@ -4,11 +4,12 @@ import type { User } from "../types/User";
 import type { Plan } from "../types/Plan";
 
 interface Props {
-  user: User;
+  user: User | null;
   plans: Plan[];
   loading: boolean;
   onClose: () => void;
   handleSubmit: (updated: any) => void;
+  visible: boolean;
 }
 
 export default function EditUserModal({
@@ -17,10 +18,14 @@ export default function EditUserModal({
   loading,
   onClose,
   handleSubmit,
+  visible,
 }: Props) {
+  // If not visible or no user, render nothing
+  if (!visible || !user) return null;
   const [form, setForm] = useState<any>({
     name: user.name,
-    dateOfBirth: user.dateOfBirth || "",
+    // Use trainerDetails.dateOfBirth only for trainers, else fallback to user.dateOfBirth
+    dateOfBirth: user.role === 'trainer' ? (user as any).trainerDetails?.dateOfBirth || user.dateOfBirth || "" : user.dateOfBirth || "",
     email: user.email,
     age: user.memberDetails?.age || "",
     gender: user.memberDetails?.gender || "",

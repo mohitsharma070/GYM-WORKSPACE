@@ -51,6 +51,7 @@ export async function createTrainer(data: any) {
       name: data.name,
       email: data.email,
       password: data.password,
+      dateOfBirth: data.dateOfBirth, // Ensure DOB is sent
       specialization: data.specialization,
       experienceYears: Number(data.experienceYears),
       certification: data.certification,
@@ -98,6 +99,7 @@ export async function updateTrainer(id: number, data: any) {
     body: JSON.stringify({
       name: data.name,
       email: data.email,
+      dateOfBirth: data.dateOfBirth, // Ensure DOB is sent
       specialization: data.specialization,
       experienceYears: Number(data.experienceYears),
       certification: data.certification,

@@ -1,7 +1,13 @@
 package com.gym.membership.service.impl;
 
-import com.gym.membership.client.UserClient;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.gym.membership.client.NotificationClient;
+import com.gym.membership.client.UserClient;
 import com.gym.membership.dto.PlanResponse;
 import com.gym.membership.dto.SubscriptionRequest;
 import com.gym.membership.entity.Plan;
@@ -13,11 +19,6 @@ import com.gym.membership.repository.PlanAssignmentRepository;
 import com.gym.membership.repository.PlanRepository;
 import com.gym.membership.repository.SubscriptionRepository;
 import com.gym.membership.service.SubscriptionService;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Service
 public class SubscriptionServiceImpl implements SubscriptionService {
@@ -57,22 +58,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         Plan plan = planRepo.findById(req.planId())
                 .orElseThrow(() -> new ResourceNotFoundException("Plan not found with id: " + req.planId()));
 
-        // Simulate payment processing
-        boolean paymentSuccessful = processPayment(req); // Assume this method exists and returns a boolean
-
-        if (!paymentSuccessful) {
-            // Optionally, send a payment failure notification
-            try {
-                com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
-                notification.setPhoneNumber(user.phone);
-                notification.setType("PAYMENT_CONFIRMATION");
-                notification.setMessage("Dear " + user.name + ", your payment for the plan '" + plan.getName() + "' failed. Please try again.");
-                notificationClient.sendNotification(notification);
-            } catch (Exception e) {
-                System.err.println("Failed to send payment failure notification: " + e.getMessage());
-            }
-            throw new BadRequestException("Payment failed for user " + req.userId());
-        }
+        // Payment logic removed
 
         LocalDate start = LocalDate.now();
         LocalDate end = start.plusDays(plan.getDurationDays());
@@ -86,17 +72,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Subscription savedSubscription = subscriptionRepo.save(s);
 
-        // Send WhatsApp notification for successful payment
-        try {
-            com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
-            notification.setPhoneNumber(user.phone);
-            notification.setType("PAYMENT_CONFIRMATION");
-            notification.setMessage("Dear " + user.name + ", your payment for the plan '" + plan.getName() + "' was successful. Your subscription is active until " + end + ".");
-            notificationClient.sendNotification(notification);
-        } catch (Exception e) {
-            // Log error, but don't stop processing
-            System.err.println("Failed to send payment confirmation notification: " + e.getMessage());
-        }
+        // Payment confirmation notification removed
 
         return savedSubscription;
     }
@@ -119,12 +95,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Plan plan = oldSubscription.getPlan();
 
-        // Simulate payment processing
-        boolean paymentSuccessful = processPayment(req);
-
-        if (!paymentSuccessful) {
-            throw new BadRequestException("Payment failed for user " + req.userId());
-        }
+        // Payment logic removed
 
         LocalDate today = LocalDate.now();
         LocalDate newStartDate = oldSubscription.getEndDate().isBefore(today) ? today : oldSubscription.getEndDate();
@@ -159,18 +130,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         return savedSubscription;
     }
 
-    /**
-     * Simulates a payment processing call to a payment gateway.
-     * In a real application, this would involve integrating with a service like Stripe or PayPal.
-     * @param req The subscription request containing payment details.
-     * @return true if the payment is successful, false otherwise.
-     */
-    private boolean processPayment(SubscriptionRequest req) {
-        // Here you would add your payment gateway logic.
-        // For the purpose of this example, we'll assume the payment is always successful.
-        System.out.println("Processing payment for user " + req.userId() + " for plan " + req.planId());
-        return true;
-    }
+    // Payment processing method removed
 
     @Override
     public List<Subscription> getSubscriptionsByUser(Long userId) {
@@ -284,30 +244,34 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             planAssignmentRepo.delete(assignment);
         }
     }
-       // PAYMENT CONFIRMATION IMPLEMENTATION
-       @Override
-       @Transactional
-       public Subscription confirmPayment(Long subscriptionId) {
-           Subscription subscription = subscriptionRepo.findById(subscriptionId)
-                   .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + subscriptionId));
-           if (subscription.isPaymentConfirmed()) {
-               return subscription;
-           }
-           subscription.setPaymentConfirmed(true);
-           subscription.setPaymentDate(LocalDate.now());
-           subscriptionRepo.save(subscription);
+    @Override
+    public void sendManualReceipt(com.gym.membership.dto.ManualReceiptRequest req) {
+        // Fetch member and plan info automatically
+        UserClient.UserResponse user = userClient.getUserById(req.getUserId());
+        Plan plan = planRepo.findById(req.getPlanId())
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found with id: " + req.getPlanId()));
+        // Find latest subscription for dates
+        Subscription subscription = subscriptionRepo.findTopByUserIdOrderByEndDateDesc(req.getUserId())
+            .orElse(null);
+        String startDate = subscription != null ? String.valueOf(subscription.getStartDate()) : "-";
+        String endDate = subscription != null ? String.valueOf(subscription.getEndDate()) : "-";
 
-           // Send WhatsApp notification for payment confirmation
-           try {
-               UserClient.UserResponse user = userClient.getUserById(subscription.getUserId());
-               com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
-               notification.setPhoneNumber(user.phone);
-               notification.setType("PAYMENT_CONFIRMATION");
-               notification.setMessage("Dear " + user.name + ", your payment for the plan '" + subscription.getPlan().getName() + "' has been confirmed. Your subscription is active until " + subscription.getEndDate() + ".");
-               notificationClient.sendNotification(notification);
-           } catch (Exception e) {
-               System.err.println("Failed to send payment confirmation notification: " + e.getMessage());
-           }
-           return subscription;
-       }
+        StringBuilder receipt = new StringBuilder();
+        receipt.append("--- GYM RECEIPT ---\n");
+        receipt.append("Member: ").append(user.name).append("\n");
+        receipt.append("Plan: ").append(plan.getName()).append("\n");
+        receipt.append("Start Date: ").append(startDate).append("\n");
+        receipt.append("End Date: ").append(endDate).append("\n");
+        if (req.getAmount() != null) receipt.append("Amount: ").append(req.getAmount()).append("\n");
+        if (req.getPaymentMethod() != null) receipt.append("Payment Method: ").append(req.getPaymentMethod()).append("\n");
+        if (req.getTransactionId() != null) receipt.append("Transaction ID: ").append(req.getTransactionId()).append("\n");
+        receipt.append("--------------------\n");
+        // message is set automatically; no manual message field
+
+        com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
+        notification.setPhoneNumber(user.phone);
+        notification.setType("MEMBERSHIP_RENEWAL");
+        notification.setMessage(receipt.toString());
+        notificationClient.sendNotification(notification);
+    }
 }

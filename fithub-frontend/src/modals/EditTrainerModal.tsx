@@ -53,7 +53,7 @@ export default function EditTrainerModal({
 
   return (
     <div className="modal-overlay fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-      <div className="modal-container bg-white p-6 rounded shadow-lg w-full max-w-lg">
+      <div className="modal-container bg-white p-6 rounded shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Edit Trainer</h2>
 
         <div className="space-y-4">

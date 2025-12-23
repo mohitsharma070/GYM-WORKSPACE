@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import RenewPlanModal from '../../modals/RenewPlanModal';
 import AddUserModal from '../../modals/AddUserModal';
 import { fetchTrainers } from "../../api/trainers";
+import ManualReceiptForm from '../../components/ManualReceiptForm';
 
 interface User {
   id: number;
@@ -43,6 +44,10 @@ export default function AdminDashboard() {
   const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [renewLoading, setRenewLoading] = useState(false);
   const [renewError, setRenewError] = useState<string | null>(null);
+  const [manualReceiptModalOpen, setManualReceiptModalOpen] = useState(false);
+  const [manualReceiptUserId, setManualReceiptUserId] = useState<number | null>(null);
+  const [manualReceiptPlanId, setManualReceiptPlanId] = useState<number | null>(null);
+
   const defaultUserObj = {
     name: "",
     email: "",
@@ -137,6 +142,10 @@ export default function AdminDashboard() {
   };
 
   const handleRenew = async (memberId: number, planId: number) => {
+    if (!planId || planId === 0) {
+      setRenewError('Please select a valid plan to renew.');
+      return;
+    }
     setRenewLoading(true);
     setRenewError(null);
     try {
@@ -145,6 +154,10 @@ export default function AdminDashboard() {
       if (!ok) throw new Error('Failed to renew plan.');
       setRenewModalOpen(false);
       loadExpiredMembers(); // Refresh expired list
+      // Open manual receipt modal after renewal
+      setManualReceiptUserId(memberId);
+      setManualReceiptPlanId(planId);
+      setManualReceiptModalOpen(true);
     } catch (e: any) {
       setRenewError(e.message || 'Failed to renew plan.');
     } finally {
@@ -184,6 +197,22 @@ export default function AdminDashboard() {
     } catch (e: any) {
       alert(e.message || 'Failed to add user');
     }
+  };
+
+  const handleSendManualReceipt = async (data: {
+    userId: number;
+    planId: number;
+    amount?: string;
+    paymentMethod?: string;
+    transactionId?: string;
+  }) => {
+    await fetch('/api/membership/manual-receipt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    setManualReceiptModalOpen(false);
+    alert('Receipt sent!');
   };
 
   useEffect(() => {
@@ -443,6 +472,37 @@ export default function AdminDashboard() {
           onClose={() => setShowAddUserModal(false)}
           handleSubmit={handleAddUser}
         />
+      )}
+      {/* Manual Receipt Modal */}
+      {manualReceiptModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ minHeight: '100vh', minWidth: '100vw' }}>
+          <div className="bg-blue-50 p-0 rounded-2xl shadow-2xl flex flex-col items-center justify-center" style={{ width: '50vw', minHeight: '50vh', maxWidth: '700px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="w-full flex flex-col items-center py-6 px-8">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="bg-blue-100 p-3 rounded-full"><svg xmlns='http://www.w3.org/2000/svg' className='h-6 w-6 text-blue-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 17v-2a4 4 0 014-4h2a4 4 0 014 4v2M9 17H7a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v6a4 4 0 01-4 4h-2M9 17v2a4 4 0 004 4h2a4 4 0 004-4v-2' /></svg></span>
+                <h2 className="text-2xl font-bold text-blue-700">Send Manual Receipt</h2>
+              </div>
+              <hr className="w-full border-blue-200 mb-6" />
+              {/* ...existing code for ManualReceiptForm and Cancel button... */}
+            </div>
+            <h2 className="text-xl font-bold mb-4">Send Manual Receipt</h2>
+            {(() => {
+              const user = members.find(m => m.id === manualReceiptUserId);
+              const plan = allPlans.find(p => p.id === manualReceiptPlanId);
+              if (user && plan) {
+                return (
+                  <ManualReceiptForm
+                    user={{ id: user.id, name: user.name }}
+                    plan={{ id: plan.id, name: plan.name, price: plan.price }}
+                    onSubmit={handleSendManualReceipt}
+                  />
+                );
+              } else {
+                return <div>Loading user/plan info...</div>;
+              }
+            })()}
+          </div>
+        </div>
       )}
     </div>
   );

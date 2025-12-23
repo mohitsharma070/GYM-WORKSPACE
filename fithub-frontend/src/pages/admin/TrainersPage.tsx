@@ -150,8 +150,8 @@ export default function TrainersPage() {
           </div>
         ) : (
           <Table
-            headers={["#", "Trainer Name", "Email Address", "Specialization", "Actions", "Details"]}
-            columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-2/12', 'w-3/12 text-center', 'w-1/12 text-center']}
+            headers={["#", "Trainer Name", "Email Address", "Phone Number", "Specialization", "Actions", "Details"]}
+            columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-2/12', 'w-2/12', 'w-2/12 text-center', 'w-1/12 text-center']}
             data={paginatedTrainers}
             renderCells={(trainer, index) => [
               <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
@@ -162,6 +162,7 @@ export default function TrainersPage() {
                 <span className="font-semibold text-gray-900">{trainer.name}</span>
               </div>,
               <span className="text-gray-700">{trainer.email}</span>,
+              <span className="text-gray-600">{trainer.trainerDetails?.phone || 'Not provided'}</span>,
               <div className="text-sm">
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                   <Star size={12} className="mr-1" />
@@ -233,6 +234,12 @@ export default function TrainersPage() {
                       <p className="text-sm font-medium text-gray-500">Certification</p>
                     </div>
                     <p className="font-semibold text-gray-900 text-lg">{trainer.trainerDetails?.certification || 'None specified'}</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <p className="text-sm font-medium text-gray-500">Date of Birth</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">{trainer.dateOfBirth || '—'}</p>
                   </div>
                 </div>
               </div>

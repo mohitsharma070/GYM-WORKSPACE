@@ -31,6 +31,7 @@ export default function SignUp() {
     height: '',
     weight: '',
     goal: '',
+    dateOfBirth: '',
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -97,6 +98,7 @@ export default function SignUp() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        dateOfBirth: formData.dateOfBirth || undefined,
         role: 'ROLE_MEMBER',
         memberDetails: {
           phone: formData.phone || undefined,
@@ -281,7 +283,7 @@ export default function SignUp() {
             {/* Step 2: Personal Information */}
             {step === 2 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
                       <Phone className="w-4 h-4 text-gray-500" />
@@ -294,6 +296,22 @@ export default function SignUp() {
                       placeholder="e.g., +1234567890"
                       value={formData.phone}
                       onChange={handleChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      name="dateOfBirth"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none text-gray-700 bg-gray-50 focus:bg-white transition-all"
+                      placeholder="YYYY-MM-DD"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                      required
                     />
                   </div>
 

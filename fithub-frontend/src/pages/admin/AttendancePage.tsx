@@ -13,8 +13,22 @@ import { Button } from "../../components/Button";
 
 export default function AttendancePage() {
   const { showToast } = useToast();
-  const { allAttendancesQuery, checkIn, checkOut } = useAttendances(); // Get checkIn and checkOut mutations
-  const { data: attendanceRecords = [], isLoading, isError, error } = allAttendancesQuery;
+  const { allAttendancesQuery, checkIn, checkOut } = useAttendances();
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
+  const [searchTerm, setSearchTerm] = useState<string>('');
+
+  // Fetch paginated attendances (0-based page index)
+  const {
+    data: attendancePage,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = allAttendancesQuery(currentPage - 1, itemsPerPage, "checkInTime,desc");
+  const attendanceRecords = attendancePage?.content || [];
+  const totalPages = attendancePage ? attendancePage.totalPages : 1;
 
   const {
     data: usersPage,
@@ -26,24 +40,17 @@ export default function AttendancePage() {
   const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
   const [selectedMembershipId, setSelectedMembershipId] = useState<number | undefined>(undefined); // Assuming a user has a membership ID
 
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10;
 
+  // Client-side search (optional, can be moved to backend if needed)
   const filteredRecords = useMemo(() => {
-    return attendanceRecords.filter(record =>
+    if (!searchTerm) return attendanceRecords;
+    return attendanceRecords.filter((record: Attendance) =>
       record.userId.toString().includes(searchTerm.toLowerCase()) ||
       new Date(record.checkInTime).toLocaleString().toLowerCase().includes(searchTerm.toLowerCase()) ||
       (record.checkOutTime && new Date(record.checkOutTime).toLocaleString().toLowerCase().includes(searchTerm.toLowerCase())) ||
       (record.checkOutTime ? 'completed' : 'active').includes(searchTerm.toLowerCase())
     );
   }, [attendanceRecords, searchTerm]);
-
-  const totalPages = Math.ceil(filteredRecords.length / itemsPerPage);
-  const paginatedRecords = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredRecords.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredRecords, currentPage, itemsPerPage]);
 
   const handleManualCheckIn = async () => {
     if (selectedUserId === undefined || selectedMembershipId === undefined) {
@@ -100,14 +107,14 @@ export default function AttendancePage() {
         />
         <StatCard
           title="Active Sessions"
-          value={attendanceRecords.filter(r => !r.checkOutTime).length}
+          value={attendanceRecords.filter((r: Attendance) => !r.checkOutTime).length}
           icon={UserCheck}
           description="Currently checked in"
           variant="warning"
         />
         <StatCard
           title="Today's Visits"
-          value={attendanceRecords.filter(r => 
+          value={attendanceRecords.filter((r: Attendance) => 
             new Date(r.checkInTime).toDateString() === new Date().toDateString()
           ).length}
           icon={Clock}
@@ -116,7 +123,7 @@ export default function AttendancePage() {
         />
         <StatCard
           title="Completed Sessions"
-          value={attendanceRecords.filter(r => r.checkOutTime).length}
+          value={attendanceRecords.filter((r: Attendance) => r.checkOutTime).length}
           icon={Users}
           description="Finished workouts"
           variant="success"
@@ -136,7 +143,7 @@ export default function AttendancePage() {
             <p className="text-red-600 text-lg font-medium mb-4">Failed to load attendance records</p>
             <p className="text-gray-500 mb-6">{error?.message}</p>
             <Button
-              onClick={() => allAttendancesQuery.refetch()}
+              onClick={() => refetch()}
               variant="outline"
             >
               Try Again
@@ -147,7 +154,7 @@ export default function AttendancePage() {
             <Table
               headers={["User ID", "Check-in Time", "Check-out Time", "Status"]}
               columnClasses={['w-1/6 text-center', 'w-2/6', 'w-2/6', 'w-1/6 text-center']}
-              data={paginatedRecords}
+              data={filteredRecords}
               renderCells={(record: Attendance) => [
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">

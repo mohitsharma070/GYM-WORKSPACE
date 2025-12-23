@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { fetchAllProducts } from '../../api/products';
+import type { ProductPage } from '../../api/products';
 import { ShoppingCart, Plus, Edit, Trash2, Package, AlertTriangle, DollarSign, Tag } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { Button } from '../../components/Button';
@@ -17,6 +19,8 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   // Modal states
   const [showModal, setShowModal] = useState(false);
@@ -33,8 +37,10 @@ export default function ProductsPage() {
 
   /* SEARCH AND PAGINATION STATE */
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10; // You can adjust this number
+  const [currentPage, setCurrentPage] = useState<number>(1); // 1-based for UI
+  const itemsPerPage = 10;
+  const [sortBy, setSortBy] = useState<string>('id');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   // -------------------------------
   // Load Products
@@ -42,19 +48,29 @@ export default function ProductsPage() {
   async function loadProducts() {
     setLoading(true);
     setError("");
-
     try {
-      const res = await fetch("http://localhost:8002/products");
-
-      if (!res.ok) {
+      const pageData: ProductPage | null = await fetchAllProducts({
+        page: currentPage - 1, // backend is 0-based
+        size: itemsPerPage,
+        sortBy,
+        sortDir,
+        search: searchTerm
+      });
+      if (!pageData) {
         setError("Failed to fetch products");
+        setProducts([]);
+        setTotalPages(1);
+        setTotalElements(0);
         return;
       }
-
-      const data = await res.json();
-      setProducts(data || []);
+      setProducts(pageData.content);
+      setTotalPages(pageData.totalPages);
+      setTotalElements(pageData.totalElements);
     } catch {
       setError("Server unreachable");
+      setProducts([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
@@ -62,19 +78,11 @@ export default function ProductsPage() {
 
   useEffect(() => {
     loadProducts();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, sortBy, sortDir]);
 
-  /* FILTER AND PAGINATE PRODUCTS */
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  // No client-side filtering/pagination needed, handled by backend
+  const paginatedProducts = products;
 
   // -------------------------------
   // Handle Input
@@ -82,6 +90,8 @@ export default function ProductsPage() {
   function updateForm(e: any) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
+  // Handle search input debounce (optional, for better UX)
+  // You can add a debounce here if needed
 
   // -------------------------------
   // Open Modal (Add or Edit)
@@ -265,10 +275,25 @@ export default function ProductsPage() {
                   type="text"
                   placeholder="Search products by name or category..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setCurrentPage(1);
+                    setSearchTerm(e.target.value);
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                 />
               </div>
+              {/* Example sort controls, you can style as needed */}
+              <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="border rounded p-2">
+                <option value="id">ID</option>
+                <option value="name">Name</option>
+                <option value="price">Price</option>
+                <option value="quantity">Quantity</option>
+                <option value="category">Category</option>
+              </select>
+              <select value={sortDir} onChange={e => setSortDir(e.target.value as 'asc' | 'desc')} className="border rounded p-2">
+                <option value="asc">Asc</option>
+                <option value="desc">Desc</option>
+              </select>
             </div>
 
             {/* Products Grid */}
@@ -361,7 +386,7 @@ export default function ProductsPage() {
                   Previous
                 </Button>
                 <span className="px-4 py-2 text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
+                  Page {currentPage} of {totalPages} (Total: {totalElements})
                 </span>
                 <Button
                   variant="outline"

@@ -121,7 +121,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
             notification.setPhoneNumber(user.phone);
             notification.setType("MEMBERSHIP_RENEWAL");
-            notification.setMessage("Dear " + user.name + ", your membership has been successfully renewed. Your new subscription is active until " + newEndDate + ".");
+            String fallbackMsg = "Dear " + user.name + ", your membership has been successfully renewed. Your new subscription is active until " + newEndDate + ".";
+            java.util.Map<String, String> values = new java.util.HashMap<>();
+            values.put("userName", user.name);
+            values.put("newEndDate", String.valueOf(newEndDate));
+            String rendered = com.gym.membership.util.TemplateUtil.renderTemplate("membership_renewal_success.html", values);
+            notification.setMessage(rendered.isEmpty() ? fallbackMsg : rendered);
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
             System.err.println("Failed to send renewal notification: " + e.getMessage());
@@ -156,7 +161,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
                 notification.setPhoneNumber(user.phone);
                 notification.setType("MEMBERSHIP_EXPIRY");
-                notification.setMessage("Dear " + user.name + ", your membership has expired. Please renew to continue enjoying our services.");
+                String fallbackMsg = "Dear " + user.name + ", your membership has expired. Please renew to continue enjoying our services.";
+                java.util.Map<String, String> values = new java.util.HashMap<>();
+                values.put("userName", user.name);
+                String rendered = com.gym.membership.util.TemplateUtil.renderTemplate("membership_expiry.html", values);
+                notification.setMessage(rendered.isEmpty() ? fallbackMsg : rendered);
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
                 // Log error, but don't stop processing
@@ -226,7 +235,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
             com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
             notification.setPhoneNumber(user.phone);
             notification.setType("WORKOUT_PLAN_ASSIGNED");
-            notification.setMessage("Hi " + user.name + ", a new workout plan has been assigned to you: " + plan.getName() + ". Start Date: " + startDate + ".");
+            String fallbackMsg = "Hi " + user.name + ", a new workout plan has been assigned to you: " + plan.getName() + ". Start Date: " + startDate + ".";
+            java.util.Map<String, String> values = new java.util.HashMap<>();
+            values.put("userName", user.name);
+            values.put("planName", plan.getName());
+            values.put("startDate", String.valueOf(startDate));
+            String rendered = com.gym.membership.util.TemplateUtil.renderTemplate("workout_plan_assigned.html", values);
+            notification.setMessage(rendered.isEmpty() ? fallbackMsg : rendered);
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
             System.err.println("Failed to send workout plan assigned notification: " + e.getMessage());
@@ -271,7 +286,16 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         com.gym.membership.dto.NotificationRequest notification = new com.gym.membership.dto.NotificationRequest();
         notification.setPhoneNumber(user.phone);
         notification.setType("MEMBERSHIP_RENEWAL");
-        notification.setMessage(receipt.toString());
+        java.util.Map<String, String> values = new java.util.HashMap<>();
+        values.put("userName", user.name);
+        values.put("planName", plan.getName());
+        values.put("startDate", startDate);
+        values.put("endDate", endDate);
+        values.put("amount", req.getAmount() != null ? req.getAmount().toString() : "");
+        values.put("paymentMethod", req.getPaymentMethod() != null ? req.getPaymentMethod() : "");
+        values.put("transactionId", req.getTransactionId() != null ? req.getTransactionId() : "");
+        String rendered = com.gym.membership.util.TemplateUtil.renderTemplate("membership_renewal_receipt.html", values);
+        notification.setMessage(rendered.isEmpty() ? receipt.toString() : rendered);
         notificationClient.sendNotification(notification);
     }
 }

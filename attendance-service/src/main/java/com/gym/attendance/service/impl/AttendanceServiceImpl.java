@@ -62,7 +62,19 @@ public class AttendanceServiceImpl implements AttendanceService {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(user.getPhone());
                 notification.setType("ATTENDANCE_CHECK_IN");
-                notification.setMessage("Hi " + user.getName() + ", your check-in has been recorded. Welcome!");
+                // Compose message using template
+                String rendered = com.gym.attendance.util.TemplateUtil.renderTemplate(
+                    "attendance_check_in.html",
+                    java.util.Map.of(
+                        "userName", user.getName() != null ? user.getName() : "",
+                        "checkInTime", java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(attendance.getCheckInTime())
+                    )
+                );
+                if (rendered.isEmpty()) {
+                    notification.setMessage("Hi " + user.getName() + ", your check-in has been recorded. Welcome!");
+                } else {
+                    notification.setMessage(rendered);
+                }
                 notificationClient.sendNotification(notification);
             }
         } catch (Exception e) {
@@ -87,7 +99,19 @@ public class AttendanceServiceImpl implements AttendanceService {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(user.getPhone());
                 notification.setType("ATTENDANCE_CHECK_OUT");
-                notification.setMessage("Hi " + user.getName() + ", your check-out has been recorded. Have a great day!");
+                // Compose message using template
+                String rendered = com.gym.attendance.util.TemplateUtil.renderTemplate(
+                    "attendance_check_out.html",
+                    java.util.Map.of(
+                        "userName", user.getName() != null ? user.getName() : "",
+                        "checkOutTime", java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(attendance.getCheckOutTime() != null ? attendance.getCheckOutTime() : java.time.LocalDateTime.now())
+                    )
+                );
+                if (rendered.isEmpty()) {
+                    notification.setMessage("Hi " + user.getName() + ", your check-out has been recorded. Have a great day!");
+                } else {
+                    notification.setMessage(rendered);
+                }
                 notificationClient.sendNotification(notification);
             }
         } catch (Exception e) {

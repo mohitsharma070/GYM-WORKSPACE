@@ -128,7 +128,15 @@ public class UserServiceImpl implements IUserService {
                 PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
                 notification.setTargetType(TargetType.SPECIFIC_PHONES);
                 notification.setTargetIdentifiers(List.of(phone));
-                notification.setMessageContent("Welcome, " + user.getName() + "! You have been registered as a trainer. Let's inspire our members together!");
+                // Use template loader for trainer registration notification
+                String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                    "trainer_registration_notification.html",
+                    Map.of("userName", user.getName() == null ? "" : user.getName())
+                );
+                if (rendered.isEmpty()) {
+                    rendered = "Welcome, " + user.getName() + "! You have been registered as a trainer. Let's inspire our members together!";
+                }
+                notification.setMessageContent(rendered);
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
                 System.err.println("Failed to send registration notification to trainer: " + e.getMessage());
@@ -194,7 +202,15 @@ public class UserServiceImpl implements IUserService {
                 PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
                 notification.setTargetType(TargetType.SPECIFIC_PHONES);
                 notification.setTargetIdentifiers(List.of(phone));
-                notification.setMessageContent("Welcome, " + user.getName() + "! You have been registered as a member. Let's achieve your fitness goals together!");
+                // Use template loader for member registration notification
+                String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                    "member_registration_notification.html",
+                    Map.of("userName", user.getName() == null ? "" : user.getName())
+                );
+                if (rendered.isEmpty()) {
+                    rendered = "Welcome, " + user.getName() + "! You have been registered as a member. Let's achieve your fitness goals together!";
+                }
+                notification.setMessageContent(rendered);
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
                 System.err.println("Failed to send registration notification to member: " + e.getMessage());
@@ -484,7 +500,15 @@ public class UserServiceImpl implements IUserService {
         try {
             PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
             notification.setTargetType(TargetType.ALL_USERS);
-            notification.setMessageContent(message);
+            // Use template loader for promotional message notification
+            String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                "promotional_message_notification.html",
+                Map.of("message", message == null ? "" : message)
+            );
+            if (rendered.isEmpty()) {
+                rendered = message;
+            }
+            notification.setMessageContent(rendered);
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
             System.err.println("Failed to send promotional message to all users: " + e.getMessage());

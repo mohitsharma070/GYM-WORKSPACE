@@ -61,7 +61,21 @@ public class InactiveUserScheduler {
                     NotificationRequest notification = new NotificationRequest();
                     notification.setPhoneNumber(user.getPhone());
                     notification.setType("MONTHLY_ATTENDANCE_SUMMARY");
-                    notification.setMessage("Hi " + user.getName() + ", here is your attendance summary for " + lastMonth.getMonth().name() + " " + lastMonth.getYear() + ". You visited the gym " + attendanceCount + " times. Keep up the great work!");
+                    // Compose message using template
+                    String rendered = com.gym.attendance.util.TemplateUtil.renderTemplate(
+                        "monthly_attendance_summary.html",
+                        java.util.Map.of(
+                            "userName", user.getName() != null ? user.getName() : "",
+                            "month", lastMonth.getMonth().name(),
+                            "year", String.valueOf(lastMonth.getYear()),
+                            "attendanceCount", String.valueOf(attendanceCount)
+                        )
+                    );
+                    if (rendered.isEmpty()) {
+                        notification.setMessage("Hi " + user.getName() + ", here is your attendance summary for " + lastMonth.getMonth().name() + " " + lastMonth.getYear() + ". You visited the gym " + attendanceCount + " times. Keep up the great work!");
+                    } else {
+                        notification.setMessage(rendered);
+                    }
                     notificationClient.sendNotification(notification);
                 } catch (Exception e) {
                     System.err.println("Failed to send monthly attendance summary for user " + user.getId() + ": " + e.getMessage());
@@ -76,7 +90,18 @@ public class InactiveUserScheduler {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(user.getPhone());
                 notification.setType("INACTIVE_USER_REMINDER");
-                notification.setMessage("Hi " + user.getName() + ", we miss you! It's been a while since your last visit. We hope to see you soon.");
+                // Compose message using template
+                String rendered = com.gym.attendance.util.TemplateUtil.renderTemplate(
+                    "inactive_user_reminder.html",
+                    java.util.Map.of(
+                        "userName", user.getName() != null ? user.getName() : ""
+                    )
+                );
+                if (rendered.isEmpty()) {
+                    notification.setMessage("Hi " + user.getName() + ", we miss you! It's been a while since your last visit. We hope to see you soon.");
+                } else {
+                    notification.setMessage(rendered);
+                }
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
                 System.err.println("Failed to send inactive user reminder notification for user " + user.getId() + ": " + e.getMessage());

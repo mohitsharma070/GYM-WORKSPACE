@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
 import InfoDialog from "../../components/InfoDialog";
-  // InfoDialog state
-  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Plus, Edit, Trash, MinusCircle, UserCheck, UserX, TrendingUp } from 'lucide-react'; // Import the icon
 import { Button } from '../../components/Button'; // Import Button component
@@ -46,6 +43,9 @@ import type { ProductAssignment } from "../../types/Product";
 import { todayISO, getDaysLeft, isExpired } from "../../utils/dateUtils";
 
 export default function UsersPage() {
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
   const queryClient = useQueryClient();
 
   /* UI STATE */

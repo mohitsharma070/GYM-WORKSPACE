@@ -1,6 +1,9 @@
 package com.gym.userservice.dto;
 
 public class TrainerRegisterRequest {
+    private String dateOfBirth; // Format: yyyy-MM-dd
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 
     private String name;
     private String email;

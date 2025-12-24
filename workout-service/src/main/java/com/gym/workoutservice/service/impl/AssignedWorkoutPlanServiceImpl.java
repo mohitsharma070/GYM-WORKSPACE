@@ -1,29 +1,29 @@
 package com.gym.workoutservice.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.gym.workoutservice.client.NotificationClient;
 import com.gym.workoutservice.client.UserClient;
 import com.gym.workoutservice.client.UserClient.UserResponse;
 import com.gym.workoutservice.dto.AssignedWorkoutPlanRequest;
 import com.gym.workoutservice.dto.AssignedWorkoutPlanResponse;
+import com.gym.workoutservice.dto.NotificationRequest;
 import com.gym.workoutservice.dto.WorkoutPlanResponse;
 import com.gym.workoutservice.entity.AssignedWorkoutPlan;
 import com.gym.workoutservice.entity.WorkoutPlan;
-import com.gym.workoutservice.exception.BadRequestException;
+import com.gym.workoutservice.exception.BadRequestException; // Injecting interface
 import com.gym.workoutservice.exception.ConflictException;
 import com.gym.workoutservice.exception.ResourceNotFoundException;
 import com.gym.workoutservice.repository.AssignedWorkoutPlanRepository;
 import com.gym.workoutservice.repository.WorkoutPlanRepository;
 import com.gym.workoutservice.service.IAssignedWorkoutPlanService;
-import com.gym.workoutservice.service.IWorkoutPlanService; // Injecting interface
-import com.gym.workoutservice.client.NotificationClient;
-import com.gym.workoutservice.dto.NotificationRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.gym.workoutservice.service.IWorkoutPlanService;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +75,16 @@ public class AssignedWorkoutPlanServiceImpl implements IAssignedWorkoutPlanServi
             NotificationRequest notification = new NotificationRequest();
             notification.setPhoneNumber(member.phone); // Or member.phone if available
             notification.setType("TRAINER_ASSIGNED_MEMBER");
-            notification.setMessage("Hi " + member.name + ", trainer " + trainerName + " has assigned you the workout plan: " + workoutPlan.getName() + ".");
+            java.util.Map<String, String> values = new java.util.HashMap<>();
+            values.put("memberName", member.name);
+            values.put("trainerName", trainerName);
+            values.put("workoutPlanName", workoutPlan.getName());
+            String rendered = com.gym.workoutservice.util.TemplateLoader.renderTemplate(
+                "trainer_assigned_member.html", values);
+            if (rendered.isEmpty()) {
+                rendered = "Hi " + member.name + ", trainer " + trainerName + " has assigned you the workout plan: " + workoutPlan.getName() + ".";
+            }
+            notification.setMessage(rendered);
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
             System.err.println("Failed to send trainer assignment notification: " + e.getMessage());

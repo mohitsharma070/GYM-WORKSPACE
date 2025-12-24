@@ -16,6 +16,7 @@ export default function EditTrainerModal({
 }: EditTrainerModalProps) {
   const [form, setForm] = useState({
     name: "",
+    dateOfBirth: "",
     email: "",
     specialization: "",
     experienceYears: "",
@@ -28,6 +29,7 @@ export default function EditTrainerModal({
     if (trainer) {
       setForm({
         name: trainer.name ?? "",
+        dateOfBirth: trainer.dateOfBirth ?? "",
         email: trainer.email ?? "",
         specialization: trainer.trainerDetails?.specialization ?? "",
         experienceYears: trainer.trainerDetails?.experienceYears ?? "",
@@ -50,16 +52,36 @@ export default function EditTrainerModal({
   if (!show || !trainer) return null;
 
   return (
-    <div className="modal-overlay fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-      <div className="modal-container bg-white p-6 rounded shadow-lg w-full max-w-lg">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+      <div
+        className="p-6 rounded-lg w-96 max-h-[90vh] overflow-auto"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
         <h2 className="text-2xl font-bold mb-4">Edit Trainer</h2>
 
         <div className="space-y-4">
+
           <div>
             <label className="block">Name</label>
             <input
               name="name"
               value={form.name}
+              onChange={handleChange}
+              className="input w-full border p-2 rounded"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+            <input
+              type="date"
+              name="dateOfBirth"
+              value={form.dateOfBirth}
               onChange={handleChange}
               className="input w-full border p-2 rounded"
             />

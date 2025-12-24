@@ -1,3 +1,4 @@
+import ManualReceiptPage from "../pages/admin/ManualReceiptPage";
 import { useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -68,6 +69,7 @@ export default function DashboardRoutes({ userRole, isAuthenticated, onLoginSucc
                         <Route path="admin/notifications/logs" element={<AdminNotificationLogsPage />} />
                         <Route path="admin/notifications/send" element={<BroadcastPage />} />
                         <Route path="admin/whatsapp-config" element={<AdminWhatsAppConfigPage />} /> {/* New route for WhatsApp config */}
+                        <Route path="admin/manual-receipt" element={<ManualReceiptPage />} />
                         <Route path="*" element={<AdminDashboard />} /> {/* Default admin route */}
                     </>
                 )}

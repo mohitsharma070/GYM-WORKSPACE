@@ -9,6 +9,7 @@ import com.notificationservice.dto.WhatsAppMessageResponse;
 import com.notificationservice.enums.TargetType;
 import com.notificationservice.model.NotificationLog;
 import com.notificationservice.dto.NotificationRequest; // Changed from dto.NotificationRequest
+import com.notificationservice.util.TemplateLoader;
 import com.notificationservice.repository.NotificationLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,9 +50,15 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
         for (String recipientPhoneNumber : recipients) {
             NotificationRequest transactionalRequest = new NotificationRequest();
             transactionalRequest.setPhoneNumber(recipientPhoneNumber);
-            transactionalRequest.setMessage(request.getMessageContent());
-            // Assuming image URL needs to be handled within the message content or a template
-            // For now, only text messages are supported directly
+            // Compose HTML message using template loader
+            java.util.Map<String, String> placeholders = new java.util.HashMap<>();
+            placeholders.put("recipientPhoneNumber", recipientPhoneNumber);
+            placeholders.put("targetType", request.getTargetType() != null ? request.getTargetType().toString() : "");
+            placeholders.put("messageContent", request.getMessageContent() != null ? request.getMessageContent() : "");
+            placeholders.put("imageUrl", request.getImageUrl() != null ? request.getImageUrl() : "");
+            String htmlMessage = TemplateLoader.renderTemplate("promotional-notification.html", placeholders);
+            // Fallback to original message if template missing
+            transactionalRequest.setMessage(htmlMessage.isEmpty() ? request.getMessageContent() : htmlMessage);
             NotificationResult result = sendNotification(transactionalRequest);
             results.add(result);
             logPromotionalNotificationOutcome(request, recipientPhoneNumber, result);
@@ -70,18 +77,33 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
     public NotificationResult sendNotification(NotificationRequest request) {
         String phoneNumber = request.getPhoneNumber();
         String messageContent = request.getMessage();
-        log.info("Attempting to send transactional WhatsApp message to {}: {}", phoneNumber, messageContent);
+        // Compose HTML message using template loader (only if not already HTML)
+        String htmlMessage = messageContent;
+        // Heuristic: if messageContent does not contain <html>, try to render template
+        if (messageContent != null && !messageContent.trim().toLowerCase().contains("<html>")) {
+            java.util.Map<String, String> placeholders = new java.util.HashMap<>();
+            placeholders.put("phoneNumber", phoneNumber != null ? phoneNumber : "");
+            placeholders.put("messageContent", messageContent != null ? messageContent : "");
+            placeholders.put("externalMessageId", "");
+            placeholders.put("status", "");
+            placeholders.put("failureReason", "");
+            htmlMessage = TemplateLoader.renderTemplate("transactional-notification.html", placeholders);
+            if (htmlMessage.isEmpty()) {
+                htmlMessage = messageContent;
+            }
+        }
+        log.info("Attempting to send transactional WhatsApp message to {}: {}", phoneNumber, htmlMessage);
 
         if (phoneNumber == null || phoneNumber.isEmpty()) {
             return NotificationResult.failure("Recipient phone number is missing.");
         }
-        if (messageContent == null || messageContent.isEmpty()) {
+        if (htmlMessage == null || htmlMessage.isEmpty()) {
             return NotificationResult.failure("Notification message content is empty.");
         }
 
         NotificationResult result;
         try {
-            WhatsAppMessageRequest whatsAppRequest = WhatsAppMessageRequest.createTextMessage(phoneNumber, messageContent);
+            WhatsAppMessageRequest whatsAppRequest = WhatsAppMessageRequest.createTextMessage(phoneNumber, htmlMessage);
             Mono<WhatsAppMessageResponse> responseMono = metaWhatsAppApiClient.sendMessage(whatsAppRequest);
             WhatsAppMessageResponse response = responseMono.block(); // Blocking call for simplicity in this synchronous context
 

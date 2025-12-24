@@ -6,7 +6,8 @@ import com.gym.userservice.dto.TrainerRegisterRequest;
 import com.gym.userservice.dto.UserResponse;
 import com.gym.userservice.entity.User;
 
-import java.util.List;
+import org.springframework.data.domain.Page;
+
 import java.util.Map;
 
 public interface IUserService {
@@ -24,9 +25,9 @@ public interface IUserService {
     boolean existsById(Long id);
 
     // ---------- Admin ----------
-    List<UserResponse> getAllUsers();
-    List<User> getAllMembersForAdmin();
-    List<User> getAllTrainers();
+    Page<UserResponse> getAllUsers(int page, int size, String sortBy, String sortDir, String search);
+    Page<User> getAllMembersForAdmin(int page, int size, String sortBy, String sortDir, String search);
+    Page<User> getAllTrainers(int page, int size, String sortBy, String sortDir, String search);
 
     // ---------- Soft Delete ----------
     void deleteUser(Long id);   // ← this now performs SOFT DELETE
@@ -37,7 +38,7 @@ public interface IUserService {
     User reactivateUser(String email);
 
     // ---------- Trainer ----------
-    List<User> getAllMembers();
+    Page<User> getAllMembers(int page, int size, String sortBy, String sortDir, String search);
 
     // ---------- Update User ----------
     User updateUser(Long id, Map<String, Object> updates);

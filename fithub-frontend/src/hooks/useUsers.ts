@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { loadUsers } from "../api/users";
+import { fetchMembersPage } from "../api/users";
+import type { PageRequest, PageResponse } from "../types/Page";
 import { type User } from "../types/User";
 
-export function useUsers() {
-  return useQuery<User[], Error>({
-    queryKey: ["users"],
-    queryFn: loadUsers,
+export function useUsers(params: PageRequest = {}) {
+  return useQuery<PageResponse<User>, Error>({
+    queryKey: ["users", params],
+    queryFn: () => fetchMembersPage(params),
   });
 }

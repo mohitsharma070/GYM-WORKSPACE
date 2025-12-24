@@ -1,5 +1,13 @@
 package com.gym.membership.service.impl;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
 import com.gym.membership.dto.ProductRequest;
 import com.gym.membership.entity.Product;
 import com.gym.membership.entity.ProductAssignment;
@@ -7,10 +15,7 @@ import com.gym.membership.exception.ResourceNotFoundException;
 import com.gym.membership.repository.ProductAssignmentRepository;
 import com.gym.membership.repository.ProductRepository;
 import com.gym.membership.service.ProductService;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
-import java.util.List;
+import com.gym.membership.specification.ProductSpecification;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -38,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Product updateProduct(Long id, ProductRequest req) {
 
         Product p = productRepo.findById(id)
@@ -53,6 +59,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void deleteProduct(Long id) {
         if (!productRepo.existsById(id)) {
             throw new ResourceNotFoundException("Product not found with id: " + id);
@@ -61,17 +68,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> getAllProducts() {
-        return productRepo.findAll();
+    @SuppressWarnings("unchecked")
+    public Page<Product> getAllProducts(String search, Pageable pageable) {
+        Specification<Product> spec = ProductSpecification.containsTextInAttributes(search);
+        return productRepo.findAll(spec, pageable);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Product getProductById(Long id) {
         return productRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public ProductAssignment assignProduct(Long memberId, Long productId) {
 
         Product product = productRepo.findById(productId)
@@ -91,6 +102,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void deleteAssignedProduct(Long assignmentId) {
         if (!productAssignmentRepo.existsById(assignmentId)) {
             throw new ResourceNotFoundException("Assigned product not found with id: " + assignmentId);
@@ -99,6 +111,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public ProductAssignment updateAssignedProduct(Long assignmentId, Long newProductId) {
 
         ProductAssignment assignment = productAssignmentRepo.findById(assignmentId)

@@ -1,17 +1,50 @@
+import type { PageRequest, PageResponse } from "../types/Page";
 import type { User } from "../types/User";
 import { API_BASE_USER } from "../utils/config";
 
-/* ------------------ LOAD USERS (members only or all) ------------------ */
-export async function loadUsers(): Promise<User[]> {
-  const token = localStorage.getItem("authToken");
+type PagedUsers = PageResponse<User>;
 
-  const res = await fetch(`${API_BASE_USER}/auth/admin/members`, {
+const DEFAULT_PAGE = 0;
+const DEFAULT_SIZE = 10;
+
+function buildUserQuery(params: PageRequest = {}): string {
+  const query = new URLSearchParams({
+    page: String(params.page ?? DEFAULT_PAGE),
+    size: String(params.size ?? DEFAULT_SIZE),
+    sortBy: params.sortBy ?? "id",
+    sortDir: params.sortDir ?? "asc",
+  });
+
+  if (params.search) {
+    query.append("search", params.search.trim());
+  }
+
+  return query.toString();
+}
+
+async function fetchUserPage(path: string, params: PageRequest = {}): Promise<PagedUsers> {
+  const token = localStorage.getItem("authToken");
+  const res = await fetch(`${API_BASE_USER}${path}?${buildUserQuery(params)}`, {
     headers: token ? { Authorization: `Basic ${token}` } : undefined,
   });
 
   if (!res.ok) throw new Error("Failed to load users");
 
-  return (await res.json()) as User[];
+  return (await res.json()) as PagedUsers;
+}
+
+/* ------------------ LOAD USERS (admin views) ------------------ */
+export function fetchAllUsersPage(params: PageRequest = {}): Promise<PagedUsers> {
+  return fetchUserPage("/auth/admin/all", params);
+}
+
+export function fetchMembersPage(params: PageRequest = {}): Promise<PagedUsers> {
+  return fetchUserPage("/auth/admin/members", params);
+}
+
+/* ------------------ LOAD USERS (trainer view) ------------------ */
+export function fetchTrainerMembersPage(params: PageRequest = {}): Promise<PagedUsers> {
+  return fetchUserPage("/auth/trainer/members", params);
 }
 
 /* ------------------ UNIVERSAL DELETE USER ------------------ */

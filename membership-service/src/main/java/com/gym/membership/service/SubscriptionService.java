@@ -1,15 +1,16 @@
 package com.gym.membership.service;
 
+import java.util.List;
+
 import com.gym.membership.dto.PlanResponse;
 import com.gym.membership.dto.SubscriptionRequest;
 import com.gym.membership.entity.Subscription;
 
-import java.util.List;
-
 public interface SubscriptionService {
+        void sendManualReceipt(com.gym.membership.dto.ManualReceiptRequest req);
     Subscription subscribe(SubscriptionRequest req);
     Subscription renew(SubscriptionRequest req);
-    Subscription confirmPayment(Long subscriptionId);
+    // confirmPayment method removed
     List<Subscription> getSubscriptionsByUser(Long userId);
     List<Subscription> getAllSubscriptions();
     void expireSubscriptions();

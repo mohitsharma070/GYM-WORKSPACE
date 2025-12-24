@@ -14,6 +14,7 @@ public class MemberDetails {
     private Long id;
 
     private int age;
+    private String dateOfBirth; // Added for DOB in member details
     private String gender;
     private double height;
     private double weight;
@@ -37,8 +38,12 @@ public class MemberDetails {
 
     public Long getId() { return id; }
 
+
     public int getAge() { return age; }
     public void setAge(int age) { this.age = age; }
+
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 
     public String getGender() { return gender; }
     public void setGender(String gender) { this.gender = gender; }

@@ -20,7 +20,15 @@ const RenewPlanModal: React.FC<RenewPlanModalProps> = ({ isOpen, onClose, member
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="bg-blue-50 rounded-lg shadow-lg p-12 w-full max-w-2xl mx-4 border border-blue-200">
+      <div
+        className="rounded-lg p-12 w-full max-w-2xl mx-4 shadow-lg"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
         <h2 className="text-2xl font-semibold mb-6">Renew Membership Plan</h2>
         <p className="mb-6 text-lg">Renew plan for <span className="font-bold">{member.name}</span>?</p>
         <select

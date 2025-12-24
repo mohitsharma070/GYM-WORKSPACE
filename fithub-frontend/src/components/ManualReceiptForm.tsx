@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import InfoDialog from "./InfoDialog";
 import { CheckCircle, User as UserIcon, FileText, CreditCard, Hash } from "lucide-react";
 
 
@@ -17,19 +18,20 @@ interface ManualReceiptFormProps {
 const ManualReceiptForm: React.FC<ManualReceiptFormProps> = ({ onSubmit, user, plan }) => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [transactionId, setTransactionId] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
+    await onSubmit({
       userId: user.id,
       planId: plan.id,
       amount: String(plan.price),
       paymentMethod,
       transactionId
     });
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 2000);
+    setInfoDialogMessage("Receipt sent!");
+    setInfoDialogOpen(true);
   };
 
   return (
@@ -66,11 +68,12 @@ const ManualReceiptForm: React.FC<ManualReceiptFormProps> = ({ onSubmit, user, p
           </div>
           <button type="submit" className="w-full py-2 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 transition">Send Receipt</button>
         </form>
-        {success && (
-          <div className="flex items-center gap-2 mt-4 text-green-600 font-medium justify-center">
-            <CheckCircle size={20} /> Receipt sent successfully!
-          </div>
-        )}
+        <InfoDialog
+          isOpen={infoDialogOpen}
+          onClose={() => setInfoDialogOpen(false)}
+          title="Success"
+          message={infoDialogMessage}
+        />
       </div>
     </div>
   );

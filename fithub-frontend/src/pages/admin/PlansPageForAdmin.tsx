@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import InfoDialog from "../../components/InfoDialog";
 import { Plus, Pencil, Trash2, IndianRupee, Clock, ClipboardList } from "lucide-react";
 import PageHeader from '../../components/PageHeader';
 import { Button } from '../../components/Button';
@@ -15,6 +17,9 @@ export default function PlansPageForAdmin() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editPlan, setEditPlan] = useState<Plan | null>(null);
@@ -108,7 +113,8 @@ export default function PlansPageForAdmin() {
     });
 
     if (!res.ok) {
-      alert("Failed to save plan");
+      setInfoDialogMessage("Failed to save plan");
+      setInfoDialogOpen(true);
       return;
     }
 
@@ -124,7 +130,8 @@ export default function PlansPageForAdmin() {
     });
 
     if (!res.ok) {
-      alert("Delete failed");
+      setInfoDialogMessage("Delete failed");
+      setInfoDialogOpen(true);
       return;
     }
 
@@ -258,56 +265,68 @@ export default function PlansPageForAdmin() {
 
       {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
+          <div
+            className="p-8 rounded-lg w-full max-w-md shadow-xl"
+            style={{
+              background: '#F5F3EE',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+              color: '#1E293B',
+            }}
+          >
+            <h2 className="text-2xl font-semibold mb-6" style={{color:'#1E293B'}}>
               {editPlan ? "Edit Plan" : "Add New Plan"}
             </h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Plan Name</label>
+                <label className="block text-sm text-gray-600 mb-1">Plan Name</label>
                 <input
                   name="name"
                   value={form.name}
                   onChange={updateForm}
                   placeholder="Enter plan name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border p-2 rounded"
+                  style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm text-gray-600 mb-1">Description</label>
                 <input
                   name="description"
                   value={form.description}
                   onChange={updateForm}
                   placeholder="Enter description"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border p-2 rounded"
+                  style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹)</label>
+                <label className="block text-sm text-gray-600 mb-1">Price (₹)</label>
                 <input
                   name="price"
                   value={form.price}
                   onChange={updateForm}
                   type="number"
                   placeholder="Enter price"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border p-2 rounded"
+                  style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (Days)</label>
+                <label className="block text-sm text-gray-600 mb-1">Duration (Days)</label>
                 <input
                   name="durationDays"
                   value={form.durationDays}
                   onChange={updateForm}
                   type="number"
                   placeholder="Enter duration in days"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border p-2 rounded"
+                  style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
                 />
               </div>
             </div>
@@ -330,5 +349,12 @@ export default function PlansPageForAdmin() {
         </div>
       )}
     </div>
+      {/* InfoDialog for alerts */}
+      <InfoDialog
+        isOpen={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        title="Notice"
+        message={infoDialogMessage}
+      />
   );
 }

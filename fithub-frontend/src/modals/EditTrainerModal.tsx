@@ -52,8 +52,16 @@ export default function EditTrainerModal({
   if (!show || !trainer) return null;
 
   return (
-    <div className="modal-overlay fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-      <div className="modal-container bg-white p-6 rounded shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+      <div
+        className="p-6 rounded-lg w-96 max-h-[90vh] overflow-auto"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
         <h2 className="text-2xl font-bold mb-4">Edit Trainer</h2>
 
         <div className="space-y-4">

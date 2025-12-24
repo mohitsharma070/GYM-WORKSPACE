@@ -1,4 +1,8 @@
 import { useEffect, useState, useRef } from "react";
+import InfoDialog from "../../components/InfoDialog";
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 import { LayoutDashboard, Users, Dumbbell, AlertTriangle, Plus, Megaphone } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard'; // Import StatCard
@@ -167,7 +171,8 @@ export default function AdminDashboard() {
 
   const handleAddUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
-      alert("Name, email, and password are required");
+      setInfoDialogMessage("Name, email, and password are required");
+      setInfoDialogOpen(true);
       return;
     }
     try {
@@ -195,7 +200,8 @@ export default function AdminDashboard() {
       setNewUser(defaultUserObj);
       loadDashboard(); // Refresh members list
     } catch (e: any) {
-      alert(e.message || 'Failed to add user');
+      setInfoDialogMessage(e.message || 'Failed to add user');
+      setInfoDialogOpen(true);
     }
   };
 
@@ -212,7 +218,8 @@ export default function AdminDashboard() {
       body: JSON.stringify(data),
     });
     setManualReceiptModalOpen(false);
-    alert('Receipt sent!');
+    setInfoDialogMessage('Receipt sent!');
+    setInfoDialogOpen(true);
   };
 
   useEffect(() => {
@@ -506,4 +513,11 @@ export default function AdminDashboard() {
       )}
     </div>
   );
+      {/* InfoDialog for alerts */}
+      <InfoDialog
+        isOpen={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        title="Notice"
+        message={infoDialogMessage}
+      />
 }

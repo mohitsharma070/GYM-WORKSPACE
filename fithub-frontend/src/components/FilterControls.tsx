@@ -47,7 +47,7 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
         ))}
       </select>
 
-      <Button onClick={onRefresh}>
+      <Button type="button" onClick={onRefresh}>
         <RefreshCw size={16} className="mr-2" />
         Refresh
       </Button>

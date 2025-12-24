@@ -1,4 +1,8 @@
 import { useEffect, useState } from "react";
+import InfoDialog from "../../components/InfoDialog";
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 import { fetchAllProducts } from '../../api/products';
 import type { ProductPage } from '../../api/products';
 import { ShoppingCart, Plus, Edit, Trash2, Package, AlertTriangle, DollarSign, Tag } from 'lucide-react';
@@ -144,7 +148,8 @@ export default function ProductsPage() {
     });
 
     if (!res.ok) {
-      alert("Failed to save product");
+      setInfoDialogMessage("Failed to save product");
+      setInfoDialogOpen(true);
       return;
     }
 
@@ -163,7 +168,8 @@ export default function ProductsPage() {
     });
 
     if (!res.ok) {
-      alert("Delete failed");
+      setInfoDialogMessage("Delete failed");
+      setInfoDialogOpen(true);
       return;
     }
 
@@ -404,9 +410,17 @@ export default function ProductsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-          <div className="bg-white p-8 rounded shadow-lg w-96">
-            <h2 className="text-xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+          <div
+            className="p-8 rounded-lg w-96 shadow-lg"
+            style={{
+              background: '#F5F3EE',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+              color: '#1E293B',
+            }}
+          >
+            <h2 className="text-xl font-bold mb-4" style={{color:'#1E293B'}}>
               {editProduct ? "Edit Product" : "Add Product"}
             </h2>
 
@@ -416,7 +430,8 @@ export default function ProductsPage() {
                 value={form.name}
                 onChange={updateForm}
                 placeholder="Product Name"
-                className="w-full p-2 border rounded"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               />
 
               <input
@@ -424,7 +439,8 @@ export default function ProductsPage() {
                 value={form.description}
                 onChange={updateForm}
                 placeholder="Description"
-                className="w-full p-2 border rounded"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               />
 
               <input
@@ -433,7 +449,8 @@ export default function ProductsPage() {
                 onChange={updateForm}
                 placeholder="Price"
                 type="number"
-                className="w-full p-2 border rounded"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               />
 
               <input
@@ -442,7 +459,8 @@ export default function ProductsPage() {
                 onChange={updateForm}
                 placeholder="Quantity"
                 type="number"
-                className="w-full p-2 border rounded"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               />
 
               <input
@@ -474,4 +492,11 @@ export default function ProductsPage() {
       )}
     </div>
   );
+      {/* InfoDialog for alerts */}
+      <InfoDialog
+        isOpen={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        title="Notice"
+        message={infoDialogMessage}
+      />
 }

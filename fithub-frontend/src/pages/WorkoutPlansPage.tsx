@@ -333,8 +333,16 @@ export default function WorkoutPlansPage({ userRole }: WorkoutPlansPageProps) {
 
       {/* Modal for Workout Plan Details */}
       {selectedPlanId !== null && (
-        <div className="fixed inset-0 flex justify-center items-center p-4 z-50 pointer-events-none">
-          <div className="bg-blue-50 p-6 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative pointer-events-auto border border-blue-200">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50 pointer-events-none">
+          <div
+            className="p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto relative pointer-events-auto shadow-2xl"
+            style={{
+              background: '#F5F3EE',
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+              color: '#1E293B',
+            }}
+          >
               <button
                 onClick={handleCloseModal}
                 className="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-2 shadow transition-colors duration-150 z-10"

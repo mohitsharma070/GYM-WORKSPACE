@@ -1,4 +1,17 @@
+// Show the assigned plan name for a member by fetching it from the backend (like user page)
+function MemberPlanBadge({ memberId }: { memberId: number }) {
+  const { data: plan, isLoading } = useMemberPlan(memberId);
+  if (isLoading) return <span className="text-xs text-gray-400">Loading...</span>;
+  if (!plan) return <span className='text-gray-400 italic'>None</span>;
+  return (
+    <span className="inline-block px-3 py-1 rounded-full font-semibold text-yellow-900 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 shadow-sm border border-yellow-400 text-xs tracking-wide" style={{letterSpacing: '0.03em'}}>
+      {plan.name}
+    </span>
+  );
+}
 import { useState } from "react";
+
+import { useMemberPlan } from "../hooks/useMemberPlan";
 import { X } from "lucide-react";
 import { type WorkoutPlan } from "../types/WorkoutPlan";
 import { useUsers } from "../hooks/useUsers"; // Hook to fetch all users/members
@@ -48,8 +61,16 @@ export default function AssignToMemberModal({ isOpen, onClose, workoutPlan }: As
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center min-h-screen z-50">
-      <div className="bg-sky-100 p-8 rounded-xl shadow-2xl w-full max-w-6xl relative border border-sky-200 max-h-[95vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center min-h-screen z-50">
+      <div
+        className="p-8 rounded-lg w-full max-w-6xl relative max-h-[95vh] overflow-y-auto shadow-2xl"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-1 shadow transition-colors duration-150 z-10" aria-label="Close">
           <X size={20} />
         </button>
@@ -85,7 +106,9 @@ export default function AssignToMemberModal({ isOpen, onClose, workoutPlan }: As
                       <td className="px-4 py-3">{idx + 1}</td>
                       <td className="px-4 py-3">{member.name}</td>
                       <td className="px-4 py-3">{member.email}</td>
-                      <td className="px-4 py-3">{member.memberDetails?.membershipType || <span className='text-gray-400 italic'>None</span>}</td>
+                      <td className="px-4 py-3">
+                        <MemberPlanBadge memberId={member.id} />
+                      </td>
                       <td className="px-4 py-3">
                         <button
                           className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold py-1 px-3 rounded disabled:opacity-50"
@@ -97,6 +120,7 @@ export default function AssignToMemberModal({ isOpen, onClose, workoutPlan }: As
                       </td>
                     </tr>
                   ))}
+
                 </tbody>
               </table>
             </div>

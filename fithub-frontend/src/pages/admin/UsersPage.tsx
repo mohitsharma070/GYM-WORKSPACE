@@ -1,4 +1,8 @@
 import { useState, useEffect } from "react";
+import InfoDialog from "../../components/InfoDialog";
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Plus, Edit, Trash, MinusCircle, UserCheck, UserX, TrendingUp } from 'lucide-react'; // Import the icon
 import { Button } from '../../components/Button'; // Import Button component
@@ -125,7 +129,8 @@ export default function UsersPage() {
       if (error.status === 409) {
         setDeactivatedEmail(newUser.email);
       } else {
-        alert("Failed to create user");
+        setInfoDialogMessage("Failed to create user");
+        setInfoDialogOpen(true);
       }
     },
   });
@@ -135,10 +140,12 @@ export default function UsersPage() {
     mutationFn: reactivateUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      alert("User reactivated successfully!");
+      setInfoDialogMessage("User reactivated successfully!");
+      setInfoDialogOpen(true);
     },
     onError: () => {
-      alert("Failed to reactivate user");
+      setInfoDialogMessage("Failed to reactivate user");
+      setInfoDialogOpen(true);
     },
   });
 
@@ -294,7 +301,8 @@ export default function UsersPage() {
   /* ADD USER */
   async function handleAddUser() {
     if (!newUser.name || !newUser.email || !newUser.password) {
-      alert("Name, email, password required");
+      setInfoDialogMessage("Name, email, password required");
+      setInfoDialogOpen(true);
       return;
     }
 
@@ -757,4 +765,11 @@ export default function UsersPage() {
       )}
     </div>
   );
+      {/* InfoDialog for alerts */}
+      <InfoDialog
+        isOpen={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        title="Notice"
+        message={infoDialogMessage}
+      />
 }

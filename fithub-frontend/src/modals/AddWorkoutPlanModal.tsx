@@ -59,8 +59,16 @@ export default function AddWorkoutPlanModal({
 
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 flex justify-center items-center p-4 z-50">
-      <div className="bg-sky-100 p-6 rounded-xl shadow-2xl max-w-md w-full relative border border-sky-200">
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
+      <div
+        className="p-6 rounded-lg max-w-md w-full relative shadow-2xl"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
@@ -70,43 +78,40 @@ export default function AddWorkoutPlanModal({
         <h2 className="text-2xl font-bold mb-4">Add New Workout Plan</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
-              Plan Name:
-            </label>
+            <label htmlFor="name" className="block text-sm text-gray-600 mb-1">Plan Name</label>
             <input
               type="text"
               id="name"
               name="name"
               value={form.name}
               onChange={handleChange}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full border p-2 rounded"
+              style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               required
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">
-              Description:
-            </label>
+            <label htmlFor="description" className="block text-sm text-gray-600 mb-1">Description</label>
             <textarea
               id="description"
               name="description"
               value={form.description}
               onChange={handleChange}
               rows={4}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full border p-2 rounded"
+              style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               required
             ></textarea>
           </div>
           <div>
-            <label htmlFor="difficulty" className="block text-gray-700 text-sm font-bold mb-2">
-              Difficulty:
-            </label>
+            <label htmlFor="difficulty" className="block text-sm text-gray-600 mb-1">Difficulty</label>
             <select
               id="difficulty"
               name="difficulty"
               value={form.difficulty}
               onChange={handleChange}
-              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="w-full border p-2 rounded"
+              style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
             >
               {Object.values(Difficulty).map((diff) => (
                 <option key={diff} value={diff}>

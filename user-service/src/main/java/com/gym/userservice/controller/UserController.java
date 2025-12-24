@@ -150,6 +150,24 @@ public class UserController {
     }
 
     // ==============================================
+    // UPDATE ADMIN PROFILE
+    // ==============================================
+
+    @PutMapping("/auth/admin/profile")
+    public ResponseEntity<?> updateAdminProfile(@RequestBody Map<String, Object> updates, Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+        UserResponse userResponse = service.getByEmail(auth.getName());
+        if (userResponse == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin not found");
+        }
+        User updated = service.updateUser(userResponse.getId(), updates);
+        updated.setPassword(null);
+        return ResponseEntity.ok(updated);
+    }
+
+    // ==============================================
     // TRAINER – GET MEMBERS
     // ==============================================
 

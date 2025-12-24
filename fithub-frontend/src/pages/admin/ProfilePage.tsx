@@ -1,13 +1,17 @@
 // src/pages/admin/ProfilePage.tsx
 
 import { useProfile } from "../../hooks/useProfile";
+import { useState } from "react";
+import EditProfileModal from '../../modals/EditProfileModal';
 import { UserRound, Shield, Clock, Calendar, Activity } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard';
 
 export default function ProfilePage() {
-  const profileQuery = useProfile();
+  // Edit Profile modal state (must be before any return)
+  const [showEdit, setShowEdit] = useState(false);
 
+  const profileQuery = useProfile();
   const { data: user, error, isLoading, refetch } = profileQuery;
 
   // Profile statistics
@@ -69,6 +73,7 @@ export default function ProfilePage() {
     );
   }
 
+
   // PROFILE UI
   return (
     <div className="space-y-8">
@@ -79,7 +84,7 @@ export default function ProfilePage() {
         actions={
           <div className="flex gap-3">
             <button
-              onClick={() => alert("Edit Profile Coming Soon")}
+              onClick={() => setShowEdit(true)}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
             >
               Edit Profile
@@ -97,6 +102,15 @@ export default function ProfilePage() {
           </div>
         }
       />
+      {/* Edit Profile Modal */}
+      {user && (
+        <EditProfileModal
+          isOpen={showEdit}
+          onClose={() => setShowEdit(false)}
+          initialProfile={user}
+          onProfileUpdated={() => { profileQuery.refetch(); setShowEdit(false); }}
+        />
+      )}
 
       {/* Profile Statistics Dashboard */}
       {user && (

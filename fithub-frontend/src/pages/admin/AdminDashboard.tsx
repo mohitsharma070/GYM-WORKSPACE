@@ -1,8 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import InfoDialog from "../../components/InfoDialog";
-  // InfoDialog state
-  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 import { LayoutDashboard, Users, Dumbbell, AlertTriangle, Plus, Megaphone } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard'; // Import StatCard
@@ -34,6 +31,9 @@ interface MemberWithPlan {
 }
 
 export default function AdminDashboard() {
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
   const [members, setMembers] = useState<User[]>([]);
   const [totalMembers, setTotalMembers] = useState(0);
   const [totalTrainers, setTotalTrainers] = useState(0);

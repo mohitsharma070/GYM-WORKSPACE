@@ -53,7 +53,15 @@ public class BirthdayGreetingScheduler {
                 PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
                 notification.setTargetType(TargetType.SPECIFIC_PHONES);
                 notification.setTargetIdentifiers(List.of(phone));
-                notification.setMessageContent("Happy Birthday, " + user.getName() + "! We wish you a fantastic day from your gym!");
+                // Use template loader for birthday greeting notification
+                String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                    "birthday_greeting_notification.html",
+                    java.util.Map.of("userName", user.getName() == null ? "" : user.getName())
+                );
+                if (rendered.isEmpty()) {
+                    rendered = "Happy Birthday, " + user.getName() + "! We wish you a fantastic day from your gym!";
+                }
+                notification.setMessageContent(rendered);
 
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {

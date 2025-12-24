@@ -1,19 +1,11 @@
-import { useEffect, useState } from "react";
 import React, { useState, useEffect } from "react";
 import InfoDialog from "../../components/InfoDialog";
 import { Plus, Pencil, Trash2, IndianRupee, Clock, ClipboardList } from "lucide-react";
 import PageHeader from '../../components/PageHeader';
 import { Button } from '../../components/Button';
+import type { Plan } from '../../types/Plan';
 
-interface Plan {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  durationDays: number;
-}
-
-export default function PlansPageForAdmin() {
+const PlansPageForAdmin: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -348,7 +340,6 @@ export default function PlansPageForAdmin() {
           </div>
         </div>
       )}
-    </div>
       {/* InfoDialog for alerts */}
       <InfoDialog
         isOpen={infoDialogOpen}
@@ -356,5 +347,8 @@ export default function PlansPageForAdmin() {
         title="Notice"
         message={infoDialogMessage}
       />
+    </div>
   );
-}
+};
+
+export default PlansPageForAdmin;

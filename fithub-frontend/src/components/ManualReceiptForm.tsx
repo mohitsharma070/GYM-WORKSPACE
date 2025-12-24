@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import InfoDialog from "./InfoDialog";
-import { CheckCircle, User as UserIcon, FileText, CreditCard, Hash } from "lucide-react";
+import { User as UserIcon, FileText, CreditCard, Hash } from "lucide-react";
 
 
 interface ManualReceiptFormProps {

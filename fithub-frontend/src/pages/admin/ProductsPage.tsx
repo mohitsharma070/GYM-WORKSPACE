@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 import InfoDialog from "../../components/InfoDialog";
-  // InfoDialog state
-  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [infoDialogMessage, setInfoDialogMessage] = useState("");
 import { fetchAllProducts } from '../../api/products';
 import type { ProductPage } from '../../api/products';
 import { ShoppingCart, Plus, Edit, Trash2, Package, AlertTriangle, DollarSign, Tag } from 'lucide-react';
@@ -20,6 +17,9 @@ interface Product {
 }
 
 export default function ProductsPage() {
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

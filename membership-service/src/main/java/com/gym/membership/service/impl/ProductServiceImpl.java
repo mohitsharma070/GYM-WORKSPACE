@@ -84,9 +84,16 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @SuppressWarnings("unchecked")
     public ProductAssignment assignProduct(Long memberId, Long productId) {
-
         Product product = productRepo.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        if (product.getQuantity() <= 0) {
+            throw new IllegalStateException("Product is out of stock");
+        }
+
+        // Decrement quantity
+        product.setQuantity(product.getQuantity() - 1);
+        productRepo.save(product);
 
         ProductAssignment pa = new ProductAssignment();
         pa.setMemberId(memberId);

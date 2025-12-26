@@ -35,9 +35,11 @@ public class SecurityConfig {
             }))
             .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in API services
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/api/whatsapp/credentials").permitAll() // Allow public access to WhatsApp credentials endpoint
                 .requestMatchers("/api/auth/**").permitAll() // Public endpoints, e.g., login, registration from user-service
                 .requestMatchers("/api/promotional-notifications").permitAll() // Admin endpoints for promotional notifications
                 .requestMatchers("/api/promotional-notifications/logs").permitAll() // Admin endpoints for promotional notifications history
+                .requestMatchers("/api/notifications/send").permitAll() // Allow internal service-to-service notification send
                 .requestMatchers("/api/images/upload").permitAll() // Admin endpoints for image upload
                 .requestMatchers("/api/admin/**").permitAll() // Admin endpoints require ADMIN role
                 .requestMatchers("/api/trainer/**").permitAll() // Trainer endpoints require TRAINER role

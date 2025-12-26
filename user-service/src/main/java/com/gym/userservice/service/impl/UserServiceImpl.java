@@ -27,6 +27,8 @@ import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +36,7 @@ import java.util.Set;
 
 @Service
 public class UserServiceImpl implements IUserService {
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository repo;
     private final TrainerDetailsRepository trainerRepo;
@@ -125,9 +128,8 @@ public class UserServiceImpl implements IUserService {
         String phone = details.getPhone();
         if (phone != null && !phone.isBlank()) {
             try {
-                PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
-                notification.setTargetType(TargetType.SPECIFIC_PHONES);
-                notification.setTargetIdentifiers(List.of(phone));
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(phone);
                 // Use template loader for trainer registration notification
                 String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
                     "trainer_registration_notification.html",
@@ -136,10 +138,12 @@ public class UserServiceImpl implements IUserService {
                 if (rendered.isEmpty()) {
                     rendered = "Welcome, " + user.getName() + "! You have been registered as a trainer. Let's inspire our members together!";
                 }
-                notification.setMessageContent(rendered);
+                String plainText = rendered.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+                notification.setMessage(plainText);
+                notification.setType("TRAINER_REGISTRATION");
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
-                System.err.println("Failed to send registration notification to trainer: " + e.getMessage());
+                log.error("Failed to send registration notification to trainer: {}", e.getMessage(), e);
             }
         }
 
@@ -199,9 +203,8 @@ public class UserServiceImpl implements IUserService {
         String phone = details.getPhone();
         if (phone != null && !phone.isBlank()) {
             try {
-                PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
-                notification.setTargetType(TargetType.SPECIFIC_PHONES);
-                notification.setTargetIdentifiers(List.of(phone));
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(phone);
                 // Use template loader for member registration notification
                 String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
                     "member_registration_notification.html",
@@ -210,10 +213,12 @@ public class UserServiceImpl implements IUserService {
                 if (rendered.isEmpty()) {
                     rendered = "Welcome, " + user.getName() + "! You have been registered as a member. Let's achieve your fitness goals together!";
                 }
-                notification.setMessageContent(rendered);
+                String plainText = rendered.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+                notification.setMessage(plainText);
+                notification.setType("MEMBER_REGISTRATION");
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
-                System.err.println("Failed to send registration notification to member: " + e.getMessage());
+                log.error("Failed to send registration notification to member: {}", e.getMessage(), e);
             }
         }
 
@@ -498,8 +503,8 @@ public class UserServiceImpl implements IUserService {
     @Override
     public void sendPromotionalMessage(String message) {
         try {
-            PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
-            notification.setTargetType(TargetType.ALL_USERS);
+            NotificationRequest notification = new NotificationRequest();
+            notification.setPhoneNumber(null); // null or empty for all users, or skip sending
             // Use template loader for promotional message notification
             String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
                 "promotional_message_notification.html",
@@ -508,10 +513,12 @@ public class UserServiceImpl implements IUserService {
             if (rendered.isEmpty()) {
                 rendered = message;
             }
-            notification.setMessageContent(rendered);
+            String plainText = rendered.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+            notification.setMessage(plainText);
+            notification.setType("PROMOTIONAL_MESSAGE");
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
-            System.err.println("Failed to send promotional message to all users: " + e.getMessage());
+            log.error("Failed to send promotional message to all users: {}", e.getMessage(), e);
         }
     }
 

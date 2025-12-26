@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import InfoDialog from "../../components/InfoDialog";
 import { fetchAllProducts } from '../../api/products';
 import type { ProductPage } from '../../api/products';
-import { ShoppingCart, Plus, Edit, Trash2, Package, AlertTriangle, DollarSign, Tag } from 'lucide-react';
+import { ShoppingCart, Plus, Edit, Trash2, Package, AlertTriangle, DollarSign, Tag, TrendingUp } from 'lucide-react';
+import { fetchAnalytics } from '../../api/analytics';
+import type { Stats } from '../../types/Stats';
 import PageHeader from '../../components/PageHeader';
 import { Button } from '../../components/Button';
 import { StatCard } from '../../components/StatCard';
@@ -17,6 +19,24 @@ interface Product {
 }
 
 export default function ProductsPage() {
+  // Analytics state
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const [analytics, setAnalytics] = useState<Stats | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  useEffect(() => {
+    setAnalyticsLoading(true);
+    fetchAnalytics(month, year)
+      .then((data) => {
+        setAnalytics(data);
+      })
+      .catch(() => {
+        // Optionally handle error
+      })
+      .finally(() => setAnalyticsLoading(false));
+  }, [month, year]);
   // InfoDialog state
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [infoDialogMessage, setInfoDialogMessage] = useState("");
@@ -209,7 +229,30 @@ export default function ProductsPage() {
         }
       />
 
-      {/* STATS DASHBOARD */}
+      {/* BEAUTIFUL ANALYTICS STATS DASHBOARD */}
+      <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl shadow p-6 mb-8 border border-blue-100">
+        <h2 className="text-2xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+          <TrendingUp className="text-green-500" size={28} /> Product Analytics
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <StatCard
+            title="Products Sold (This Month)"
+            value={analyticsLoading ? '...' : analytics?.productsSoldThisMonth ?? '...'}
+            icon={TrendingUp}
+            description="Products sold this month"
+            variant="info"
+          />
+          <StatCard
+            title="Product Revenue (This Month)"
+            value={analyticsLoading ? '...' : analytics ? `₹${analytics.productRevenue.toLocaleString()}` : '...'}
+            icon={DollarSign}
+            description="Revenue from product sales this month"
+            variant="success"
+          />
+        </div>
+      </div>
+
+      {/* INVENTORY STATS DASHBOARD */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
           title="Total Products"

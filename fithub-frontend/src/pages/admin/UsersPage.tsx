@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery as useRQ } from "@tanstack/react-query";
 import InfoDialog from "../../components/InfoDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Users, Plus, Edit, Trash, MinusCircle, UserCheck, UserX, TrendingUp } from 'lucide-react'; // Import the icon
@@ -40,9 +41,19 @@ import Pulse from "../../components/Pulse";
 import { loadPlan } from "../../api/subscriptions";
 import { loadProducts } from "../../api/products";
 import type { ProductAssignment } from "../../types/Product";
-import { todayISO, getDaysLeft, isExpired } from "../../utils/dateUtils";
+import { todayISO, getDaysLeft } from "../../utils/dateUtils";
+import { fetchAnalytics } from "../../api/analytics";
+import type { Stats } from "../../types/Stats";
 
 export default function UsersPage() {
+    // ANALYTICS STATS
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const statsQuery = useRQ<Stats>({
+      queryKey: ["analytics", month, year],
+      queryFn: () => fetchAnalytics(month, year),
+    });
   // InfoDialog state
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [infoDialogMessage, setInfoDialogMessage] = useState("");
@@ -105,7 +116,7 @@ export default function UsersPage() {
   const paginatedUsers = usersQuery.data?.content || [];
   const totalPages = usersQuery.data?.totalPages || 0;
   const totalItems = usersQuery.data?.totalElements || 0;
-  const usersForStats = paginatedUsers;
+  // const usersForStats = paginatedUsers; // No longer needed with analytics stats
 
 
 
@@ -243,10 +254,16 @@ export default function UsersPage() {
     mutationFn: (vars) =>
       assignProductToMember(vars.memberId, vars.productId),
 
-    onSuccess: (_res, vars) =>
+    onSuccess: (_res, vars) => {
       queryClient.invalidateQueries({
         queryKey: ["member-products", vars.memberId],
-      }),
+      });
+      setShowProductModal(false);
+    },
+    onError: (_error, _vars) => {
+      setInfoDialogMessage("Failed to assign product. The product may be out of stock.");
+      setInfoDialogOpen(true);
+    },
   });
 
   /* DELETE PRODUCT */
@@ -560,71 +577,40 @@ export default function UsersPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard
           title="Total Members"
-          value={totalItems}
+          value={statsQuery.data?.totalMembers ?? '...'}
           icon={Users}
           description="All registered members"
           variant="success"
         />
         <StatCard
           title="Active Plans"
-          value={usersForStats.filter(u => {
-            const plan = userPlans[u.id];
-            return plan && plan.endDate && !isExpired(plan.endDate);
-          }).length}
+          value={statsQuery.data?.activePlans ?? '...'}
           icon={UserCheck}
-          description="Members with active plans"
+          description="Currently active plans"
           variant="info"
         />
         <StatCard
           title="Expired Plans"
-          value={usersForStats.filter(u => {
-            const plan = userPlans[u.id];
-            return plan && plan.endDate && isExpired(plan.endDate);
-          }).length}
+          value={statsQuery.data?.expiredPlans ?? '...'}
           icon={UserX}
-          description="Members with expired plans"
+          description="Plans expired as of today"
           variant="destructive"
         />
-        {/* Dynamic Growth Card */}
         <StatCard
           title="Growth"
           value={(() => {
-            // Calculate new members this month and growth percent
-            function getMonthYear(date: Date) {
-              return `${date.getFullYear()}-${date.getMonth() + 1}`;
-            }
-            const now = new Date();
-            const thisMonth = getMonthYear(now);
-            const lastMonth = getMonthYear(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-            const usersWithDate = usersForStats || [];
-            const newMembersThisMonth = usersWithDate.filter(u => {
-              if (!u.createdAt) return false;
-              return getMonthYear(new Date(u.createdAt)) === thisMonth;
-            });
-            const newMembersLastMonth = usersWithDate.filter(u => {
-              if (!u.createdAt) return false;
-              return getMonthYear(new Date(u.createdAt)) === lastMonth;
-            });
-            const growthPercent = newMembersLastMonth.length === 0
-              ? (newMembersThisMonth.length > 0 ? 100 : 0)
-              : Math.round(((newMembersThisMonth.length - newMembersLastMonth.length) / newMembersLastMonth.length) * 100);
-            // Return only the percentage for the main value
+            if (!statsQuery.data) return '...';
+            const { membersThisMonth, membersLastMonth } = statsQuery.data;
+            const growthPercent = membersLastMonth === 0
+              ? (membersThisMonth > 0 ? 100 : 0)
+              : Math.round(((membersThisMonth - membersLastMonth) / membersLastMonth) * 100);
             return `${growthPercent > 0 ? '+' : ''}${growthPercent}%`;
           })()}
           icon={TrendingUp}
           description={(() => {
-            // Show new members count as sub-label
-            function getMonthYear(date: Date) {
-              return `${date.getFullYear()}-${date.getMonth() + 1}`;
-            }
-            const now = new Date();
-            const thisMonth = getMonthYear(now);
-            const usersWithDate = usersForStats || [];
-            const newMembersThisMonth = usersWithDate.filter(u => {
-              if (!u.createdAt) return false;
-              return getMonthYear(new Date(u.createdAt)) === thisMonth;
-            });
-            return `${newMembersThisMonth.length} new member${newMembersThisMonth.length === 1 ? '' : 's'} this month`;
+            if (!statsQuery.data) return '...';
+            const { membersThisMonth } = statsQuery.data;
+            return `${membersThisMonth} new member${membersThisMonth === 1 ? '' : 's'} this month`;
           })()}
           variant="success"
         />

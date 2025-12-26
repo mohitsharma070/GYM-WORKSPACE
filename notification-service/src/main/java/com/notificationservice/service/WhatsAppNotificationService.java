@@ -50,16 +50,8 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
         for (String recipientPhoneNumber : recipients) {
             NotificationRequest transactionalRequest = new NotificationRequest();
             transactionalRequest.setPhoneNumber(recipientPhoneNumber);
-            // Compose HTML message using template loader
-            java.util.Map<String, String> placeholders = new java.util.HashMap<>();
-            placeholders.put("recipientPhoneNumber", recipientPhoneNumber);
-            placeholders.put("targetType", request.getTargetType() != null ? request.getTargetType().toString() : "");
-            placeholders.put("messageContent", request.getMessageContent() != null ? request.getMessageContent() : "");
-            placeholders.put("imageUrl", request.getImageUrl() != null ? request.getImageUrl() : "");
-            String htmlMessage = TemplateLoader.renderTemplate("promotional-notification.html", placeholders);
-            // Fallback to original message if template missing
-            transactionalRequest.setMessage(htmlMessage.isEmpty() ? request.getMessageContent() : htmlMessage);
-            NotificationResult result = sendNotification(transactionalRequest);
+            transactionalRequest.setMessage(request.getMessageContent()); // Only send plain text
+            NotificationResult result = sendNotification(transactionalRequest, false); // Do not log transactional outcome
             results.add(result);
             logPromotionalNotificationOutcome(request, recipientPhoneNumber, result);
         }
@@ -75,35 +67,25 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
      */
     @Override
     public NotificationResult sendNotification(NotificationRequest request) {
+        return sendNotification(request, true);
+    }
+
+    // Overloaded method to control transactional logging
+    public NotificationResult sendNotification(NotificationRequest request, boolean logTransactional) {
         String phoneNumber = request.getPhoneNumber();
         String messageContent = request.getMessage();
-        // Compose HTML message using template loader (only if not already HTML)
-        String htmlMessage = messageContent;
-        // Heuristic: if messageContent does not contain <html>, try to render template
-        if (messageContent != null && !messageContent.trim().toLowerCase().contains("<html>")) {
-            java.util.Map<String, String> placeholders = new java.util.HashMap<>();
-            placeholders.put("phoneNumber", phoneNumber != null ? phoneNumber : "");
-            placeholders.put("messageContent", messageContent != null ? messageContent : "");
-            placeholders.put("externalMessageId", "");
-            placeholders.put("status", "");
-            placeholders.put("failureReason", "");
-            htmlMessage = TemplateLoader.renderTemplate("transactional-notification.html", placeholders);
-            if (htmlMessage.isEmpty()) {
-                htmlMessage = messageContent;
-            }
-        }
-        log.info("Attempting to send transactional WhatsApp message to {}: {}", phoneNumber, htmlMessage);
+        log.info("Attempting to send transactional WhatsApp message to {}: {}", phoneNumber, messageContent);
 
         if (phoneNumber == null || phoneNumber.isEmpty()) {
             return NotificationResult.failure("Recipient phone number is missing.");
         }
-        if (htmlMessage == null || htmlMessage.isEmpty()) {
+        if (messageContent == null || messageContent.isEmpty()) {
             return NotificationResult.failure("Notification message content is empty.");
         }
 
         NotificationResult result;
         try {
-            WhatsAppMessageRequest whatsAppRequest = WhatsAppMessageRequest.createTextMessage(phoneNumber, htmlMessage);
+            WhatsAppMessageRequest whatsAppRequest = WhatsAppMessageRequest.createTextMessage(phoneNumber, messageContent);
             Mono<WhatsAppMessageResponse> responseMono = metaWhatsAppApiClient.sendMessage(whatsAppRequest);
             WhatsAppMessageResponse response = responseMono.block(); // Blocking call for simplicity in this synchronous context
 
@@ -119,7 +101,9 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
             log.error("Failed to send transactional notification to {}: {}", phoneNumber, e.getMessage(), e);
             result = NotificationResult.failure("Exception during WhatsApp API call: " + e.getMessage());
         }
-        logTransactionalNotificationOutcome(request, result);
+        if (logTransactional) {
+            logTransactionalNotificationOutcome(request, result);
+        }
         return result;
     }
 

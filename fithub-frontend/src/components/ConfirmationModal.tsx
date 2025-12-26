@@ -32,7 +32,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <X size={24} />
         </button>
         <h2 className="text-2xl font-bold mb-4 text-gray-800">{title}</h2>
-        <p className="text-gray-700 mb-6">{message}</p>
+        <div className="text-gray-700 mb-6">{message}</div>
         <div className="flex justify-end space-x-4">
           <Button
             type="button"

@@ -13,25 +13,27 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class MetaWhatsAppApiClient {
 
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
     private final WhatsAppConfig whatsAppConfig;
 
     public MetaWhatsAppApiClient(WebClient.Builder webClientBuilder, WhatsAppConfig whatsAppConfig) {
         this.whatsAppConfig = whatsAppConfig;
-        this.webClient = webClientBuilder.baseUrl(whatsAppConfig.getApiUrl())
-                .defaultHeader("Authorization", "Bearer " + whatsAppConfig.getAccessToken())
-                .build();
+        this.webClientBuilder = webClientBuilder;
     }
 
-    public Mono<WhatsAppMessageResponse> sendMessage(WhatsAppMessageRequest request) {
+        public Mono<WhatsAppMessageResponse> sendMessage(WhatsAppMessageRequest request) {
         String url = String.format("/%s/messages", whatsAppConfig.getPhoneNumberId());
+        log.info("Full WhatsApp API URL: {}{}", whatsAppConfig.getApiUrl(), url);
         log.info("Sending WhatsApp message to Meta API: {}", request);
+        WebClient webClient = webClientBuilder.baseUrl(whatsAppConfig.getApiUrl())
+            .defaultHeader("Authorization", "Bearer " + whatsAppConfig.getAccessToken())
+            .build();
         return webClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(WhatsAppMessageResponse.class)
-                .doOnError(e -> log.error("Error sending WhatsApp message: {}", e.getMessage()));
-    }
+            .uri(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(WhatsAppMessageResponse.class)
+            .doOnError(e -> log.error("Error sending WhatsApp message: {}", e.getMessage()));
+        }
 }

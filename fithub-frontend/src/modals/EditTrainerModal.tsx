@@ -1,5 +1,6 @@
 // src/modals/EditTrainerModal.tsx
 import { useEffect, useState } from "react";
+import { normalizePhoneInput } from "../utils/phone";
 
 interface EditTrainerModalProps {
   trainer: any | null;
@@ -45,7 +46,7 @@ export default function EditTrainerModal({
 
   function handleSave() {
     // DO NOT call updateTrainer here → parent should handle it
-    onUpdated(form);         // FIXED: pass form data to parent
+    onUpdated({ ...form, phone: normalizePhoneInput(form.phone) }); // Pass normalized phone to parent
     onClose();               // close modal
   }
 
@@ -134,6 +135,7 @@ export default function EditTrainerModal({
               name="phone"
               value={form.phone}
               onChange={handleChange}
+              onBlur={(e) => setForm({ ...form, phone: normalizePhoneInput(e.target.value) })}
               className="input w-full border p-2 rounded"
             />
           </div>

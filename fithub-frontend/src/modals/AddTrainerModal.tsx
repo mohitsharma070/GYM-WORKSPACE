@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { normalizePhoneInput } from "../utils/phone";
 
 interface Props {
   onClose: () => void;
@@ -36,7 +37,7 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
       specialization: form.specialization,
       experienceYears: Number(form.experienceYears),
       certification: form.certification,
-      phone: form.phone,
+      phone: normalizePhoneInput(form.phone),
     });
   }
 
@@ -118,6 +119,7 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
             className="w-full border p-2 rounded"
             value={form.phone}
             onChange={(e) => updateField("phone", e.target.value)}
+            onBlur={(e) => updateField("phone", normalizePhoneInput(e.target.value))}
           />
         </div>
 

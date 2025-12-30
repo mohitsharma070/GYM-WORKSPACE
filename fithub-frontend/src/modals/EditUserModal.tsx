@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../components/Button';
+import { normalizePhoneInput } from '../utils/phone';
 import type { User } from "../types/User";
 import type { Plan } from "../types/Plan";
 
@@ -51,7 +52,7 @@ export default function EditUserModal({
       height: Number(form.height),
       weight: Number(form.weight),
       goal: form.goal,
-      phone: form.phone,
+      phone: normalizePhoneInput(form.phone),
       membershipType: form.membershipType,
     };
 
@@ -105,6 +106,7 @@ export default function EditUserModal({
             placeholder="Phone"
             value={form.phone}
             onChange={(e) => updateField("phone", e.target.value)}
+            onBlur={(e) => updateField("phone", normalizePhoneInput(e.target.value))}
           />
 
           {/* Age + Gender */}

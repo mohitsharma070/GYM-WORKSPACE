@@ -10,6 +10,7 @@ import type { PromotionalNotificationRequest } from "../../types/Notification";
 import { Megaphone, Send, Eye, Users, MessageSquare, Image, Info, CheckCircle, AlertCircle, Activity, Target, Globe } from 'lucide-react';
 import PageHeader from '../../components/PageHeader';
 import { StatCard } from '../../components/StatCard';
+import { normalizePhoneInput } from "../../utils/phone";
 
 export default function BroadcastPage() {
   const queryClient = useQueryClient();
@@ -43,17 +44,13 @@ export default function BroadcastPage() {
       setSelectedFile(null);
       setUploadedImageUrl(null);
       setShowConfirmationModal(false);
-      // Check the success status and message to determine the toast type
-      if (result.success) {
-        if (result.message.includes("Failed")) {
-          // Partial success scenario
-          showToast(result.message, "warn");
-        } else {
-          // Full success
-          showToast(result.message, "success");
-        }
+      // Improved error handling: treat any message containing 'Failed' or 'Exception' as error
+      const lowerMsg = (result.message || '').toLowerCase();
+      if (result.success && !lowerMsg.includes('failed') && !lowerMsg.includes('exception')) {
+        showToast(result.message, "success");
+      } else if (lowerMsg.includes('failed') || lowerMsg.includes('exception')) {
+        showToast(result.message, "error");
       } else {
-        // Explicit failure from the backend
         showToast(result.message || "Failed to send broadcast.", "error");
       }
       queryClient.invalidateQueries({ queryKey: ["adminNotificationLogs"] });
@@ -68,7 +65,10 @@ export default function BroadcastPage() {
     let finalTargetIdentifiers: string[] | undefined = undefined;
 
     if (selectedTargetType === TargetType.SPECIFIC_PHONES) {
-      finalTargetIdentifiers = specificTargetInput.split(",").map((s) => s.trim()).filter(Boolean);
+      finalTargetIdentifiers = specificTargetInput
+        .split(",")
+        .map((s) => normalizePhoneInput(s))
+        .filter(Boolean);
     }
 
     sendNotificationMutation.mutate({
@@ -316,6 +316,14 @@ export default function BroadcastPage() {
                       placeholder="Enter phone numbers separated by commas (e.g., +1234567890, +1987654321)"
                       value={specificTargetInput}
                       onChange={(e) => setSpecificTargetInput(e.target.value)}
+                      onBlur={(e) => {
+                        const normalized = e.target.value
+                          .split(",")
+                          .map((s) => normalizePhoneInput(s))
+                          .filter(Boolean)
+                          .join(", ");
+                        setSpecificTargetInput(normalized);
+                      }}
                       className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     />
                   </div>

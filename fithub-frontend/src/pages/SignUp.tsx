@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createUser } from '../api/users';
+import { normalizePhoneInput } from '../utils/phone';
 import { 
   Dumbbell, 
   Mail, 
@@ -93,6 +94,7 @@ export default function SignUp() {
     setLoading(true);
 
     try {
+      const normalizedPhone = normalizePhoneInput(formData.phone);
       // Prepare user data according to backend API expectations
       const userData = {
         name: formData.name,
@@ -101,7 +103,7 @@ export default function SignUp() {
         dateOfBirth: formData.dateOfBirth || undefined,
         role: 'ROLE_MEMBER',
         memberDetails: {
-          phone: formData.phone || undefined,
+          phone: normalizedPhone || undefined,
           age: formData.age ? parseInt(formData.age) : undefined,
           gender: formData.gender || undefined,
           height: formData.height ? parseFloat(formData.height) : undefined,
@@ -293,9 +295,13 @@ export default function SignUp() {
                       type="tel"
                       name="phone"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none text-gray-700 bg-gray-50 focus:bg-white transition-all"
-                      placeholder="e.g., +1234567890"
+                      placeholder="10 digits → auto +91"
                       value={formData.phone}
                       onChange={handleChange}
+                      onBlur={(e) => {
+                        const normalized = normalizePhoneInput(e.target.value);
+                        setFormData({ ...formData, phone: normalized });
+                      }}
                     />
                   </div>
 

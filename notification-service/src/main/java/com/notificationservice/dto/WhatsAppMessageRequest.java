@@ -16,7 +16,7 @@ public class WhatsAppMessageRequest {
     private String to;
     private String type;
     private WhatsAppTextRequest text;
-    // Add other message types like template, image, etc. as needed in the future
+    private WhatsAppImageRequest image;
 
     public static WhatsAppMessageRequest createTextMessage(String to, String body) {
         return WhatsAppMessageRequest.builder()
@@ -24,6 +24,15 @@ public class WhatsAppMessageRequest {
                 .to(to)
                 .type("text")
                 .text(new WhatsAppTextRequest(body))
+                .build();
+    }
+
+    public static WhatsAppMessageRequest createImageMessage(String to, String imageUrl, String caption) {
+        return WhatsAppMessageRequest.builder()
+                .messagingProduct("whatsapp")
+                .to(to)
+                .type("image")
+                .image(new WhatsAppImageRequest(imageUrl, caption))
                 .build();
     }
 }

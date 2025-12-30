@@ -59,6 +59,18 @@ public class UserServiceImpl implements IUserService {
         this.notificationClient = notificationClient;
     }
 
+    // Normalize Indian phone numbers: keep existing +91, add +91 for 10-digit inputs, otherwise return as-is
+    private String normalizePhone(String phone) {
+        if (phone == null) return null;
+        String trimmed = phone.trim();
+        if (trimmed.isEmpty()) return trimmed;
+        if (trimmed.startsWith("+91")) return trimmed;
+        if (trimmed.matches("\\d{10}")) {
+            return "+91" + trimmed;
+        }
+        return trimmed;
+    }
+
     // ============================================================
     // ADMIN REGISTER (RETURNS USER)
     // ============================================================
@@ -115,7 +127,7 @@ public class UserServiceImpl implements IUserService {
         details.setSpecialization(request.getSpecialization());
         details.setExperienceYears(request.getExperienceYears());
         details.setCertification(request.getCertification());
-        details.setPhone(request.getPhone());
+        details.setPhone(normalizePhone(request.getPhone()));
         details.setUser(savedUser);
         // Set dateOfBirth in TrainerDetails if provided
         if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
@@ -129,7 +141,7 @@ public class UserServiceImpl implements IUserService {
         if (phone != null && !phone.isBlank()) {
             try {
                 NotificationRequest notification = new NotificationRequest();
-                notification.setPhoneNumber(phone);
+            notification.setPhoneNumber(phone);
                 // Use template loader for trainer registration notification
                 String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
                     "trainer_registration_notification.html",
@@ -189,7 +201,7 @@ public class UserServiceImpl implements IUserService {
         details.setWeight(request.getWeight());
         details.setGoal(request.getGoal());
         details.setMembershipType(request.getMembershipType());
-        details.setPhone(request.getPhone());
+        details.setPhone(normalizePhone(request.getPhone()));
         details.setFingerprint(request.getFingerprint()); // Set fingerprint here
         details.setUser(savedUser);
         // Set dateOfBirth in MemberDetails as well
@@ -204,7 +216,7 @@ public class UserServiceImpl implements IUserService {
         if (phone != null && !phone.isBlank()) {
             try {
                 NotificationRequest notification = new NotificationRequest();
-                notification.setPhoneNumber(phone);
+            notification.setPhoneNumber(phone);
                 // Use template loader for member registration notification
                 String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
                     "member_registration_notification.html",

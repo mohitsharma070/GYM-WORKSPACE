@@ -12,7 +12,6 @@ import jakarta.persistence.GenerationType;
 @Table(name = "whatsapp_credentials")
 public class WhatsAppCredential {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(length = 1024)

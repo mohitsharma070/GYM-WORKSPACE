@@ -1,5 +1,6 @@
 import type { Plan } from "../types/Plan";
 import { Button } from '../components/Button';
+import { normalizePhoneInput } from '../utils/phone';
 
 import { initiateFingerprintScan } from '../utils/fingerprintScanner';
 
@@ -134,6 +135,15 @@ export default function AddUserModal({
                 memberDetails: {
                   ...newUser.memberDetails,
                   phone: e.target.value,
+                },
+              })
+            }
+            onBlur={(e) =>
+              setNewUser({
+                ...newUser,
+                memberDetails: {
+                  ...newUser.memberDetails,
+                  phone: normalizePhoneInput(e.target.value),
                 },
               })
             }

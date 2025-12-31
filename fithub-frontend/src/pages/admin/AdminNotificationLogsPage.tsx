@@ -2,11 +2,13 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getPromotionalNotificationHistory,
+  fetchNotificationStats,
   type PaginatedResponse,
-  type NotificationLogResponse, // Changed from PromotionalNotificationHistoryItem
+  type NotificationLogResponse,
   type NotificationHistoryFilter,
   type NotificationHistorySort,
 } from "../../api/notifications";
+import { useQuery as useRQ } from "@tanstack/react-query";
 import { TargetType } from "../../types/TargetType"; // Import TargetType
 import { ScrollText, BellOff, Filter, Search, BarChart3, Send, CheckCircle, XCircle, Clock, AlertTriangle, Image } from 'lucide-react'; // Import the icon and BellOff
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
@@ -24,12 +26,18 @@ export default function AdminNotificationLogsPage() {
 
   const navigate = useNavigate(); // Initialize navigate
 
-  const { data, isLoading, isError, error, refetch } = useQuery< // Added refetch
-    PaginatedResponse<NotificationLogResponse>, // Changed from PromotionalNotificationHistoryItem
+  const { data, isLoading, isError, error, refetch } = useQuery<
+    PaginatedResponse<NotificationLogResponse>,
     Error
   >({
-    queryKey: ["promotionalNotificationHistory", page, size, filters, sort, searchTerm], // Include searchTerm in queryKey
-    queryFn: () => getPromotionalNotificationHistory(page, size, { ...filters, searchTerm }, sort), // Pass searchTerm to filters
+    queryKey: ["promotionalNotificationHistory", page, size, filters, sort, searchTerm],
+    queryFn: () => getPromotionalNotificationHistory(page, size, { ...filters, searchTerm }, sort),
+  });
+
+  // Fetch global stats for all notification logs (not just current page)
+  const statsQuery = useRQ({
+    queryKey: ["notificationStats", filters],
+    queryFn: () => fetchNotificationStats(filters),
   });
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -97,6 +105,13 @@ export default function AdminNotificationLogsPage() {
   const history = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
+    // Use global stats if available, fallback to current page if not
+    const totalMessages = statsQuery.data?.total ?? 0;
+    const sentCount = statsQuery.data?.sent ?? 0;
+    const failedCount = statsQuery.data?.failed ?? 0;
+    const successRate = totalMessages > 0 ? ((sentCount / totalMessages) * 100).toFixed(1) : '0';
+    const recentActivity = statsQuery.data?.recentActivity ?? 0;
+
   const getStatusClasses = (status: string) => {
     switch (status) {
       case "SENT":
@@ -127,23 +142,22 @@ export default function AdminNotificationLogsPage() {
     }
   };
 
-  const getStatusCount = (status: string) => {
-    return history.filter(item => item.status === status).length;
-  };
+  // Removed unused getStatusCount function
 
-  // Enhanced statistics calculation
-  const sentCount = getStatusCount('SENT');
-  const failedCount = getStatusCount('FAILED');
-  const totalMessages = history.length;
-  const successRate = totalMessages > 0 ? ((sentCount / totalMessages) * 100).toFixed(1) : '0';
+    // Enhanced statistics calculation
+    // Removed duplicate declarations
+    // const sentCount = getStatusCount('SENT');
+    // const failedCount = getStatusCount('FAILED');
+    // const totalMessages = history.length;
+    // const successRate = totalMessages > 0 ? ((sentCount / totalMessages) * 100).toFixed(1) : '0';
   
-  // Calculate recent activity (messages from last 24 hours)
-  const recentActivity = history.filter(log => {
-    const logTime = new Date(log.timestamp);
-    const now = new Date();
-    const diffHours = (now.getTime() - logTime.getTime()) / (1000 * 60 * 60);
-    return diffHours <= 24;
-  }).length;
+    // Calculate recent activity (messages from last 24 hours)
+    // const recentActivity = history.filter(log => {
+    //   const logTime = new Date(log.timestamp);
+    //   const now = new Date();
+    //   const diffHours = (now.getTime() - logTime.getTime()) / (1000 * 60 * 60);
+    //   return diffHours <= 24;
+    // }).length;
 
   return (
     <div className="space-y-8">

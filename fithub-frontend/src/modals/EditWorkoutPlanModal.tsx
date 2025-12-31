@@ -211,44 +211,58 @@ export default function EditWorkoutPlanModal({ isOpen, onClose, workoutPlan }: E
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
-          <X size={24} />
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center p-4 z-50">
+      <div
+        className="p-8 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto relative shadow-2xl"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
+        <button onClick={onClose} className="absolute top-5 right-5 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-2 shadow transition-colors duration-150 z-10" aria-label="Close">
+          <X size={28} />
         </button>
-        <h2 className="text-2xl font-bold mb-4">Edit Workout Plan: {workoutPlan.name}</h2>
+        <h2 className="text-3xl font-extrabold mb-6 text-gray-900 flex items-center gap-2">
+          <span>Edit Workout Plan:</span>
+          <span className="truncate text-blue-700 max-w-xs" title={workoutPlan.name}>{workoutPlan.name}</span>
+        </h2>
 
         {/* Basic Plan Details */}
         <div className="mb-6 p-4 border rounded-lg bg-gray-50">
           <h3 className="text-xl font-semibold mb-3">Plan Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="plan-name" className="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+              <label htmlFor="plan-name" className="block text-sm text-gray-600 mb-1">Name</label>
               <input
                 id="plan-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               />
             </div>
             <div>
-              <label htmlFor="plan-description" className="block text-gray-700 text-sm font-bold mb-2">Description:</label>
+              <label htmlFor="plan-description" className="block text-sm text-gray-600 mb-1">Description</label>
               <textarea
                 id="plan-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
                 rows={3}
               ></textarea>
             </div>
             <div>
-              <label htmlFor="plan-difficulty" className="block text-gray-700 text-sm font-bold mb-2">Difficulty:</label>
+              <label htmlFor="plan-difficulty" className="block text-sm text-gray-600 mb-1">Difficulty</label>
               <select
                 id="plan-difficulty"
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-                className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                className="w-full border p-2 rounded"
+                style={{border: '1px solid #E5E7EB', color: '#1E293B', background: '#F5F3EE'}}
               >
                 {Object.values(Difficulty).map((diff) => (
                   <option key={diff} value={diff}>{diff}</option>

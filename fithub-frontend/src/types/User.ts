@@ -6,6 +6,7 @@ export interface MemberDetails {
   goal?: string;
   membershipType?: string | number;
   phone?: string;
+  dateOfBirth?: string;
 }
 
 export interface User {
@@ -14,4 +15,6 @@ export interface User {
   email: string;
   role: string;
   memberDetails?: MemberDetails;
+  dateOfBirth?: string; // Added to match EditUserModal usage
+  createdAt?: string; // ISO date string, for growth stats
 }

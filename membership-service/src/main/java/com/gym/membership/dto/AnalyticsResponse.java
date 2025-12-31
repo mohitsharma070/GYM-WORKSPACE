@@ -1,5 +1,6 @@
 package com.gym.membership.dto;
 
+
 public class AnalyticsResponse {
 
     // PERIOD (for dynamic analytics)
@@ -22,6 +23,10 @@ public class AnalyticsResponse {
     private long totalMembers;
     private long totalProductsSold;
 
+
+    private long activePlans;
+    private long expiredPlans;
+
     // Default constructor (required by Jackson)
     public AnalyticsResponse() {}
 
@@ -34,7 +39,9 @@ public class AnalyticsResponse {
             long membersThisMonth,
             long membersLastMonth,
             long totalMembers,
-            long totalProductsSold
+            long totalProductsSold,
+            long activePlans,
+            long expiredPlans
     ) {
         this.month = month;
         this.year = year;
@@ -50,6 +57,9 @@ public class AnalyticsResponse {
 
         this.totalMembers = totalMembers;
         this.totalProductsSold = totalProductsSold;
+
+        this.activePlans = activePlans;
+        this.expiredPlans = expiredPlans;
     }
 
     // GETTERS
@@ -67,4 +77,7 @@ public class AnalyticsResponse {
 
     public long getTotalMembers() { return totalMembers; }
     public long getTotalProductsSold() { return totalProductsSold; }
+
+    public long getActivePlans() { return activePlans; }
+    public long getExpiredPlans() { return expiredPlans; }
 }

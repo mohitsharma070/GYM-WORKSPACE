@@ -15,24 +15,20 @@ public class UserResponse {
     private String email;
     private String role;
     private String phone;
+    private String dateOfBirth; // Top-level DOB
+    private MemberDetailsResponse memberDetails; // Nested member details
+    private TrainerDetailsResponse trainerDetails; // Nested trainer details
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
+    public void setId(Long id) { this.id = id; }
+    public Long getId() { return this.id; }
+    public void setName(String name) { this.name = name; }
+    public void setEmail(String email) { this.email = email; }
+    public void setRole(String role) { this.role = role; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public MemberDetailsResponse getMemberDetails() { return memberDetails; }
+    public void setMemberDetails(MemberDetailsResponse memberDetails) { this.memberDetails = memberDetails; }
+    public TrainerDetailsResponse getTrainerDetails() { return trainerDetails; }
+    public void setTrainerDetails(TrainerDetailsResponse trainerDetails) { this.trainerDetails = trainerDetails; }
 }

@@ -1,24 +1,42 @@
+
 package com.gym.attendance.service.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
 import com.gym.attendance.client.MembershipServiceFeignClient;
-import com.gym.attendance.client.UserServiceFeignClient;
-import com.gym.attendance.entity.Attendance;
 import com.gym.attendance.client.NotificationClient;
+import com.gym.attendance.client.UserServiceFeignClient;
 import com.gym.attendance.dto.NotificationRequest;
+import com.gym.attendance.entity.Attendance;
 import com.gym.attendance.exception.ResourceNotFoundException;
 import com.gym.attendance.payload.response.MembershipResponse;
 import com.gym.attendance.payload.response.UserResponse;
 import com.gym.attendance.repository.AttendanceRepository;
 import com.gym.attendance.service.AttendanceService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
+
+    @Override
+    public Page<Attendance> getAllAttendances(Specification<Attendance> spec, Pageable pageable) {
+        return attendanceRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public Page<Attendance> getAttendancesByUserId(Long userId, Pageable pageable) {
+        Specification<Attendance> spec = (root, query, cb) -> cb.equal(root.get("userId"), userId);
+        return attendanceRepository.findAll(spec, pageable);
+    }
 
     private final AttendanceRepository attendanceRepository;
     private final UserServiceFeignClient userServiceFeignClient;
@@ -44,7 +62,19 @@ public class AttendanceServiceImpl implements AttendanceService {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(user.getPhone());
                 notification.setType("ATTENDANCE_CHECK_IN");
-                notification.setMessage("Hi " + user.getName() + ", your check-in has been recorded. Welcome!");
+                // Compose message using template
+                String rendered = com.gym.attendance.util.TemplateUtil.renderTemplate(
+                    "attendance_check_in.html",
+                    java.util.Map.of(
+                        "userName", user.getName() != null ? user.getName() : "",
+                        "checkInTime", java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(attendance.getCheckInTime())
+                    )
+                );
+                if (rendered.isEmpty()) {
+                    notification.setMessage("Hi " + user.getName() + ", your check-in has been recorded. Welcome!");
+                } else {
+                    notification.setMessage(rendered);
+                }
                 notificationClient.sendNotification(notification);
             }
         } catch (Exception e) {
@@ -69,7 +99,19 @@ public class AttendanceServiceImpl implements AttendanceService {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(user.getPhone());
                 notification.setType("ATTENDANCE_CHECK_OUT");
-                notification.setMessage("Hi " + user.getName() + ", your check-out has been recorded. Have a great day!");
+                // Compose message using template
+                String rendered = com.gym.attendance.util.TemplateUtil.renderTemplate(
+                    "attendance_check_out.html",
+                    java.util.Map.of(
+                        "userName", user.getName() != null ? user.getName() : "",
+                        "checkOutTime", java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").format(attendance.getCheckOutTime() != null ? attendance.getCheckOutTime() : java.time.LocalDateTime.now())
+                    )
+                );
+                if (rendered.isEmpty()) {
+                    notification.setMessage("Hi " + user.getName() + ", your check-out has been recorded. Have a great day!");
+                } else {
+                    notification.setMessage(rendered);
+                }
                 notificationClient.sendNotification(notification);
             }
         } catch (Exception e) {

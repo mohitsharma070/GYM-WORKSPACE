@@ -9,4 +9,6 @@ export interface Stats {
   membersLastMonth: number;
   totalMembers: number;
   totalProductsSold: number;
+  activePlans: number;
+  expiredPlans: number;
 }

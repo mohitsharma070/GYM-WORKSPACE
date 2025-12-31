@@ -1,5 +1,8 @@
 import type { Plan } from "../types/Plan";
 import { Button } from '../components/Button';
+import { normalizePhoneInput } from '../utils/phone';
+
+import { initiateFingerprintScan } from '../utils/fingerprintScanner';
 
 interface AddUserModalProps {
   newUser: any;
@@ -20,11 +23,53 @@ export default function AddUserModal({
 }: AddUserModalProps) {
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-auto shadow-lg">
+      <div
+        className="p-6 rounded-lg w-96 max-h-[90vh] overflow-auto shadow-lg"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
 
         <h2 className="text-xl font-bold mb-4">Add New Member</h2>
 
         <div className="space-y-3">
+
+
+          {/* FINGERPRINT SCAN */}
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Fingerprint</label>
+            <div className="flex gap-2 items-center">
+              <input
+                className="w-full border p-2 rounded bg-gray-100"
+                placeholder="Scan fingerprint..."
+                value={newUser.memberDetails?.fingerprint || ''}
+                readOnly
+              />
+              <Button
+                type="button"
+                variant="default"
+                onClick={async () => {
+                  try {
+                    const fp = await initiateFingerprintScan();
+                    setNewUser({
+                      ...newUser,
+                      memberDetails: {
+                        ...newUser.memberDetails,
+                        fingerprint: fp,
+                      },
+                    });
+                  } catch (e: any) {
+                    alert(e.message || 'Fingerprint scan failed');
+                  }
+                }}
+              >
+                Scan
+              </Button>
+            </div>
+          </div>
 
           {/* NAME */}
           <input
@@ -32,6 +77,15 @@ export default function AddUserModal({
             placeholder="Full Name"
             value={newUser.name}
             onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+          />
+
+          {/* DATE OF BIRTH */}
+          <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={newUser.dateOfBirth || ''}
+            onChange={(e) => setNewUser({ ...newUser, dateOfBirth: e.target.value })}
           />
 
           {/* EMAIL */}
@@ -81,6 +135,15 @@ export default function AddUserModal({
                 memberDetails: {
                   ...newUser.memberDetails,
                   phone: e.target.value,
+                },
+              })
+            }
+            onBlur={(e) =>
+              setNewUser({
+                ...newUser,
+                memberDetails: {
+                  ...newUser.memberDetails,
+                  phone: normalizePhoneInput(e.target.value),
                 },
               })
             }

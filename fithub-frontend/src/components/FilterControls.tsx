@@ -1,6 +1,8 @@
 // src/components/FilterControls.tsx
 
 import React from "react";
+import { RefreshCw } from 'lucide-react';
+import { Button } from './Button';
 
 interface FilterControlsProps {
   selectedMonth: number;
@@ -45,9 +47,10 @@ export const FilterControls: React.FC<FilterControlsProps> = ({
         ))}
       </select>
 
-      <button onClick={onRefresh} className="px-4 py-2 bg-blue-600 text-white rounded">
+      <Button type="button" onClick={onRefresh}>
+        <RefreshCw size={16} className="mr-2" />
         Refresh
-      </button>
+      </Button>
     </div>
   );
 };

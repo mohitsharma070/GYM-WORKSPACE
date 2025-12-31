@@ -94,7 +94,16 @@ public class WorkoutLogServiceImpl implements IWorkoutLogService {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(member.email); // or member.phone
                 notification.setType("TRAINER_WORKOUT_COMPLETED");
-                notification.setMessage("Hi " + member.name + ", your workout '" + workoutLog.getExercise().getName() + "' has been marked as completed by trainer " + trainer.name + ".");
+                java.util.Map<String, String> values = new java.util.HashMap<>();
+                values.put("memberName", member.name);
+                values.put("exerciseName", workoutLog.getExercise().getName());
+                values.put("trainerName", trainer.name);
+                String rendered = com.gym.workoutservice.util.TemplateLoader.renderTemplate(
+                    "trainer_workout_completed.html", values);
+                if (rendered.isEmpty()) {
+                    rendered = "Hi " + member.name + ", your workout '" + workoutLog.getExercise().getName() + "' has been marked as completed by trainer " + trainer.name + ".";
+                }
+                notification.setMessage(rendered);
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
                 System.err.println("Failed to send workout completion notification: " + e.getMessage());

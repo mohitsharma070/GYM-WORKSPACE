@@ -14,25 +14,37 @@ import com.gym.userservice.feign.NotificationServiceClient;
 import com.gym.userservice.repository.UserRepository;
 import com.gym.userservice.service.IUserService;
 
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import jakarta.persistence.criteria.Predicate;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements IUserService {
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository repo;
     private final TrainerDetailsRepository trainerRepo;
     private final MemberDetailsRepository memberRepo;
     private final PasswordEncoder encoder;
     private final NotificationServiceClient notificationClient;
+
+    private static final Set<String> ALLOWED_SORT_COLUMNS = Set.of("id", "name", "email", "role", "createdAt");
 
     public UserServiceImpl(UserRepository repo,
                            TrainerDetailsRepository trainerRepo,
@@ -45,6 +57,18 @@ public class UserServiceImpl implements IUserService {
         this.memberRepo = memberRepo;
         this.encoder = encoder;
         this.notificationClient = notificationClient;
+    }
+
+    // Normalize Indian phone numbers: keep existing +91, add +91 for 10-digit inputs, otherwise return as-is
+    private String normalizePhone(String phone) {
+        if (phone == null) return null;
+        String trimmed = phone.trim();
+        if (trimmed.isEmpty()) return trimmed;
+        if (trimmed.startsWith("+91")) return trimmed;
+        if (trimmed.matches("\\d{10}")) {
+            return "+91" + trimmed;
+        }
+        return trimmed;
     }
 
     // ============================================================
@@ -75,7 +99,6 @@ public class UserServiceImpl implements IUserService {
     public User registerTrainer(TrainerRegisterRequest request) {
 
         Optional<User> existingUser = repo.findByEmailIncludeDeleted(request.getEmail());
-
         if (existingUser.isPresent()) {
             if (existingUser.get().isDeleted()) {
                 throw new AccountDeactivatedException("Account is deactivated. Please reactivate it.");
@@ -89,6 +112,14 @@ public class UserServiceImpl implements IUserService {
         user.setEmail(request.getEmail());
         user.setPassword(encoder.encode(request.getPassword()));
         user.setRole("ROLE_TRAINER");
+        // Set dateOfBirth if provided
+        if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
+            try {
+                user.setDateOfBirth(LocalDate.parse(request.getDateOfBirth()));
+            } catch (Exception e) {
+                throw new BadRequestException("Invalid dateOfBirth format. Use yyyy-MM-dd.");
+            }
+        }
 
         User savedUser = repo.save(user);
 
@@ -96,10 +127,37 @@ public class UserServiceImpl implements IUserService {
         details.setSpecialization(request.getSpecialization());
         details.setExperienceYears(request.getExperienceYears());
         details.setCertification(request.getCertification());
-        details.setPhone(request.getPhone());
+        details.setPhone(normalizePhone(request.getPhone()));
         details.setUser(savedUser);
+        // Set dateOfBirth in TrainerDetails if provided
+        if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
+            details.setDateOfBirth(request.getDateOfBirth());
+        }
 
         trainerRepo.save(details);
+
+        // Automated notification for new trainer registration
+        String phone = details.getPhone();
+        if (phone != null && !phone.isBlank()) {
+            try {
+                NotificationRequest notification = new NotificationRequest();
+            notification.setPhoneNumber(phone);
+                // Use template loader for trainer registration notification
+                String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                    "trainer_registration_notification.html",
+                    Map.of("userName", user.getName() == null ? "" : user.getName())
+                );
+                if (rendered.isEmpty()) {
+                    rendered = "Welcome, " + user.getName() + "! You have been registered as a trainer. Let's inspire our members together!";
+                }
+                String plainText = rendered.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+                notification.setMessage(plainText);
+                notification.setType("TRAINER_REGISTRATION");
+                notificationClient.sendNotification(notification);
+            } catch (Exception e) {
+                log.error("Failed to send registration notification to trainer: {}", e.getMessage(), e);
+            }
+        }
 
         savedUser.setPassword(null);
         return savedUser;
@@ -112,7 +170,6 @@ public class UserServiceImpl implements IUserService {
     public User registerMember(MemberRegisterRequest request) {
 
         Optional<User> existingUser = repo.findByEmailIncludeDeleted(request.getEmail());
-
         if (existingUser.isPresent()) {
             if (existingUser.get().isDeleted()) {
                 throw new AccountDeactivatedException("Account is deactivated. Please reactivate it.");
@@ -126,6 +183,14 @@ public class UserServiceImpl implements IUserService {
         user.setEmail(request.getEmail());
         user.setPassword(encoder.encode(request.getPassword()));
         user.setRole("ROLE_MEMBER");
+        // Set dateOfBirth if provided
+        if (request.getDateOfBirth() != null && !request.getDateOfBirth().isBlank()) {
+            try {
+                user.setDateOfBirth(LocalDate.parse(request.getDateOfBirth()));
+            } catch (Exception e) {
+                throw new BadRequestException("Invalid dateOfBirth format. Use yyyy-MM-dd.");
+            }
+        }
 
         User savedUser = repo.save(user);
 
@@ -136,15 +201,40 @@ public class UserServiceImpl implements IUserService {
         details.setWeight(request.getWeight());
         details.setGoal(request.getGoal());
         details.setMembershipType(request.getMembershipType());
-        details.setPhone(request.getPhone());
+        details.setPhone(normalizePhone(request.getPhone()));
         details.setFingerprint(request.getFingerprint()); // Set fingerprint here
         details.setUser(savedUser);
+        // Set dateOfBirth in MemberDetails as well
+        details.setDateOfBirth(request.getDateOfBirth());
 
         savedUser.setMemberDetails(details);
 
         memberRepo.save(details);
-        savedUser.setPassword(null);
 
+        // Automated notification for new member registration
+        String phone = details.getPhone();
+        if (phone != null && !phone.isBlank()) {
+            try {
+                NotificationRequest notification = new NotificationRequest();
+            notification.setPhoneNumber(phone);
+                // Use template loader for member registration notification
+                String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                    "member_registration_notification.html",
+                    Map.of("userName", user.getName() == null ? "" : user.getName())
+                );
+                if (rendered.isEmpty()) {
+                    rendered = "Welcome, " + user.getName() + "! You have been registered as a member. Let's achieve your fitness goals together!";
+                }
+                String plainText = rendered.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+                notification.setMessage(plainText);
+                notification.setType("MEMBER_REGISTRATION");
+                notificationClient.sendNotification(notification);
+            } catch (Exception e) {
+                log.error("Failed to send registration notification to member: {}", e.getMessage(), e);
+            }
+        }
+
+        savedUser.setPassword(null);
         return savedUser;
     }
 
@@ -187,45 +277,31 @@ public class UserServiceImpl implements IUserService {
     // LISTS (FILTER OUT DELETED)
     // ============================================================
     @Override
-    public List<UserResponse> getAllUsers() {
-        return repo.findAll()
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .map(this::toUserResponse)
-                .collect(Collectors.toList());
+    public Page<UserResponse> getAllUsers(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification(null, search), pageable)
+                .map(this::toUserResponse);
     }
 
     @Override
-    public List<User> getAllMembers() {
-        List<User> list = repo.findByRole("ROLE_MEMBER")
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+    public Page<User> getAllMembers(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification("ROLE_MEMBER", search), pageable)
+                .map(this::clearPassword);
     }
 
     @Override
-    public List<User> getAllTrainers() {
-        List<User> list = repo.findByRole("ROLE_TRAINER")
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+    public Page<User> getAllTrainers(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification("ROLE_TRAINER", search), pageable)
+                .map(this::clearPassword);
     }
 
     @Override
-    public List<User> getAllMembersForAdmin() {
-        List<User> list = repo.findByRole("ROLE_MEMBER")
-                .stream()
-                .filter(u -> !u.isDeleted())
-                .toList();
-
-        list.forEach(u -> u.setPassword(null));
-        return list;
+    public Page<User> getAllMembersForAdmin(int page, int size, String sortBy, String sortDir, String search) {
+        Pageable pageable = buildPageable(page, size, sortBy, sortDir);
+        return repo.findAll(buildUserSpecification("ROLE_MEMBER", search), pageable)
+                .map(this::clearPassword);
     }
 
     // ============================================================
@@ -322,6 +398,23 @@ public class UserServiceImpl implements IUserService {
                 user.setEmail(newEmail);
             }
         }
+        // Handle dateOfBirth (update both User and MemberDetails)
+        if (updates.containsKey("dateOfBirth")) {
+            Object dobObj = updates.get("dateOfBirth");
+            String dobStr = dobObj != null ? dobObj.toString() : null;
+            if (dobStr != null && !dobStr.isBlank()) {
+                try {
+                    user.setDateOfBirth(java.time.LocalDate.parse(dobStr));
+                } catch (Exception e) {
+                    throw new BadRequestException("Invalid dateOfBirth format. Use yyyy-MM-dd.");
+                }
+            } else {
+                user.setDateOfBirth(null);
+            }
+            if (user.getMemberDetails() != null) {
+                user.getMemberDetails().setDateOfBirth(dobStr);
+            }
+        }
 
         // MEMBER
         if (user.getMemberDetails() != null) {
@@ -346,6 +439,12 @@ public class UserServiceImpl implements IUserService {
             if (updates.containsKey("experienceYears"))
                 t.setExperienceYears(Integer.valueOf(updates.get("experienceYears").toString()));
             if (updates.containsKey("phone")) t.setPhone((String) updates.get("phone"));
+            // Update dateOfBirth in TrainerDetails if present
+            if (updates.containsKey("dateOfBirth")) {
+                Object dobObj = updates.get("dateOfBirth");
+                String dobStr = dobObj != null ? dobObj.toString() : null;
+                t.setDateOfBirth(dobStr);
+            }
         }
 
         User updated = repo.save(user);
@@ -416,26 +515,115 @@ public class UserServiceImpl implements IUserService {
     @Override
     public void sendPromotionalMessage(String message) {
         try {
-            PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
-            notification.setTargetType(TargetType.ALL_USERS);
-            notification.setMessageContent(message);
+            NotificationRequest notification = new NotificationRequest();
+            notification.setPhoneNumber(null); // null or empty for all users, or skip sending
+            // Use template loader for promotional message notification
+            String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                "promotional_message_notification.html",
+                Map.of("message", message == null ? "" : message)
+            );
+            if (rendered.isEmpty()) {
+                rendered = message;
+            }
+            String plainText = rendered.replaceAll("<[^>]+>", "").replaceAll("\\s+", " ").trim();
+            notification.setMessage(plainText);
+            notification.setType("PROMOTIONAL_MESSAGE");
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
-            System.err.println("Failed to send promotional message to all users: " + e.getMessage());
+            log.error("Failed to send promotional message to all users: {}", e.getMessage(), e);
         }
     }
 
-    private UserResponse toUserResponse(User user) {
+    private Pageable buildPageable(int page, int size, String sortBy, String sortDir) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+        String property = ALLOWED_SORT_COLUMNS.contains(sortBy) ? sortBy : "createdAt";
+        Sort sort = Sort.by(property);
+        sort = "desc".equalsIgnoreCase(sortDir) ? sort.descending() : sort.ascending();
+        return PageRequest.of(safePage, safeSize, sort);
+    }
+
+    private Specification<User> buildUserSpecification(String role, String search) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isFalse(root.get("deleted")));
+
+            if (StringUtils.hasText(role)) {
+                predicates.add(cb.equal(root.get("role"), role));
+            }
+
+            if (StringUtils.hasText(search)) {
+                String like = "%" + search.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(root.get("email")), like),
+                        cb.like(cb.lower(root.get("phoneNumber")), like)
+                ));
+            }
+
+            query.distinct(true);
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private User clearPassword(User user) {
+        user.setPassword(null);
+        return user;
+    }
+
+    public UserResponse toUserResponse(User user) {
         UserResponse res = new UserResponse();
         res.setId(user.getId());
         res.setName(user.getName());
         res.setEmail(user.getEmail());
         res.setRole(user.getRole());
 
-        if (user.getMemberDetails() != null && user.getMemberDetails().getPhone() != null) {
-            res.setPhone(user.getMemberDetails().getPhone());
-        } else if (user.getTrainerDetails() != null && user.getTrainerDetails().getPhone() != null) {
-            res.setPhone(user.getTrainerDetails().getPhone());
+
+        if (user.getMemberDetails() != null) {
+            var m = user.getMemberDetails();
+            res.setPhone(m.getPhone());
+            MemberDetailsResponse mdr = new MemberDetailsResponse();
+            mdr.setId(m.getId());
+            mdr.setAge(m.getAge());
+            mdr.setGender(m.getGender());
+            mdr.setHeight(m.getHeight());
+            mdr.setWeight(m.getWeight());
+            mdr.setGoal(m.getGoal());
+            mdr.setMembershipType(m.getMembershipType());
+            mdr.setPhone(m.getPhone());
+            mdr.setFingerprint(m.getFingerprint());
+            // Set DOB from MemberDetails if present, else from User
+            if (m.getDateOfBirth() != null) {
+                mdr.setDateOfBirth(m.getDateOfBirth());
+            } else if (user.getDateOfBirth() != null) {
+                mdr.setDateOfBirth(user.getDateOfBirth().toString());
+            }
+            res.setMemberDetails(mdr);
+        }
+
+        if (user.getTrainerDetails() != null) {
+            var t = user.getTrainerDetails();
+            res.setPhone(t.getPhone());
+            TrainerDetailsResponse tdr = new TrainerDetailsResponse();
+            tdr.setId(t.getId());
+            tdr.setSpecialization(t.getSpecialization());
+            tdr.setExperienceYears(t.getExperienceYears());
+            tdr.setCertification(t.getCertification());
+            tdr.setPhone(t.getPhone());
+            tdr.setDeleted(t.isDeleted());
+            tdr.setDeletedAt(t.getDeletedAt() != null ? t.getDeletedAt().toString() : null);
+            // Set DOB from TrainerDetails if present, else from User entity
+            if (t.getDateOfBirth() != null && !t.getDateOfBirth().isBlank()) {
+                tdr.setDateOfBirth(t.getDateOfBirth());
+            } else if (user.getDateOfBirth() != null) {
+                tdr.setDateOfBirth(user.getDateOfBirth().toString());
+            }
+            res.setTrainerDetails(tdr);
+        }
+
+        // Set dateOfBirth as ISO string if present (top-level)
+        if (user.getDateOfBirth() != null) {
+            res.setDateOfBirth(user.getDateOfBirth().toString());
         }
 
         return res;

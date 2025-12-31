@@ -1,20 +1,24 @@
 import { useState, useEffect } from "react";
+import { useQuery as useRQ } from "@tanstack/react-query";
+import InfoDialog from "../../components/InfoDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Edit, Trash, MinusCircle } from 'lucide-react'; // Import the icon
+import { Users, Plus, Edit, Trash, MinusCircle, UserCheck, UserX, TrendingUp } from 'lucide-react'; // Import the icon
 import { Button } from '../../components/Button'; // Import Button component
+import { StatCard } from '../../components/StatCard';
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
 
 import type { User } from "../../types/User";
 import type { Plan } from "../../types/Plan";
 import type { Product } from "../../types/Product";
+import type { SortDirection, UserSortBy } from "../../types/Page";
 
 import {
-  loadUsers,
   deleteUser as apiDeleteUser,
   createUser as apiCreateUser,
   updateUser as apiUpdateUser,
   reactivateUser,
 } from "../../api/users";
+import { useUsers } from "../../hooks/useUsers";
 
 import { fetchAllPlans } from "../../api/plans";
 import {
@@ -37,19 +41,22 @@ import Pulse from "../../components/Pulse";
 import { loadPlan } from "../../api/subscriptions";
 import { loadProducts } from "../../api/products";
 import type { ProductAssignment } from "../../types/Product";
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getDaysLeft(endDate?: string) {
-  if (!endDate) return "N/A";
-  const diff =
-    new Date(endDate).getTime() - new Date().getTime();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
+import { todayISO, getDaysLeft } from "../../utils/dateUtils";
+import { fetchAnalytics } from "../../api/analytics";
+import type { Stats } from "../../types/Stats";
 
 export default function UsersPage() {
+    // ANALYTICS STATS
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const statsQuery = useRQ<Stats>({
+      queryKey: ["analytics", month, year],
+      queryFn: () => fetchAnalytics(month, year),
+    });
+  // InfoDialog state
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
+  const [infoDialogMessage, setInfoDialogMessage] = useState("");
   const queryClient = useQueryClient();
 
   /* UI STATE */
@@ -75,6 +82,7 @@ export default function UsersPage() {
     name: "",
     email: "",
     password: "",
+    dateOfBirth: "", // Added to match AddUserModal usage
     fingerprint: "", // New fingerprint field
     memberDetails: {
       age: "",
@@ -92,25 +100,23 @@ export default function UsersPage() {
   /* SEARCH AND PAGINATION STATE */
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10; // You can adjust this number
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<UserSortBy>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
   /* LOAD USERS */
-  const usersQuery = useQuery<User[]>({
-    queryKey: ["users"],
-    queryFn: loadUsers,
+  const usersQuery = useUsers({
+    page: currentPage - 1,
+    size: pageSize,
+    sortBy,
+    sortDir,
+    search: searchTerm || undefined,
   });
 
-  /* FILTER AND PAGINATE USERS */
-  const filteredUsers = usersQuery.data?.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedUsers = usersQuery.data?.content || [];
+  const totalPages = usersQuery.data?.totalPages || 0;
+  const totalItems = usersQuery.data?.totalElements || 0;
+  // const usersForStats = paginatedUsers; // No longer needed with analytics stats
 
 
 
@@ -134,7 +140,8 @@ export default function UsersPage() {
       if (error.status === 409) {
         setDeactivatedEmail(newUser.email);
       } else {
-        alert("Failed to create user");
+        setInfoDialogMessage("Failed to create user");
+        setInfoDialogOpen(true);
       }
     },
   });
@@ -144,10 +151,12 @@ export default function UsersPage() {
     mutationFn: reactivateUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      alert("User reactivated successfully!");
+      setInfoDialogMessage("User reactivated successfully!");
+      setInfoDialogOpen(true);
     },
     onError: () => {
-      alert("Failed to reactivate user");
+      setInfoDialogMessage("Failed to reactivate user");
+      setInfoDialogOpen(true);
     },
   });
 
@@ -183,6 +192,7 @@ export default function UsersPage() {
             ...(goal && { goal }),
             ...(membershipType && { membershipType }),
             ...(phone && { phone }),
+            ...(vars.data.dateOfBirth && { dateOfBirth: vars.data.dateOfBirth }),
           };
 
           return {
@@ -244,10 +254,16 @@ export default function UsersPage() {
     mutationFn: (vars) =>
       assignProductToMember(vars.memberId, vars.productId),
 
-    onSuccess: (_res, vars) =>
+    onSuccess: (_res, vars) => {
       queryClient.invalidateQueries({
         queryKey: ["member-products", vars.memberId],
-      }),
+      });
+      setShowProductModal(false);
+    },
+    onError: (_error, _vars) => {
+      setInfoDialogMessage("Failed to assign product. The product may be out of stock.");
+      setInfoDialogOpen(true);
+    },
   });
 
   /* DELETE PRODUCT */
@@ -262,10 +278,37 @@ export default function UsersPage() {
     if (showProductModal) {
       setProductsLoading(true);
       fetchAllProducts()
-        .then(setAllProducts)
+        .then((page) => setAllProducts(page?.content || []))
         .finally(() => setProductsLoading(false));
     }
   }, [showProductModal]);
+
+  /* LOAD PLANS FOR ALL USERS */
+  const [userPlans, setUserPlans] = useState<Record<number, Plan | null>>({});
+  useEffect(() => {
+    async function fetchPlans() {
+      if (!paginatedUsers.length) return;
+
+      const missingUsers = paginatedUsers.filter((user) => userPlans[user.id] === undefined);
+      if (!missingUsers.length) return;
+
+      const plans: Record<number, Plan | null> = {};
+      await Promise.all(
+        missingUsers.map(async (user) => {
+          try {
+            plans[user.id] = await loadPlan(user.id);
+          } catch {
+            plans[user.id] = null;
+          }
+        })
+      );
+
+      if (Object.keys(plans).length) {
+        setUserPlans((prev) => ({ ...prev, ...plans }));
+      }
+    }
+    fetchPlans();
+  }, [paginatedUsers, userPlans]);
 
   /* Helper */
   function toggleRow(index: number) {
@@ -275,7 +318,8 @@ export default function UsersPage() {
   /* ADD USER */
   async function handleAddUser() {
     if (!newUser.name || !newUser.email || !newUser.password) {
-      alert("Name, email, password required");
+      setInfoDialogMessage("Name, email, password required");
+      setInfoDialogOpen(true);
       return;
     }
 
@@ -285,6 +329,7 @@ export default function UsersPage() {
       name: newUser.name,
       email: newUser.email,
       password: newUser.password,
+      dateOfBirth: newUser.dateOfBirth, // Pass dateOfBirth to backend
       fingerprint: newUser.fingerprint, // Include fingerprint in the payload
       age: Number(newUser.memberDetails.age || 0),
       gender: newUser.memberDetails.gender,
@@ -318,43 +363,72 @@ export default function UsersPage() {
   }
 
   /* UI */
-  const tableHeaders = ["#", "Name", "Email", "Phone", "Actions", "▾"];
+  const tableHeaders = ["#", "Member Name", "Email Address", "Phone Number", "Actions", "Details"];
 
-  const getUserCells = (user: User, index: number) => [
-    index + 1,
-    <span className="font-medium">{user.name}</span>,
-    user.email,
-    user.memberDetails?.phone,
-    <div className="flex gap-2 justify-center">
-      {/* EDIT USER BUTTON */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setShowEditUserModal(true);
-                    }}
-                  >
-                    <Edit size={16} /> Edit
-                  </Button>
-
-      {/* DELETE USER */}
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm("Delete user?")) {
-                        deleteUserMutation.mutate(user.id);
-                      }
-                    }}
-                  >
-                    <Trash size={16} /> Delete
-                  </Button>
-    </div>,
-    <button className="hover:text-black">
-      {openRowIndex === index ? "▴" : "▾"}
-    </button>,
-  ];
+  const getUserCells = (user: User, index: number) => {
+    // Runtime checks for debugging
+    if (!user || typeof user !== 'object') {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: user is invalid', user, index);
+      return Array(tableHeaders.length).fill(<span className="text-red-500">Error: Invalid user</span>);
+    }
+    if (user.id === undefined || user.id === null) {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: user.id is missing', user, index);
+    }
+    const cells = [
+      <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
+      <div className="flex items-center space-x-3">
+        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+          <Users size={16} className="text-green-600" />
+        </div>
+        <span className="font-semibold text-gray-900">{user.name}</span>
+      </div>,
+      <span className="text-gray-700">{user.email}</span>,
+      <span className="text-gray-600">{user.memberDetails?.phone || 'Not provided'}</span>,
+      <div className="flex gap-2 justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setSelectedUser(user);
+            setShowEditUserModal(true);
+          }}
+        >
+          <Edit size={16} className="mr-1" /> Edit
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => {
+            if (confirm("Are you sure you want to delete this member?")) {
+              deleteUserMutation.mutate(user.id);
+            }
+          }}
+        >
+          <Trash size={16} className="mr-1" /> Delete
+        </Button>
+      </div>,
+      <div className="text-center">
+        <button className="text-green-600 hover:text-green-800 transition-colors">
+          <span className={`inline-block transform transition-transform duration-200 ${
+            openRowIndex === index ? "rotate-180" : ""
+          }`}>
+            ▼
+          </span>
+        </button>
+      </div>,
+    ];
+    if (cells.length !== tableHeaders.length) {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: cell count mismatch', { user, index, cells, expected: tableHeaders.length });
+    }
+    if (cells.some(cell => cell === undefined || cell === null)) {
+      // eslint-disable-next-line no-console
+      console.error('getUserCells: cell is undefined/null', { user, index, cells });
+    }
+    return cells;
+  };
 
   const renderExpandedUserContent = (user: User, index: number) => {
     const planQuery = useQuery({
@@ -373,9 +447,9 @@ export default function UsersPage() {
       <>
         {/* MEMBER DETAILS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Detail label="Date of Birth" value={user.dateOfBirth || '—'} />
           <Detail label="Age" value={user.memberDetails?.age} />
           <Detail label="Gender" value={user.memberDetails?.gender} />
-          <Detail label="Phone" value={user.memberDetails?.phone} />
           <Detail label="Height" value={user.memberDetails?.height} />
           <Detail label="Weight" value={user.memberDetails?.weight} />
           <Detail label="Goal" value={user.memberDetails?.goal} />
@@ -398,7 +472,7 @@ export default function UsersPage() {
 
             <div className="mt-3 flex gap-3">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => {
                               setEditPlanMemberId(user.id);
@@ -460,49 +534,96 @@ export default function UsersPage() {
           </div>
         )}
 
-        {/* ASSIGN PLAN BUTTON */}
-        <button
-          onClick={() => {
-            setEditPlanMemberId(user.id);
-            setShowEditPlanModal(true);
-          }}
-          className="mt-5 px-4 py-2 bg-purple-600 text-white rounded mr-3"
-        >
-          + Assign Plan
-        </button>
-
-        {/* ASSIGN PRODUCT BUTTON */}
-        <button
-          onClick={() => {
-            setSelectedMemberId(user.id);
-            setShowProductModal(true);
-          }}
-          className="mt-5 px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          + Assign Product
-        </button>
+        {/* ASSIGN BUTTONS */}
+        <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+          <Button
+            onClick={() => {
+              setEditPlanMemberId(user.id);
+              setShowEditPlanModal(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" /> Assign Plan
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedMemberId(user.id);
+              setShowProductModal(true);
+            }}
+          >
+            <Plus size={16} className="mr-2" /> Assign Product
+          </Button>
+        </div>
       </>
     );
   };
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={Users}
         title="Members"
         subtitle="Manage gym members and their details."
         actions={
-          <button
+          <Button
             onClick={() => setShowAddUserModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded flex items-center gap-2"
+            size="default"
           >
-            <Plus size={18} /> Add User
-          </button>
+            <Plus size={18} className="mr-2" /> Add Member
+          </Button>
         }
       />
 
-      <div className="bg-white shadow rounded p-6 overflow-x-auto">
+      {/* STATS DASHBOARD */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Members"
+          value={statsQuery.data?.totalMembers ?? '...'}
+          icon={Users}
+          description="All registered members"
+          variant="success"
+        />
+        <StatCard
+          title="Active Plans"
+          value={statsQuery.data?.activePlans ?? '...'}
+          icon={UserCheck}
+          description="Currently active plans"
+          variant="info"
+        />
+        <StatCard
+          title="Expired Plans"
+          value={statsQuery.data?.expiredPlans ?? '...'}
+          icon={UserX}
+          description="Plans expired as of today"
+          variant="destructive"
+        />
+        <StatCard
+          title="Growth"
+          value={(() => {
+            if (!statsQuery.data) return '...';
+            const { membersThisMonth, membersLastMonth } = statsQuery.data;
+            const growthPercent = membersLastMonth === 0
+              ? (membersThisMonth > 0 ? 100 : 0)
+              : Math.round(((membersThisMonth - membersLastMonth) / membersLastMonth) * 100);
+            return `${growthPercent > 0 ? '+' : ''}${growthPercent}%`;
+          })()}
+          icon={TrendingUp}
+          description={(() => {
+            if (!statsQuery.data) return '...';
+            const { membersThisMonth } = statsQuery.data;
+            return `${membersThisMonth} new member${membersThisMonth === 1 ? '' : 's'} this month`;
+          })()}
+          variant="success"
+        />
+      </div>
+
+      <div className="bg-yellow-100 shadow-sm rounded-lg p-6 border border-gray-100">
         {usersQuery.isLoading ? (
-          <div className="p-6 text-center">Loading users...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading members...</p>
+            </div>
+          </div>
         ) : (
           <Table
             headers={tableHeaders}
@@ -513,12 +634,29 @@ export default function UsersPage() {
             keyExtractor={(user) => user.id}
             openRowIndex={openRowIndex}
             toggleRow={toggleRow}
-            searchPlaceholder="Search users by name or email..."
+            searchPlaceholder="Search members by name or email..."
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setCurrentPage(1);
+            }}
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+            totalItems={totalItems}
+            sortableColumns={{ 0: "id", 1: "name", 2: "email" }}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={(column, direction) => {
+              setSortBy(column as UserSortBy);
+              setSortDir(direction);
+              setCurrentPage(1);
+            }}
           />
         )}
       </div>
@@ -536,15 +674,14 @@ export default function UsersPage() {
       )}
 
       {/* EDIT USER */}
-      {showEditUserModal && selectedUser && (
-            <EditUserModal
-              user={selectedUser}
-              plans={plansQuery.data || []}
-              loading={updateUserMutation.isPending}
-              onClose={() => setShowEditUserModal(false)}
-              handleSubmit={(data: any) => handleEditUser(selectedUser.id, data)}
-            />
-      )}
+      <EditUserModal
+        user={selectedUser}
+        plans={plansQuery.data || []}
+        loading={updateUserMutation.isPending}
+        onClose={() => setShowEditUserModal(false)}
+        handleSubmit={selectedUser ? (data: any) => handleEditUser(selectedUser.id, data) : () => {}}
+        visible={showEditUserModal && !!selectedUser}
+      />
 
       {/* EDIT PLAN */}
       {showEditPlanModal && editPlanMemberId && (
@@ -582,34 +719,43 @@ export default function UsersPage() {
 
       {/* CONFIRM REACTIVATION */}
       {deactivatedEmail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Reactivate Account?</h2>
-            <p>
-              An account with the email <strong>{deactivatedEmail}</strong> is
-              currently deactivated.
-            </p>
-            <p className="mt-2">Would you like to reactivate it?</p>
-            <div className="mt-6 flex justify-end gap-4">
-              <button
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Reactivate Account?</h2>
+            <div className="text-gray-600 space-y-3">
+              <p>
+                An account with the email <strong className="text-gray-900">{deactivatedEmail}</strong> is
+                currently deactivated.
+              </p>
+              <p>Would you like to reactivate it?</p>
+            </div>
+            <div className="mt-8 flex justify-end gap-3">
+              <Button
+                variant="outline"
                 onClick={() => setDeactivatedEmail(null)}
-                className="px-4 py-2 bg-gray-300 rounded"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
                 onClick={() => {
                   reactivateUserMutation.mutate(deactivatedEmail);
                   setDeactivatedEmail(null);
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded"
               >
                 Reactivate
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
+      {/* InfoDialog for alerts */}
+      <InfoDialog
+        isOpen={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        title="Notice"
+        message={infoDialogMessage}
+      />
 }

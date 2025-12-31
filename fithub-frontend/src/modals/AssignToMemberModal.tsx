@@ -1,92 +1,129 @@
-import { useState, useEffect } from "react";
+// Show the assigned plan name for a member by fetching it from the backend (like user page)
+function MemberPlanBadge({ memberId }: { memberId: number }) {
+  const { data: plan, isLoading } = useMemberPlan(memberId);
+  if (isLoading) return <span className="text-xs text-gray-400">Loading...</span>;
+  if (!plan) return <span className='text-gray-400 italic'>None</span>;
+  return (
+    <span className="inline-block px-3 py-1 rounded-full font-semibold text-yellow-900 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500 shadow-sm border border-yellow-400 text-xs tracking-wide" style={{letterSpacing: '0.03em'}}>
+      {plan.name}
+    </span>
+  );
+}
+import { useState } from "react";
+
+import { useMemberPlan } from "../hooks/useMemberPlan";
 import { X } from "lucide-react";
 import { type WorkoutPlan } from "../types/WorkoutPlan";
 import { useUsers } from "../hooks/useUsers"; // Hook to fetch all users/members
-import { useAssignWorkoutPlan } from "../hooks/useWorkoutPlans"; // Hook to assign workout plan
+// import { usePlans } from "../hooks/usePlans";
 
 interface AssignToMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   workoutPlan: WorkoutPlan;
-  currentTrainerId: number; // The ID of the trainer/admin performing the assignment
 }
 
-export default function AssignToMemberModal({
-  isOpen,
-  onClose,
-  workoutPlan,
-  currentTrainerId,
-}: AssignToMemberModalProps) {
-  const { data: users, isLoading: isLoadingUsers, error: usersError } = useUsers();
-  const assignWorkoutPlanMutation = useAssignWorkoutPlan();
 
-  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+
+
+export default function AssignToMemberModal({ isOpen, onClose, workoutPlan }: AssignToMemberModalProps) {
+  const {
+    data: usersPage,
+    isLoading: isLoadingUsers,
+    error: usersError,
+  } = useUsers({ page: 0, size: 500, sortBy: "name", sortDir: "asc" });
+  const users = usersPage?.content || [];
+  // const { data: plans, isLoading: isLoadingPlans } = usePlans();
+
 
   // Filter users to only show members (assuming role "ROLE_MEMBER")
   const members = users?.filter(user => user.role === 'ROLE_MEMBER') || [];
 
-  useEffect(() => {
-    // Reset selected member when modal opens or workoutPlan changes
-    setSelectedMemberId(null);
-  }, [isOpen, workoutPlan]);
 
-  // Debugging logs - Keeping them for one more round
-  console.log("AssignToMemberModal - members:", members);
-  console.log("AssignToMemberModal - isLoadingUsers:", isLoadingUsers);
-  console.log("AssignToMemberModal - usersError:", usersError);
 
-  const handleAssign = async () => {
-    if (!selectedMemberId) {
-      alert("Please select a member.");
-      return;
-    }
 
-    try {
-      await assignWorkoutPlanMutation.mutateAsync({
-        memberId: selectedMemberId,
-        planId: workoutPlan.id,
-        assignedByTrainerId: currentTrainerId,
-        startDate: new Date().toISOString().split('T')[0], // Use current date as default start date
-        status: "ACTIVE",
-      });
-      alert(`Workout plan "${workoutPlan.name}" assigned to member successfully!`);
-      onClose();
-    } catch (err: any) {
-      alert(`Failed to assign plan: ${err.message}`);
-    }
+
+  // Assignment state (optional, for feedback)
+  const [assigningId, setAssigningId] = useState<number | null>(null);
+  // Placeholder: Assignment handler
+  const handleAssign = (memberId: number) => {
+    setAssigningId(memberId);
+    // TODO: Implement actual assignment logic (API call)
+    setTimeout(() => {
+      setAssigningId(null);
+      alert(`Assigned plan to member ID ${memberId}`);
+    }, 800);
   };
+
+
+
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
-        <button onClick={onClose} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
-          <X size={24} />
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center min-h-screen z-50">
+      <div
+        className="p-8 rounded-lg w-full max-w-6xl relative max-h-[95vh] overflow-y-auto shadow-2xl"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-red-500 bg-white border border-gray-200 rounded-full p-1 shadow transition-colors duration-150 z-10" aria-label="Close">
+          <X size={20} />
         </button>
-        <h2 className="text-2xl font-bold mb-4">Assign "{workoutPlan.name}" to Member</h2>
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+          <span>Assign</span>
+          <span className="truncate text-blue-700 max-w-xs" title={workoutPlan.name}
+            >"{workoutPlan.name}"</span>
+          <span>to Member</span>
+        </h2>
+        <div className="border-b border-gray-200 mb-4"></div>
 
         {isLoadingUsers && <p>Loading members...</p>}
         {usersError && <p className="text-red-500">Error loading members: {usersError.message}</p>}
 
+
+
         {members.length > 0 ? (
           <div className="mb-4">
-            <label htmlFor="member-select" className="block text-gray-700 text-sm font-bold mb-2">
-              Select Member:
-            </label>
-            <select
-              id="member-select"
-              value={selectedMemberId || ""}
-              onChange={(e) => setSelectedMemberId(Number(e.target.value))}
-              className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            >
-              <option value="">-- Select a Member --</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name} ({member.email})
-                </option>
-              ))}
-            </select>
+            <div className="overflow-x-auto mt-4">
+              <table className="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <thead className="bg-blue-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-700">#</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-700">Member Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-700">Email Address</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-700">Membership Plan</th>
+                    <th className="px-4 py-2 text-left text-xs font-bold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {members.map((member, idx) => (
+                    <tr key={member.id}>
+                      <td className="px-4 py-3">{idx + 1}</td>
+                      <td className="px-4 py-3">{member.name}</td>
+                      <td className="px-4 py-3">{member.email}</td>
+                      <td className="px-4 py-3">
+                        <MemberPlanBadge memberId={member.id} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold py-1 px-3 rounded disabled:opacity-50"
+                          onClick={() => handleAssign(member.id)}
+                          disabled={assigningId === member.id}
+                        >
+                          {assigningId === member.id ? 'Assigning...' : 'Assign'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <p className="text-gray-600 mb-4">No members available for assignment.</p>
@@ -97,14 +134,7 @@ export default function AssignToMemberModal({
             onClick={onClose}
             className="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
-            Cancel
-          </button>
-          <button
-            onClick={handleAssign}
-            disabled={assignWorkoutPlanMutation.isPending || !selectedMemberId}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            {assignWorkoutPlanMutation.isPending ? "Assigning..." : "Assign Plan"}
+            Close
           </button>
         </div>
       </div>

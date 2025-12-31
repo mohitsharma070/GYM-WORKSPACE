@@ -102,7 +102,15 @@ public class WorkoutPlanServiceImpl implements IWorkoutPlanService {
                 NotificationRequest notification = new NotificationRequest();
                 notification.setPhoneNumber(trainer.email); // Replace with phone if available
                 notification.setType("WORKOUT_PLAN_UPDATED");
-                notification.setMessage("Hi " + trainer.name + ", the workout plan '" + updatedPlan.getName() + "' has been updated.");
+                java.util.Map<String, String> values = new java.util.HashMap<>();
+                values.put("trainerName", trainer.name);
+                values.put("workoutPlanName", updatedPlan.getName());
+                String rendered = com.gym.workoutservice.util.TemplateLoader.renderTemplate(
+                    "workout_plan_updated.html", values);
+                if (rendered.isEmpty()) {
+                    rendered = "Hi " + trainer.name + ", the workout plan '" + updatedPlan.getName() + "' has been updated.";
+                }
+                notification.setMessage(rendered);
                 notificationClient.sendNotification(notification);
             }
         } catch (Exception e) {

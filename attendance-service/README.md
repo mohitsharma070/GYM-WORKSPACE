@@ -1,58 +1,134 @@
+
 # Attendance Service
 
-## Introduction
-The `attendance-service` is a new microservice designed to manage the check-in and check-out records of gym members and trainers. It integrates with the existing User Service and Membership Service to validate user and membership information during attendance operations.
+## Overview
 
-## Purpose
-The primary responsibilities of this service include:
-*   Recording member/trainer check-ins.
-*   Recording member/trainer check-outs.
-*   Storing attendance logs.
-*   Providing attendance records for individual users or all records.
-*   (Optional) Support for fingerprint verification during check-in.
+The **Attendance Service** is a Spring Boot microservice for managing gym member and trainer attendance, including check-in, check-out, and fingerprint-based authentication. It integrates with user, membership, and notification services to provide a seamless attendance tracking experience.
 
-## Technologies Used
-*   **Spring Boot:** Framework for building standalone, production-grade Spring applications.
-*   **Java 21:** The programming language version used.
-*   **Maven:** Dependency management and build automation.
-*   **Spring Data JPA:** For interacting with the PostgreSQL database.
-*   **Lombok:** Reduces boilerplate code (getters, setters, constructors).
-*   **Spring Web:** For building RESTful APIs.
-*   **Spring Cloud OpenFeign:** Declarative REST client for inter-service communication.
-*   **PostgreSQL:** Relational database for storing attendance records.
+---
 
-## Configuration (`application.properties`)
+## Key Features
+
+- **Check-in/Check-out:** Records when a user enters or leaves the gym. Validates active membership and user existence via Feign clients.
+- **Attendance Logs:** Stores and retrieves attendance records, supports pagination and filtering.
+- **Fingerprint Support:** Allows registering and verifying fingerprints for check-in.
+- **Notifications:** Sends WhatsApp notifications for check-in, check-out, inactivity, and monthly summaries.
+- **Schedulers:**
+    - Reminds inactive users.
+    - Sends monthly attendance summaries.
+
+---
+
+## Architecture & Main Components
+
+- **Entities:**
+    - `Attendance`: Stores user, check-in/out times.
+    - `Fingerprint`: Stores user fingerprint data.
+- **Controllers:**
+    - `AttendanceController`: REST endpoints for attendance.
+    - `FingerprintController`: Endpoints for fingerprint registration and check-in.
+- **Services:**
+    - `AttendanceService`: Business logic for attendance.
+    - `FingerprintService`: Logic for fingerprint registration/verification.
+- **Feign Clients:**
+    - `UserServiceFeignClient`, `MembershipServiceFeignClient`: Communicate with user and membership services.
+    - `NotificationClient`: Sends notifications.
+- **Repositories:**
+    - `AttendanceRepository`, `FingerprintRepository`: Data access.
+- **Scheduler:**
+    - `InactiveUserScheduler`: Handles reminders and summaries.
+
+---
+
+## Tech Stack
+
+- Java 21
+- Spring Boot
+- Spring Data JPA
+- Spring Cloud OpenFeign
+- PostgreSQL
+- Lombok
+- Maven
+
+---
+
+## API Endpoints
+
+- `POST /api/attendances/check-in`: User check-in
+- `POST /api/attendances/check-out/{id}`: User check-out
+- `GET /api/attendances/paged`: Paginated attendance records
+- `GET /api/attendances/user/{userId}/paged`: Paginated records for a user
+- `POST /api/fingerprints/register`: Register fingerprint
+- `POST /api/fingerprints/checkin`: Check-in with fingerprint
+
+---
+
+## Configuration
+
 The service is configured via `src/main/resources/application.properties`:
 
 ```properties
 spring.application.name=attendance-service
 server.port=8003
 
-# ============================
 # DATABASE CONFIG (POSTGRES)
-# ============================
 spring.datasource.url=jdbc:postgresql://localhost:5432/gym_attendance
 spring.datasource.username=postgres
 spring.datasource.password=root
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA / HIBERNATE
-spring.jpa.hibernate.ddl-auto=update # Creates/updates database schema automatically
-spring.jpa.show-sql=true             # Shows SQL statements in logs
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-# ============================
-# FEIGN CLIENTS (for inter-service communication)
-# ============================
+# FEIGN CLIENTS
 user.service.url=http://localhost:8001
 membership.service.url=http://localhost:8002
 
-# ============================
 # SCHEDULER SETTINGS (Optional)
-# ============================
 # scheduler.daily-check.cron=0 0 2 * * *
 ```
+
+---
+
+## Schedulers
+
+- **Inactive User Reminder:** Sends reminders to users who haven't checked in for 30 days.
+- **Monthly Attendance Summary:** Sends a summary of last month's attendance to each user.
+
+---
+
+## Planned Improvements
+
+- More robust error handling.
+- Integration with real fingerprint hardware.
+- Security enhancements.
+- More tests.
+- Asynchronous event handling.
+
+---
+
+## Getting Started
+
+1. **Prerequisites:**
+        - Java 21 installed.
+        - Maven installed.
+        - PostgreSQL running with a database named `gym_attendance`.
+        - Ensure `user-service` and `membership-service` are running and expose the required endpoints.
+2. **Build:**
+        ```bash
+        mvn clean install
+        ```
+3. **Run:**
+        ```bash
+        java -jar target/attendance-service-0.0.1-SNAPSHOT.jar
+        # or
+        mvn spring-boot:run
+        ```
+
+The service will start on `http://localhost:8003`.
 
 ## Entities
 

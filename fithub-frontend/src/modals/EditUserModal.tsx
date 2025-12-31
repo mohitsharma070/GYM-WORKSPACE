@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Button } from '../components/Button';
+import { normalizePhoneInput } from '../utils/phone';
 import type { User } from "../types/User";
 import type { Plan } from "../types/Plan";
 
 interface Props {
-  user: User;
+  user: User | null;
   plans: Plan[];
   loading: boolean;
   onClose: () => void;
   handleSubmit: (updated: any) => void;
+  visible: boolean;
 }
 
 export default function EditUserModal({
@@ -17,9 +19,14 @@ export default function EditUserModal({
   loading,
   onClose,
   handleSubmit,
+  visible,
 }: Props) {
+  // If not visible or no user, render nothing
+  if (!visible || !user) return null;
   const [form, setForm] = useState<any>({
     name: user.name,
+    // Use trainerDetails.dateOfBirth only for trainers, else fallback to user.dateOfBirth
+    dateOfBirth: user.role === 'trainer' ? (user as any).trainerDetails?.dateOfBirth || user.dateOfBirth || "" : user.dateOfBirth || "",
     email: user.email,
     age: user.memberDetails?.age || "",
     gender: user.memberDetails?.gender || "",
@@ -38,14 +45,14 @@ export default function EditUserModal({
     // 🔥 Backend expects FLAT fields, NOT memberDetails object
     const payload = {
       name: form.name,
+      dateOfBirth: form.dateOfBirth,
       email: form.email,
-
       age: Number(form.age),
       gender: form.gender,
       height: Number(form.height),
       weight: Number(form.weight),
       goal: form.goal,
-      phone: form.phone,
+      phone: normalizePhoneInput(form.phone),
       membershipType: form.membershipType,
     };
 
@@ -54,9 +61,18 @@ export default function EditUserModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-auto shadow-lg">
+      <div
+        className="p-6 rounded-lg w-96 max-h-[90vh] overflow-auto shadow-lg"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
 
         <h2 className="text-xl font-bold mb-4">Edit Member</h2>
+
 
         <div className="space-y-3">
           {/* Name */}
@@ -65,6 +81,15 @@ export default function EditUserModal({
             placeholder="Full Name"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
+          />
+
+          {/* Date of Birth */}
+          <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={form.dateOfBirth}
+            onChange={(e) => updateField("dateOfBirth", e.target.value)}
           />
 
           {/* Email (read only) */}
@@ -81,6 +106,7 @@ export default function EditUserModal({
             placeholder="Phone"
             value={form.phone}
             onChange={(e) => updateField("phone", e.target.value)}
+            onBlur={(e) => updateField("phone", normalizePhoneInput(e.target.value))}
           />
 
           {/* Age + Gender */}

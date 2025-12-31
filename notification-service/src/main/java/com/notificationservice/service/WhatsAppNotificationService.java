@@ -75,7 +75,7 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
     public NotificationResult sendNotification(NotificationRequest request, boolean logTransactional) {
         String phoneNumber = request.getPhoneNumber();
         String messageContent = request.getMessage();
-        String imageUrl = request.getImageUrl();
+        String imageUrl = normalizeImageUrl(request.getImageUrl());
         log.info("Attempting to send transactional WhatsApp message to {}: {} (imageUrl={})", phoneNumber, messageContent, imageUrl);
 
         if (phoneNumber == null || phoneNumber.isEmpty()) {
@@ -112,6 +112,18 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
             logTransactionalNotificationOutcome(request, result);
         }
         return result;
+    }
+
+    // Normalizes accidental concatenated base URLs (e.g., http://localhost:8005https://domain/file.jpg)
+    private String normalizeImageUrl(String url) {
+        if (url == null) return null;
+        String trimmed = url.trim();
+        int secondHttp = trimmed.indexOf("http", 1); // find a second http/https occurrence
+        if (secondHttp > 0) {
+            // If the string has two http occurrences back-to-back, keep from the second
+            return trimmed.substring(secondHttp);
+        }
+        return trimmed;
     }
 
     /**

@@ -30,8 +30,8 @@ export async function uploadImage(file: File): Promise<string> {
   const result = await res.json();
   // Assuming the backend returns an object with an imageUrl property
   if (result && result.imageUrl) {
-    // Use the imageUrl as returned by the backend (should already include /uploads/)
-    return `${API_BASE_NOTIFICATION}${result.imageUrl}`;
+    // Use the imageUrl as returned by the backend (should already be a full public URL)
+    return result.imageUrl;
   } else {
     throw new Error("Image upload successful, but no imageUrl returned.");
   }

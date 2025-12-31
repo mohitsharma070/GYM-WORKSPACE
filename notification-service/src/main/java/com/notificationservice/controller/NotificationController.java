@@ -43,6 +43,10 @@ public class NotificationController {
     @PostMapping("/promotional-notifications")
     public ResponseEntity<String> sendPromotionalNotification(@RequestBody PromotionalNotificationRequest request) {
         log.info("Received request to send promotional notification: {}", request);
+        // Normalize image URL to avoid accidental double prefixes from clients/gateways
+        if (request.getImageUrl() != null) {
+            request.setImageUrl(normalizeImageUrl(request.getImageUrl()));
+        }
         List<NotificationResult> results = whatsAppNotificationService.sendPromotionalNotification(request); // Call the refactored method
         long successCount = results.stream().filter(NotificationResult::isSuccess).count();
         long failureCount = results.size() - successCount;
@@ -88,5 +92,14 @@ public class NotificationController {
 
         Page<NotificationLogResponse> responsePage = notificationLogs.map(NotificationLogResponse::fromEntity);
         return ResponseEntity.ok(responsePage);
+    }
+
+    private String normalizeImageUrl(String url) {
+        String trimmed = url.trim();
+        int secondHttp = trimmed.indexOf("http", 1);
+        if (secondHttp > 0) {
+            return trimmed.substring(secondHttp);
+        }
+        return trimmed;
     }
 }

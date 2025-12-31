@@ -13,8 +13,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Serve files from the local upload directory under the /images/ path
-        registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + uploadDir + "/");
+        // Serve files from the local upload directory under both /images/** and /uploads/**
+        registry.addResourceHandler("/images/**", "/uploads/**")
+            .addResourceLocations("file:" + uploadDir + "/");
     }
 }

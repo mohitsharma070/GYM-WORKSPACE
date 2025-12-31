@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { normalizePhoneInput } from "../utils/phone";
 
 interface Props {
   onClose: () => void;
@@ -9,6 +10,7 @@ interface Props {
 export default function AddTrainerModal({ onClose, onSave, creating = false }: Props) {
   const [form, setForm] = useState({
     name: "",
+    dateOfBirth: "",
     email: "",
     password: "",
     specialization: "",
@@ -29,21 +31,31 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
 
     onSave({
       name: form.name,
+      dateOfBirth: form.dateOfBirth,
       email: form.email,
       password: form.password,
       specialization: form.specialization,
       experienceYears: Number(form.experienceYears),
       certification: form.certification,
-      phone: form.phone,
+      phone: normalizePhoneInput(form.phone),
     });
   }
 
   return (
     <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
+      <div
+        className="p-6 rounded-lg w-96 shadow-lg max-h-[90vh] overflow-y-auto"
+        style={{
+          background: '#F5F3EE',
+          border: '1px solid #E5E7EB',
+          boxShadow: '0 8px 40px 0 rgba(16, 30, 54, 0.18)',
+          color: '#1E293B',
+        }}
+      >
         <h2 className="text-xl font-bold mb-4">Add Trainer</h2>
 
         <div className="space-y-3">
+
 
           <input
             type="text"
@@ -51,6 +63,14 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
             className="w-full border p-2 rounded"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
+          />
+
+          <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={form.dateOfBirth}
+            onChange={(e) => updateField("dateOfBirth", e.target.value)}
           />
 
           <input
@@ -99,6 +119,7 @@ export default function AddTrainerModal({ onClose, onSave, creating = false }: P
             className="w-full border p-2 rounded"
             value={form.phone}
             onChange={(e) => updateField("phone", e.target.value)}
+            onBlur={(e) => updateField("phone", normalizePhoneInput(e.target.value))}
           />
         </div>
 

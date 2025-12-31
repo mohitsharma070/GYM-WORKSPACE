@@ -42,8 +42,8 @@
 
 		<!-- Database -->
 		<dependency>
-			<groupId>org.***REMOVED***ql</groupId>
-			<artifactId>***REMOVED***ql</artifactId>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
         <!-- H2 Database for development/testing -->

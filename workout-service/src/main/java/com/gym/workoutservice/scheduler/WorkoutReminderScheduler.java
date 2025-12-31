@@ -47,7 +47,15 @@ public class WorkoutReminderScheduler {
             NotificationRequest notification = new NotificationRequest();
             notification.setPhoneNumber(user.phone); // Replace with phone if available
             notification.setType("DAILY_WORKOUT_REMINDER");
-            notification.setMessage("Hi " + user.name + ", just a reminder that you have a workout scheduled for today (" + DayOfWeek.of(workoutDay.getDayNumber()) + "). Let's do this!");
+            java.util.Map<String, String> values = new java.util.HashMap<>();
+            values.put("userName", user.name);
+            values.put("dayName", java.time.DayOfWeek.of(workoutDay.getDayNumber()).toString());
+            String rendered = com.gym.workoutservice.util.TemplateLoader.renderTemplate(
+                "daily_workout_reminder.html", values);
+            if (rendered.isEmpty()) {
+                rendered = "Hi " + user.name + ", just a reminder that you have a workout scheduled for today (" + java.time.DayOfWeek.of(workoutDay.getDayNumber()) + "). Let's do this!";
+            }
+            notification.setMessage(rendered);
             notificationClient.sendNotification(notification);
         } catch (Exception e) {
             System.err.println("Failed to send workout reminder for user " + userId + ": " + e.getMessage());

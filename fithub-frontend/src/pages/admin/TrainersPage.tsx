@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dumbbell } from 'lucide-react'; // Import the icon
+import { Dumbbell, Plus, Edit, Trash, Award, TrendingUp, Star } from 'lucide-react'; // Import the icons
 import PageHeader from '../../components/PageHeader'; // Import PageHeader
+import { Button } from '../../components/Button';
 
 import type { Trainer } from "../../types/Trainer";
+import type { PageResponse, SortDirection, UserSortBy } from "../../types/Page";
 import {
   fetchTrainers,
   deleteTrainer,
@@ -29,26 +31,29 @@ export default function TrainersPage() {
   /* SEARCH AND PAGINATION STATE */
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10; // You can adjust this number
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<UserSortBy>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
 
   /* ------------------ QUERY: LOAD TRAINERS ------------------ */
-  const trainersQuery = useQuery<Trainer[]>({
-    queryKey: ["trainers"],
-    queryFn: fetchTrainers,
+  const trainersQuery = useQuery<PageResponse<Trainer>, Error>({
+    queryKey: [
+      "trainers",
+      { page: currentPage, pageSize, sortBy, sortDir, searchTerm },
+    ],
+    queryFn: () =>
+      fetchTrainers({
+        page: currentPage - 1,
+        size: pageSize,
+        sortBy,
+        sortDir,
+        search: searchTerm || undefined,
+      }),
   });
 
-  /* FILTER AND PAGINATE TRAINERS */
-  const filteredTrainers = trainersQuery.data?.filter(trainer =>
-    trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trainer.trainerDetails?.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const totalPages = Math.ceil(filteredTrainers.length / itemsPerPage);
-  const paginatedTrainers = filteredTrainers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedTrainers = trainersQuery.data?.content || [];
+  const totalPages = trainersQuery.data?.totalPages || 0;
+  const totalItems = trainersQuery.data?.totalElements || 0;
 
   /* ------------------ MUTATION: CREATE TRAINER ------------------ */
   const createTrainerMutation = useMutation({
@@ -97,87 +102,138 @@ export default function TrainersPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader
         icon={Dumbbell}
         title="Trainers"
         subtitle="Manage gym trainers and their specializations."
         actions={
-          <button
+          <Button
             onClick={() => setShowAddTrainerModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            size="default"
           >
-            + Add Trainer
-          </button>
+            <Plus size={18} className="mr-2" /> Add Trainer
+          </Button>
         }
       />
 
+      {/* STATS DASHBOARD REMOVED as per admin request */}
+
       {/* TABLE */}
-      <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
+      <div className="bg-yellow-100 shadow-sm rounded-lg p-6 border border-gray-100">
         {trainersQuery.isLoading ? (
-          <div className="p-6 text-center">Loading trainers...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading trainers...</p>
+            </div>
+          </div>
         ) : trainersQuery.error ? (
-          <div className="p-6 text-center text-red-600">Failed to load trainers</div>
+          <div className="text-center py-12">
+            <div className="text-red-600 mb-4">Failed to load trainers</div>
+            <Button
+              onClick={() => trainersQuery.refetch()}
+              variant="outline"
+            >
+              Try Again
+            </Button>
+          </div>
         ) : paginatedTrainers.length === 0 ? (
-          <div className="text-center p-6 text-gray-600">No trainers found.</div>
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-3">
+              <Dumbbell size={48} className="mx-auto" />
+            </div>
+            <p className="text-gray-500 text-lg font-medium">No trainers found</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {searchTerm ? 'Try adjusting your search terms' : 'Add trainers to get started'}
+            </p>
+          </div>
         ) : (
           <Table
-            headers={["#", "Name", "Email", "Actions", "▾"]}
-            columnClasses={['w-1/12 text-center', 'w-3/12', 'w-3/12', 'w-3/12 text-center', 'w-1/12 text-center']}
+            headers={["#", "Trainer Name", "Email Address", "Specialization", "Actions", "Details"]}
+            columnClasses={['w-1/12 text-center', 'w-2/12', 'w-3/12', 'w-2/12', 'w-3/12 text-center', 'w-1/12 text-center']}
             data={paginatedTrainers}
             renderCells={(trainer, index) => [
-              index + 1 + (currentPage - 1) * itemsPerPage,
-              <span className="font-medium">{trainer.name}</span>,
-              trainer.email,
+              <span className="text-gray-600 font-medium">{index + 1 + (currentPage - 1) * pageSize}</span>,
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Dumbbell size={16} className="text-blue-600" />
+                </div>
+                <span className="font-semibold text-gray-900">{trainer.name}</span>
+              </div>,
+              <span className="text-gray-700">{trainer.email}</span>,
+              <div className="text-sm">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <Star size={12} className="mr-1" />
+                  {trainer.trainerDetails?.specialization || 'General'}
+                </span>
+              </div>,
               <div className="flex gap-2 justify-center">
                 {/* EDIT BUTTON */}
-                <button
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedTrainer(trainer);
                     setShowEditTrainerModal(true);
                   }}
                 >
-                  Edit
-                </button>
+                  <Edit size={14} className="mr-1" /> Edit
+                </Button>
 
                 {/* DELETE BUTTON */}
-                <button
-                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(trainer.id);
                   }}
                 >
-                  Delete
+                  <Trash size={14} className="mr-1" /> Delete
+                </Button>
+              </div>,
+              <div className="text-center">
+                <button className="text-green-600 hover:text-green-800 transition-colors">
+                  <span className={`inline-block transform transition-transform duration-200 ${
+                    openRowIndex === index ? "rotate-180" : ""
+                  }`}>
+                    ▼
+                  </span>
                 </button>
               </div>,
-              <span
-                className={`inline-block transform transition-transform ${
-                  openRowIndex === index ? "rotate-180" : ""
-                }`}
-              >
-                ▼
-              </span>,
             ]}
             renderExpandedContent={(trainer) => (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Specialization</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.specialization ?? "-"}</p>
-                </div>
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Experience (Years)</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.experienceYears ?? "-"}</p>
-                </div>
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Certification</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.certification ?? "-"}</p>
-                </div>
-                <div className="p-3 border rounded bg-white">
-                  <p className="text-gray-600">Phone</p>
-                  <p className="font-semibold">{trainer.trainerDetails?.phone ?? "-"}</p>
+              <div className="p-6 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Award size={20} className="mr-2 text-blue-600" />
+                  Trainer Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Star size={16} className="text-yellow-500" />
+                      <p className="text-sm font-medium text-gray-500">Specialization</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">{trainer.trainerDetails?.specialization || 'General Training'}</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <TrendingUp size={16} className="text-green-500" />
+                      <p className="text-sm font-medium text-gray-500">Experience</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">
+                      {trainer.trainerDetails?.experienceYears ? `${trainer.trainerDetails.experienceYears} years` : 'Not specified'}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Award size={16} className="text-blue-500" />
+                      <p className="text-sm font-medium text-gray-500">Certification</p>
+                    </div>
+                    <p className="font-semibold text-gray-900 text-lg">{trainer.trainerDetails?.certification || 'None specified'}</p>
+                  </div>
                 </div>
               </div>
             )}
@@ -188,10 +244,27 @@ export default function TrainersPage() {
             }
             searchPlaceholder="Search trainers by name, email, or specialization..."
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setCurrentPage(1);
+            }}
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => setCurrentPage(page)}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+            totalItems={totalItems}
+            sortableColumns={{ 0: "id", 1: "name", 2: "email" }}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSortChange={(column, direction) => {
+              setSortBy(column as UserSortBy);
+              setSortDir(direction);
+              setCurrentPage(1);
+            }}
           />
         )}
       </div>

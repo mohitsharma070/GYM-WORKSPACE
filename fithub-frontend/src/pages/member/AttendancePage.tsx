@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { AttendanceStatCards } from "../../components/AttendanceStatCards";
 import { initiateFingerprintScan } from "../../utils/fingerprintScanner";
 import { markAttendance } from "../../api/attendance";
 import { useToast } from "../../components/ToastProvider";
@@ -18,6 +19,48 @@ export default function AttendancePage() {
 
   // Explicitly type attendanceRecords after fetching
   const typedAttendanceRecords: Attendance[] = attendanceRecords || [];
+
+  // Compute stats for stat cards
+  const attendanceStats = useMemo(() => {
+    let totalCheckIns = 0;
+    let totalCheckOuts = 0;
+    let totalDaysPresent = 0;
+    let currentStreak = 0;
+    let lastDate: string | null = null;
+    let streak = 0;
+    // Sort by checkInTime ascending
+    const sorted = [...typedAttendanceRecords].sort((a, b) => new Date(a.checkInTime).getTime() - new Date(b.checkInTime).getTime());
+    sorted.forEach((rec) => {
+      totalCheckIns++;
+      if (rec.checkOutTime) totalCheckOuts++;
+      // Count unique days present
+      const day = rec.checkInTime.split('T')[0];
+      if (lastDate !== day) {
+        totalDaysPresent++;
+        // Check streak
+        if (lastDate) {
+          const prev = new Date(lastDate);
+          const curr = new Date(day);
+          const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+          if (diff === 1) {
+            streak++;
+          } else {
+            streak = 1;
+          }
+        } else {
+          streak = 1;
+        }
+        lastDate = day;
+      }
+      if (streak > currentStreak) currentStreak = streak;
+    });
+    return {
+      totalCheckIns,
+      totalCheckOuts,
+      currentStreak,
+      totalDaysPresent,
+    };
+  }, [typedAttendanceRecords]);
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -56,6 +99,8 @@ export default function AttendancePage() {
   return (
     <div className="p-6">
       <h1 className="text-3xl font-bold mb-6">Mark Attendance</h1>
+      {/* Stat cards section */}
+      <AttendanceStatCards stats={attendanceStats} />
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <button
           onClick={handleAttendanceScan}

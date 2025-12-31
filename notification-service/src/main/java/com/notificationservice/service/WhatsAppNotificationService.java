@@ -9,6 +9,7 @@ import com.notificationservice.dto.WhatsAppMessageResponse;
 import com.notificationservice.enums.TargetType;
 import com.notificationservice.model.NotificationLog;
 import com.notificationservice.dto.NotificationRequest; // Changed from dto.NotificationRequest
+import com.notificationservice.util.TemplateLoader;
 import com.notificationservice.repository.NotificationLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +51,8 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
             NotificationRequest transactionalRequest = new NotificationRequest();
             transactionalRequest.setPhoneNumber(recipientPhoneNumber);
             transactionalRequest.setMessage(request.getMessageContent());
-            // Assuming image URL needs to be handled within the message content or a template
-            // For now, only text messages are supported directly
-            NotificationResult result = sendNotification(transactionalRequest);
+            transactionalRequest.setImageUrl(request.getImageUrl());
+            NotificationResult result = sendNotification(transactionalRequest, false);
             results.add(result);
             logPromotionalNotificationOutcome(request, recipientPhoneNumber, result);
         }
@@ -68,22 +68,33 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
      */
     @Override
     public NotificationResult sendNotification(NotificationRequest request) {
+        return sendNotification(request, true);
+    }
+
+    // Overloaded method to control transactional logging
+    public NotificationResult sendNotification(NotificationRequest request, boolean logTransactional) {
         String phoneNumber = request.getPhoneNumber();
         String messageContent = request.getMessage();
-        log.info("Attempting to send transactional WhatsApp message to {}: {}", phoneNumber, messageContent);
+        String imageUrl = request.getImageUrl();
+        log.info("Attempting to send transactional WhatsApp message to {}: {} (imageUrl={})", phoneNumber, messageContent, imageUrl);
 
         if (phoneNumber == null || phoneNumber.isEmpty()) {
             return NotificationResult.failure("Recipient phone number is missing.");
         }
-        if (messageContent == null || messageContent.isEmpty()) {
-            return NotificationResult.failure("Notification message content is empty.");
+        if ((messageContent == null || messageContent.isEmpty()) && (imageUrl == null || imageUrl.isEmpty())) {
+            return NotificationResult.failure("Notification message content and image URL are both empty.");
         }
 
         NotificationResult result;
         try {
-            WhatsAppMessageRequest whatsAppRequest = WhatsAppMessageRequest.createTextMessage(phoneNumber, messageContent);
+            WhatsAppMessageRequest whatsAppRequest;
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                whatsAppRequest = WhatsAppMessageRequest.createImageMessage(phoneNumber, imageUrl, messageContent);
+            } else {
+                whatsAppRequest = WhatsAppMessageRequest.createTextMessage(phoneNumber, messageContent);
+            }
             Mono<WhatsAppMessageResponse> responseMono = metaWhatsAppApiClient.sendMessage(whatsAppRequest);
-            WhatsAppMessageResponse response = responseMono.block(); // Blocking call for simplicity in this synchronous context
+            WhatsAppMessageResponse response = responseMono.block();
 
             if (response != null && response.getMessages() != null && !response.getMessages().isEmpty()) {
                 String externalMessageId = response.getMessages().get(0).getId();
@@ -97,7 +108,9 @@ public class WhatsAppNotificationService implements IWhatsAppNotificationService
             log.error("Failed to send transactional notification to {}: {}", phoneNumber, e.getMessage(), e);
             result = NotificationResult.failure("Exception during WhatsApp API call: " + e.getMessage());
         }
-        logTransactionalNotificationOutcome(request, result);
+        if (logTransactional) {
+            logTransactionalNotificationOutcome(request, result);
+        }
         return result;
     }
 

@@ -1,6 +1,7 @@
 package com.notificationservice.client;
 
-import com.notificationservice.config.WhatsAppConfig;
+import com.notificationservice.repository.WhatsAppCredentialRepository;
+import com.notificationservice.model.WhatsAppCredential;
 import com.notificationservice.dto.WhatsAppMessageRequest;
 import com.notificationservice.dto.WhatsAppMessageResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -13,25 +14,32 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class MetaWhatsAppApiClient {
 
-    private final WebClient webClient;
-    private final WhatsAppConfig whatsAppConfig;
+    private final WebClient.Builder webClientBuilder;
+    private final WhatsAppCredentialRepository credentialRepository;
 
-    public MetaWhatsAppApiClient(WebClient.Builder webClientBuilder, WhatsAppConfig whatsAppConfig) {
-        this.whatsAppConfig = whatsAppConfig;
-        this.webClient = webClientBuilder.baseUrl(whatsAppConfig.getApiUrl())
-                .defaultHeader("Authorization", "Bearer " + whatsAppConfig.getAccessToken())
-                .build();
+    public MetaWhatsAppApiClient(WebClient.Builder webClientBuilder, WhatsAppCredentialRepository credentialRepository) {
+        this.webClientBuilder = webClientBuilder;
+        this.credentialRepository = credentialRepository;
     }
 
     public Mono<WhatsAppMessageResponse> sendMessage(WhatsAppMessageRequest request) {
-        String url = String.format("/%s/messages", whatsAppConfig.getPhoneNumberId());
+        // Always fetch the latest credential (assume only one row exists)
+        WhatsAppCredential credential = credentialRepository.findAll().stream().findFirst().orElse(null);
+        if (credential == null) {
+            throw new IllegalStateException("No WhatsApp credentials found in the database.");
+        }
+        String url = String.format("/%s/messages", credential.getPhoneNumberId());
+        log.info("Full WhatsApp API URL: {}{}", credential.getApiUrl(), url);
         log.info("Sending WhatsApp message to Meta API: {}", request);
+        WebClient webClient = webClientBuilder.baseUrl(credential.getApiUrl())
+            .defaultHeader("Authorization", "Bearer " + credential.getAccessToken())
+            .build();
         return webClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(WhatsAppMessageResponse.class)
-                .doOnError(e -> log.error("Error sending WhatsApp message: {}", e.getMessage()));
+            .uri(url)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .retrieve()
+            .bodyToMono(WhatsAppMessageResponse.class)
+            .doOnError(e -> log.error("Error sending WhatsApp message: {}", e.getMessage()));
     }
 }

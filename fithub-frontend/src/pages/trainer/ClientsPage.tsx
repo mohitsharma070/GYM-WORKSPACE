@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
+import { Plus } from 'lucide-react';
+import { Button } from '../../components/Button';
 import { useQuery } from "@tanstack/react-query";
 
 import { type UserProfile, fetchProfile } from "../../api/profile";
+import { fetchTrainerMembersPage } from "../../api/users";
 import { useAllWorkoutPlans } from "../../hooks/useWorkoutPlans";
 import {
   useCurrentAssignedWorkoutPlanForMember,
@@ -9,6 +12,7 @@ import {
 } from "../../hooks/useAssignedWorkoutPlans";
 import Table from "../../components/Table";
 import AssignWorkoutPlanModal from "../../modals/AssignWorkoutPlanModal";
+import type { PageResponse, SortDirection, UserSortBy } from "../../types/Page";
 
 interface Client {
   id: number;
@@ -26,7 +30,9 @@ export default function ClientsPage() {
   /* SEARCH AND PAGINATION STATE */
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 10; // You can adjust this number
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [sortBy, setSortBy] = useState<UserSortBy>("name");
+  const [sortDir, setSortDir] = useState<SortDirection>("asc");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -47,38 +53,34 @@ export default function ClientsPage() {
   // Fetch all members that are clients of this trainer (assuming an API endpoint exists)
   // For now, re-using the existing /auth/trainer/members endpoint
   const {
-    data: clients,
+    data: clientsPage,
     isLoading: isLoadingClients,
     isError: isErrorClients,
     error: clientsError,
     refetch: refetchClients,
-  } = useQuery<Client[], Error>({
-    queryKey: ["trainerClients", trainerId],
-    queryFn: async () => {
-      const token = localStorage.getItem("authToken");
-      const res = await fetch("http://localhost:8001/auth/trainer/members", {
-        headers: { Authorization: `Basic ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch clients");
-      return res.json();
-    },
+  } = useQuery<PageResponse<Client>, Error>({
+    queryKey: [
+      "trainerClients",
+      trainerId,
+      { page: currentPage, pageSize, sortBy, sortDir, searchTerm },
+    ],
+    queryFn: () =>
+      fetchTrainerMembersPage({
+        page: currentPage - 1,
+        size: pageSize,
+        sortBy,
+        sortDir,
+        search: searchTerm || undefined,
+      }),
     enabled: !!trainerId,
   });
 
   // Fetch all workout plans created by this trainer, or all active plans
   const { data: allWorkoutPlans } = useAllWorkoutPlans(trainerId); // Fetch plans created by this trainer
 
-  /* FILTER AND PAGINATE CLIENTS */
-  const filteredClients = clients?.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-  const paginatedClients = filteredClients.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedClients = clientsPage?.content || [];
+  const totalPages = clientsPage?.totalPages || 0;
+  const totalItems = clientsPage?.totalElements || 0;
 
 
   if (loadingUser || isLoadingClients) {
@@ -89,12 +91,11 @@ export default function ClientsPage() {
     return (
       <div className="mt-10 text-center">
         <p className="text-red-600">{errorUser || clientsError?.message}</p>
-        <button
+        <Button
           onClick={() => { refetchClients(); }}
-          className="px-5 py-2 bg-blue-600 text-white rounded"
         >
-          Retry
-        </button>
+          <Plus size={18} className="mr-2" /> Retry
+        </Button>
       </div>
     );
   }
@@ -141,7 +142,7 @@ export default function ClientsPage() {
               };
 
               return [
-                index + 1 + (currentPage - 1) * itemsPerPage,
+                index + 1 + (currentPage - 1) * pageSize,
                 <span className="font-medium">{client.name}</span>,
                 client.email,
                 isLoadingAssignedPlan ? (
@@ -152,24 +153,25 @@ export default function ClientsPage() {
                   "No Active Plan"
                 ),
                 <div className="flex gap-2 justify-center">
-                  <button
+                  <Button
+                    size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedClientForPlan(client.id);
                       setShowAssignPlanModal(true);
                     }}
-                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
-                    Assign Plan
-                  </button>
+                    <Plus size={14} className="mr-1" /> Assign Plan
+                  </Button>
                   {currentAssignedPlan && (
-                    <button
+                    <Button
+                      size="sm"
+                      variant="destructive"
                       onClick={handleCancelPlan}
                       disabled={cancelPlanMutation.isPending}
-                      className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                     >
                       Cancel Plan
-                    </button>
+                    </Button>
                   )}
                 </div>,
               ];
@@ -180,7 +182,24 @@ export default function ClientsPage() {
             onPageChange={setCurrentPage}
             searchPlaceholder="Search clients by name or email..."
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={(value) => {
+              setSearchTerm(value);
+              setCurrentPage(1);
+            }}
+            pageSize={pageSize}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            }}
+            totalItems={totalItems}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            sortableColumns={{ 0: "id", 1: "name", 2: "email" }}
+            onSortChange={(column, direction) => {
+              setSortBy(column as UserSortBy);
+              setSortDir(direction);
+              setCurrentPage(1);
+            }}
           />
         )}
       </div>

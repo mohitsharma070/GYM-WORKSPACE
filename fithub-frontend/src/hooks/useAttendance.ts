@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../utils/api";
 import type { Attendance } from "../types/Attendance";
 
-const ATTENDANCE_SERVICE_BASE_URL = "http://localhost:8003/api/fingerprints";
+import { API_BASE_ATTENDANCE } from "../utils/config";
+const ATTENDANCE_SERVICE_BASE_URL = `${API_BASE_ATTENDANCE}/api/attendances`;
 
 interface CheckInPayload {
   userId: number;
@@ -13,8 +14,15 @@ interface CheckInPayload {
 export function useAttendances() {
   const queryClient = useQueryClient();
 
-  const fetchAllAttendances = async (): Promise<Attendance[]> => {
-    return api(ATTENDANCE_SERVICE_BASE_URL);
+  // Fetch paginated attendances
+  const fetchAllAttendances = async (page = 0, size = 10, sort = "checkInTime,desc", userId?: number) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      sort,
+    });
+    if (userId !== undefined) params.append("userId", userId.toString());
+    return api(`${ATTENDANCE_SERVICE_BASE_URL}/paged?${params.toString()}`);
   };
 
   const checkIn = useMutation({
@@ -47,18 +55,20 @@ export function useAttendances() {
     },
   });
 
-  const getAttendancesByUserId = (userId: number) => {
-    return useQuery<Attendance[]>({
-      queryKey: ["attendances", userId],
-      queryFn: async () => api(`${ATTENDANCE_SERVICE_BASE_URL}/user/${userId}`),
+  const getAttendancesByUserId = (userId: number, page = 0, size = 10, sort = "checkInTime,desc") => {
+    return useQuery({
+      queryKey: ["attendances", userId, page, size, sort],
+      queryFn: async () => api(`${ATTENDANCE_SERVICE_BASE_URL}/user/${userId}/paged?page=${page}&size=${size}&sort=${sort}`),
       enabled: !!userId,
     });
   };
 
-  const allAttendancesQuery = useQuery<Attendance[]>({
-    queryKey: ["attendances"],
-    queryFn: fetchAllAttendances,
-  });
+  // Main paginated attendances query
+  const allAttendancesQuery = (page = 0, size = 10, sort = "checkInTime,desc", userId?: number) =>
+    useQuery({
+      queryKey: ["attendances", page, size, sort, userId],
+      queryFn: async () => fetchAllAttendances(page, size, sort, userId),
+    });
 
   return {
     allAttendancesQuery,

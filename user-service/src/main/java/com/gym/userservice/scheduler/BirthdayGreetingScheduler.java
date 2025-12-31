@@ -1,6 +1,6 @@
 package com.gym.userservice.scheduler;
 
-import com.gym.userservice.dto.PromotionalNotificationRequest;
+import com.gym.userservice.dto.NotificationRequest;
 import com.gym.userservice.entity.User;
 import com.gym.userservice.enums.TargetType;
 import com.gym.userservice.feign.NotificationServiceClient;
@@ -50,11 +50,18 @@ public class BirthdayGreetingScheduler {
         // Only proceed if a non-empty phone number was found
         if (phone != null && !phone.isBlank()) {
             try {
-                PromotionalNotificationRequest notification = new PromotionalNotificationRequest();
-                notification.setTargetType(TargetType.SPECIFIC_PHONES);
-                notification.setTargetIdentifiers(List.of(phone));
-                notification.setMessageContent("Happy Birthday, " + user.getName() + "! We wish you a fantastic day from your gym!");
-
+                NotificationRequest notification = new NotificationRequest();
+                notification.setPhoneNumber(phone);
+                // Use template loader for birthday greeting notification
+                String rendered = com.gym.userservice.common.TemplateUtil.renderTemplate(
+                    "birthday_greeting_notification.html",
+                    java.util.Map.of("userName", user.getName() == null ? "" : user.getName())
+                );
+                if (rendered.isEmpty()) {
+                    rendered = "Happy Birthday, " + user.getName() + "! We wish you a fantastic day from your gym!";
+                }
+                notification.setMessage(rendered);
+                notification.setType("BIRTHDAY_GREETING");
                 notificationClient.sendNotification(notification);
             } catch (Exception e) {
                 System.err.println("Failed to send birthday greeting for user " + user.getId() + ": " + e.getMessage());

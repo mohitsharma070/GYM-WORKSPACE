@@ -51,15 +51,22 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         long totalMembers = memberStats.totalMembers;
         long totalProductsSold = productAssignmentRepo.count();
 
+
+        java.sql.Date todaySql = java.sql.Date.valueOf(now);
+        long activePlans = planAssignmentRepo.countActivePlans(todaySql);
+        long expiredPlans = planAssignmentRepo.countExpiredPlans(todaySql);
+
         return new AnalyticsResponse(
-                m, y,
-                planRevenue,
-                productRevenue,
-                productsSoldThisMonth,
-                membersThisMonth,
-                membersLastMonth,
-                totalMembers,
-                totalProductsSold
+            m, y,
+            planRevenue,
+            productRevenue,
+            productsSoldThisMonth,
+            membersThisMonth,
+            membersLastMonth,
+            totalMembers,
+            totalProductsSold,
+            activePlans,
+            expiredPlans
         );
     }
 

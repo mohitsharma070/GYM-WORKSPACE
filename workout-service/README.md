@@ -37,9 +37,9 @@ This microservice is responsible for managing all aspects related to fitness wor
 3.  **Database Configuration**:
     Update `src/main/resources/application.properties` with your PostgreSQL database credentials if they differ from the defaults:
     ```properties
-    spring.datasource.url=jdbc:***REMOVED***ql://localhost:5432/gym_workout
-    spring.datasource.username=***REMOVED***
-    spring.datasource.password=***REMOVED***
+    spring.datasource.url=jdbc:postgresql://localhost:5432/gym_workout
+    spring.datasource.username=postgres
+    spring.datasource.password=root
     ```
     **Note**: For production environments, sensitive credentials should be managed securely (e.g., environment variables, Kubernetes secrets). Also, `spring.jpa.hibernate.ddl-auto` should be set to `none` or `validate` with a proper migration tool.
 

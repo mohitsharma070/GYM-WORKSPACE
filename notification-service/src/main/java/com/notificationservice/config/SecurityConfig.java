@@ -2,6 +2,8 @@ package com.notificationservice.config;
 
 import com.notificationservice.security.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +18,7 @@ import org.springframework.security.config.Customizer;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     public SecurityConfig(CustomUserDetailsService customUserDetailsService) {
         // CustomUserDetailsService is still needed to enable method security expressions like hasRole()
@@ -24,30 +27,23 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        log.info("SecurityConfig loaded: custom security rules are active.");
+            // Debug filter to log all incoming requests and their paths
+            http.addFilterBefore(new jakarta.servlet.Filter() {
+                @Override
+                public void doFilter(jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response, jakarta.servlet.FilterChain chain)
+                        throws java.io.IOException, jakarta.servlet.ServletException {
+                    jakarta.servlet.http.HttpServletRequest req = (jakarta.servlet.http.HttpServletRequest) request;
+                    log.info("Incoming request: {} {}", req.getMethod(), req.getRequestURI());
+                    chain.doFilter(request, response);
+                }
+            }, org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class);
         http
-            .cors(cors -> cors.configurationSource(request -> {
-                var corsConfiguration = new org.springframework.web.cors.CorsConfiguration();
-                corsConfiguration.setAllowedOrigins(java.util.List.of("http://localhost:5173")); // Allow frontend origin
-                corsConfiguration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                corsConfiguration.setAllowedHeaders(java.util.List.of("*"));
-                corsConfiguration.setAllowCredentials(true);
-                return corsConfiguration;
-            }))
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in API services
+            .cors(cors -> cors.disable())
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/api/auth/**").permitAll() // Public endpoints, e.g., login, registration from user-service
-                .requestMatchers("/api/promotional-notifications").permitAll() // Admin endpoints for promotional notifications
-                .requestMatchers("/api/promotional-notifications/logs").permitAll() // Admin endpoints for promotional notifications history
-                .requestMatchers("/api/images/upload").permitAll() // Admin endpoints for image upload
-                .requestMatchers("/api/admin/**").permitAll() // Admin endpoints require ADMIN role
-                .requestMatchers("/api/trainer/**").permitAll() // Trainer endpoints require TRAINER role
-                .requestMatchers("/api/member/**").permitAll() // Member endpoints require MEMBER role
-                .anyRequest().authenticated() // All other requests require authentication
-            )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Use stateless sessions for REST APIs
-            .httpBasic(Customizer.withDefaults()); // Enable Basic Authentication
-
+                .anyRequest().permitAll()
+            );
         return http.build();
     }
 

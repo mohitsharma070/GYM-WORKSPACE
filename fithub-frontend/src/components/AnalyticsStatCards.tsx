@@ -15,13 +15,14 @@ export const AnalyticsStatCards: React.FC<AnalyticsStatCardsProps> = ({ stats })
     stats.membersThisMonth < stats.membersLastMonth ? 'negative' : 'neutral';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <StatCard
         title="Plan Revenue"
         value={stats.planRevenue}
         currency="₹"
         icon={Wallet}
         description="Revenue from membership plans"
+        variant="success"
       />
       <StatCard
         title="Product Revenue"
@@ -29,6 +30,7 @@ export const AnalyticsStatCards: React.FC<AnalyticsStatCardsProps> = ({ stats })
         currency="₹"
         icon={ShoppingCart}
         description="Revenue from product sales"
+        variant="info"
       />
       <StatCard
         title="Total Revenue"
@@ -36,6 +38,7 @@ export const AnalyticsStatCards: React.FC<AnalyticsStatCardsProps> = ({ stats })
         currency="₹"
         icon={DollarSign}
         description="Combined revenue this month"
+        variant="warning"
       />
       <StatCard
         title="Products Sold"
@@ -43,12 +46,14 @@ export const AnalyticsStatCards: React.FC<AnalyticsStatCardsProps> = ({ stats })
         icon={Package}
         description="Units sold this month"
         microMetric={`Total: ${stats.totalProductsSold}`}
+        variant="info"
       />
       <StatCard
         title="Total Members"
         value={stats.totalMembers}
         icon={Users}
         description="All active members"
+        variant="success"
       />
       <StatCard
         title="Members Joined"
@@ -57,6 +62,7 @@ export const AnalyticsStatCards: React.FC<AnalyticsStatCardsProps> = ({ stats })
         description="New members this month"
         microMetric={`Last month: ${stats.membersLastMonth}`}
         microMetricType={membersJoinedTrend}
+        variant={membersJoinedTrend === 'positive' ? 'success' : membersJoinedTrend === 'negative' ? 'error' : 'info'}
       />
     </div>
   );

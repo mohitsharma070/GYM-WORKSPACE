@@ -4,7 +4,9 @@ import { API_BASE_MEMBERSHIP } from "../utils/config";
 export async function loadPlan(memberId: number): Promise<Plan | null> {
   const res = await fetch(`${API_BASE_MEMBERSHIP}/member/${memberId}/plan`);
   if (!res.ok) return null;
-  return await res.json();
+  const text = await res.text();
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 export async function assignPlanToMember(

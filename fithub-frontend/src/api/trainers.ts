@@ -1,16 +1,39 @@
+import type { PageRequest, PageResponse } from "../types/Page";
 import type { Trainer } from "../types/Trainer";
+import { API_BASE_USER } from "../utils/config";
 
-/* ------------------ GET TRAINERS ------------------ */
-export async function fetchTrainers(): Promise<Trainer[]> {
-  const token = localStorage.getItem("authToken");
+type PagedTrainers = PageResponse<Trainer>;
 
-  const res = await fetch("http://localhost:8001/auth/admin/trainers", {
-    headers: {
-      Authorization: `Basic ${token}`,
-    },
+const DEFAULT_PAGE = 0;
+const DEFAULT_SIZE = 10;
+
+function buildTrainerQuery(params: PageRequest = {}): string {
+  const query = new URLSearchParams({
+    page: String(params.page ?? DEFAULT_PAGE),
+    size: String(params.size ?? DEFAULT_SIZE),
+    sortBy: params.sortBy ?? "id",
+    sortDir: params.sortDir ?? "asc",
   });
 
-  if (!res.ok) return [];
+  if (params.search) {
+    query.append("search", params.search.trim());
+  }
+
+  return query.toString();
+}
+
+/* ------------------ GET TRAINERS ------------------ */
+export async function fetchTrainers(params: PageRequest = {}): Promise<PagedTrainers> {
+  const token = localStorage.getItem("authToken");
+
+  const res = await fetch(
+    `${API_BASE_USER}/auth/admin/trainers?${buildTrainerQuery(params)}`,
+    {
+      headers: token ? { Authorization: `Basic ${token}` } : undefined,
+    },
+  );
+
+  if (!res.ok) throw new Error("Failed to load trainers");
   return res.json();
 }
 
@@ -18,7 +41,7 @@ export async function fetchTrainers(): Promise<Trainer[]> {
 export async function createTrainer(data: any) {
   const token = localStorage.getItem("authToken");
 
-  const res = await fetch("http://localhost:8001/auth/trainer/register", {
+  const res = await fetch(`${API_BASE_USER}/auth/trainer/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -28,6 +51,7 @@ export async function createTrainer(data: any) {
       name: data.name,
       email: data.email,
       password: data.password,
+      dateOfBirth: data.dateOfBirth, // Ensure DOB is sent
       specialization: data.specialization,
       experienceYears: Number(data.experienceYears),
       certification: data.certification,
@@ -47,7 +71,7 @@ export async function createTrainer(data: any) {
 export async function deleteTrainer(id: number) {
   const token = localStorage.getItem("authToken");
 
-  const res = await fetch(`http://localhost:8001/auth/admin/user/${id}`, {
+  const res = await fetch(`${API_BASE_USER}/auth/admin/user/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Basic ${token}`,
@@ -66,7 +90,7 @@ export async function deleteTrainer(id: number) {
 export async function updateTrainer(id: number, data: any) {
   const token = localStorage.getItem("authToken");
 
-  const res = await fetch(`http://localhost:8001/auth/user/${id}`, {
+  const res = await fetch(`${API_BASE_USER}/auth/user/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -75,6 +99,7 @@ export async function updateTrainer(id: number, data: any) {
     body: JSON.stringify({
       name: data.name,
       email: data.email,
+      dateOfBirth: data.dateOfBirth, // Ensure DOB is sent
       specialization: data.specialization,
       experienceYears: Number(data.experienceYears),
       certification: data.certification,

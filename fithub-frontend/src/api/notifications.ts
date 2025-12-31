@@ -1,3 +1,21 @@
+// Fetch notification stats (all records, not paginated)
+export async function fetchNotificationStats(filters: NotificationHistoryFilter = {}): Promise<{
+  total: number;
+  sent: number;
+  failed: number;
+  pending: number;
+  partial: number;
+  recentActivity: number;
+}> {
+  const queryParams = new URLSearchParams();
+  if (filters.status) queryParams.append('status', filters.status);
+  if (filters.targetType) queryParams.append('targetType', filters.targetType);
+  const res = await fetch(`${API_BASE_NOTIFICATION}/api/promotional-notifications/stats?${queryParams.toString()}`);
+  if (!res.ok) {
+    throw new Error('Failed to fetch notification stats');
+  }
+  return await res.json();
+}
 import { API_BASE_NOTIFICATION } from "../utils/config";
 import type { NotificationRequest, PromotionalNotificationRequest, NotificationResult } from "../types/Notification"; // Updated import
 import { TargetType } from "../types/TargetType"; // Correct import for TargetType

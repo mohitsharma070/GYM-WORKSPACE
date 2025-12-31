@@ -6,6 +6,7 @@ import com.notificationservice.dto.WhatsAppMessageRequest;
 import com.notificationservice.dto.WhatsAppMessageResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -38,8 +39,20 @@ public class MetaWhatsAppApiClient {
             .uri(url)
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(request)
-            .retrieve()
-            .bodyToMono(WhatsAppMessageResponse.class)
-            .doOnError(e -> log.error("Error sending WhatsApp message: {}", e.getMessage()));
+            .exchangeToMono(response -> handleResponse(response));
+    }
+
+    private Mono<WhatsAppMessageResponse> handleResponse(ClientResponse response) {
+        if (response.statusCode().is2xxSuccessful()) {
+            return response.bodyToMono(WhatsAppMessageResponse.class);
+        }
+
+        // Capture error body for better diagnostics (Meta returns structured JSON)
+        return response.bodyToMono(String.class)
+            .defaultIfEmpty("<empty body>")
+            .flatMap(body -> {
+                log.error("WhatsApp API error: status={} body={} ", response.statusCode(), body);
+                return Mono.error(new IllegalStateException("WhatsApp API error: " + response.statusCode() + " body: " + body));
+            });
     }
 }

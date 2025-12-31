@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.http.MediaType;
+import com.notificationservice.util.FtpUploader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,6 +25,15 @@ public class ImageController {
 
     @Value("${image.upload.dir:uploads}")
     private String uploadDir;
+
+    @Value("${app.image.public-base-url:}")
+    private String publicBaseUrl; // Optional: set to your Hostinger HTTPS base, e.g., https://yourdomain.com/uploads
+
+    private final FtpUploader ftpUploader;
+
+    public ImageController(FtpUploader ftpUploader) {
+        this.ftpUploader = ftpUploader;
+    }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
@@ -43,13 +53,29 @@ public class ImageController {
             Path filePath = uploadPath.resolve(filename);
             file.transferTo(filePath);
             log.info("Saved file to: {}", filePath.toAbsolutePath());
-            String imageUrl = "/uploads/" + filename;
+
+            if (ftpUploader.isEnabled()) {
+                ftpUploader.upload(filePath, filename);
+            }
+
+            String imageUrl = buildPublicUrl(filename);
             Map<String, String> response = new HashMap<>();
             response.put("imageUrl", imageUrl);
             return ResponseEntity.ok(response);
         } catch (IOException e) {
             log.error("Failed to upload image: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(Map.of("message", "Failed to upload image."));
+        } catch (Exception e) {
+            log.error("Upload failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("message", e.getMessage()));
         }
+    }
+
+    private String buildPublicUrl(String filename) {
+        if (StringUtils.hasText(publicBaseUrl)) {
+            String base = publicBaseUrl.endsWith("/") ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
+            return base + "/" + filename;
+        }
+        return "/uploads/" + filename;
     }
 }

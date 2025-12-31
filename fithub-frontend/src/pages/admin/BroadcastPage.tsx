@@ -13,6 +13,7 @@ import { StatCard } from '../../components/StatCard';
 import { normalizePhoneInput } from "../../utils/phone";
 
 export default function BroadcastPage() {
+    const [broadcastResult, setBroadcastResult] = useState<{ success: boolean; message: string; userMessage?: string } | null>(null);
   const queryClient = useQueryClient();
   const { showToast } = useToast(); // Initialize useToast
   const [showConfirmationModal, setShowConfirmationModal] = useState(false); // State for confirmation modal
@@ -25,6 +26,7 @@ export default function BroadcastPage() {
   // Image upload states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const imageUploadMutation = useMutation({
     mutationFn: uploadImage,
@@ -44,7 +46,25 @@ export default function BroadcastPage() {
       setSelectedFile(null);
       setUploadedImageUrl(null);
       setShowConfirmationModal(false);
-      // Improved error handling: treat any message containing 'Failed' or 'Exception' as error
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      queryClient.invalidateQueries({ queryKey: ["adminNotificationLogs"] });
+      // Save result for UI feedback
+      // User-friendly error message logic
+      let userMessage: string | undefined = undefined;
+      const msg = result.message || "";
+      if (/session has expired|401 unauthorized|error validating access token/i.test(msg)) {
+        userMessage = "Your WhatsApp session has expired. Please reconnect your WhatsApp account in the admin settings.";
+      } else if (!result.success || /failed|exception/i.test(msg)) {
+        userMessage = "Failed to send broadcast. Please try again or contact support.";
+      }
+      setBroadcastResult({
+        success: result.success && !(msg.toLowerCase().includes('failed')) && !(msg.toLowerCase().includes('exception')),
+        message: msg || (result.success ? "Broadcast sent successfully!" : "Failed to send broadcast."),
+        userMessage
+      });
+      // Show toast as before
       const lowerMsg = (result.message || '').toLowerCase();
       if (result.success && !lowerMsg.includes('failed') && !lowerMsg.includes('exception')) {
         showToast(result.message, "success");
@@ -53,10 +73,10 @@ export default function BroadcastPage() {
       } else {
         showToast(result.message || "Failed to send broadcast.", "error");
       }
-      queryClient.invalidateQueries({ queryKey: ["adminNotificationLogs"] });
     },
     onError: (error: any) => {
       setShowConfirmationModal(false);
+      setBroadcastResult({ success: false, message: error?.message || "Failed to send broadcast." });
       showToast(error?.message || "Failed to send broadcast.", "error");
     },
   });
@@ -339,10 +359,10 @@ export default function BroadcastPage() {
                 <input
                   type="file"
                   accept="image/*"
+                  ref={fileInputRef}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     setSelectedFile(file || null);
-                    
                     if (file) {
                       imageUploadMutation.mutate(file);
                     } else {
@@ -405,17 +425,35 @@ export default function BroadcastPage() {
             </button>
           </form>
           
-          {sendNotificationMutation.isSuccess && (
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          {broadcastResult && (
+            <div className={`mt-6 border rounded-lg p-4 ${broadcastResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="text-green-600" size={20} />
-                <p className="text-sm font-medium text-green-800">Broadcast sent successfully!</p>
+                {broadcastResult.success ? (
+                  <CheckCircle className="text-green-600" size={20} />
+                ) : (
+                  <AlertCircle className="text-red-600" size={20} />
+                )}
+                <p className={`text-sm font-medium ${broadcastResult.success ? 'text-green-800' : 'text-red-800'}`}>{broadcastResult.success ? "Broadcast sent successfully!" : "Broadcast failed!"}</p>
               </div>
-              <p className="text-sm text-green-700 mb-3">Your message has been delivered to the selected audience.</p>
+              {broadcastResult.userMessage && (
+                <p className={`text-sm mb-2 ${broadcastResult.success ? 'text-green-700' : 'text-red-700'}`}>{broadcastResult.userMessage}</p>
+              )}
+              {!broadcastResult.success && (
+                <details className="text-xs text-red-500 mb-2">
+                  <summary>Show technical details</summary>
+                  <pre className="whitespace-pre-wrap break-all">{broadcastResult.message}</pre>
+                </details>
+              )}
+              {broadcastResult.success && !broadcastResult.userMessage && (
+                <p className="text-sm text-green-700 mb-3">{broadcastResult.message}</p>
+              )}
               <Link 
                 to="/admin/notifications/logs" 
                 className="inline-flex items-center gap-2 text-blue-600 hover:underline text-sm font-medium"
-                onClick={() => sendNotificationMutation.reset()}
+                onClick={() => {
+                  sendNotificationMutation.reset();
+                  setBroadcastResult(null);
+                }}
               >
                 <Eye size={16} />
                 View Delivery Status
